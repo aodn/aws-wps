@@ -17,7 +17,7 @@
 
 Looked at Version 1.0.0 - there is a 2.0 now but no implementations that I know of.
 
-##### GetCapabilities
+#### GetCapabilities
 
 HTTP Get request using KVP mandatory
 POST optional
@@ -39,7 +39,7 @@ Simple implementation
  - Request validation/Returning appropriate exceptions
  - Return xml with process summary details
 
-##### DescribeProcess
+#### DescribeProcess
 
 HTTP Get request using KVP mandatory
 POST optional but easy to do (in java at least - see prototype - get it for free if parse KVP to JAXB classes) 
@@ -51,7 +51,7 @@ Simple implementation
  - Request validation/Returning appropriate exceptions
  - Just include selected processes DecsribeProcess xml fragment
 
-##### Execute
+#### Execute
 
 Need to support:
 
@@ -90,7 +90,7 @@ Output
  - Need to store status document and keep it updated during processing/retain it afterwards
  - Need to handle multiple outputs/mimetypes
 
-#### AWS API Gateway
+#### API Gateway
 
  - lambda - WPS API looks to be beyond the capabilities of API Gateway -  all requests mapped to one resource/method
  - AWS Service - batch not available - anyway, as for lambda integration mapping of WPS requests looks to be beyond the capabilities of API gateway
