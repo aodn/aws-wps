@@ -1,0 +1,7 @@
+ - Overview of WPS features
+   - GetCapabilities/DescribeProcess/Execute - example requests/responses
+ - Demo or walk through, creating a docker image, uploading to registry, setting up a compute environment, job queue, job definition
+ - Demo javaduck queues/processing/autoscaling etc
+ - Walk through prototype API/Gateway demo curl request
+ - AWS BAtch/API Gateway/Lambda notes not mentioned above
+ - Discuss design/TODO items
