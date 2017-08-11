@@ -92,9 +92,14 @@ Output
 
 #### API Gateway
 
- - lambda - WPS API looks to be beyond the capabilities of API Gateway -  all requests mapped to one resource/method
- - AWS Service - batch not available - anyway, as for lambda integration mapping of WPS requests looks to be beyond the capabilities of API gateway
+Integrations
+
+ - lambda - WPS API request looks to be beyond the capabilities of API Gateway mapping capabilities -  all requests mapped to one resource/method
+ - AWS Service - batch not available
  - possible with lambda proxy - proxy all requests to lambda function which works out what the request is and dispatches to an appropriate process
+ 
+ Prototype
+ 
  - prototyped submitting batch job via lambda java proxy - approx 3s cold startup time then 400-500 ms per request - had to set memory to 1500 to get this - initially getting 10 second cold startup time.
  - java 8 only
  - also tried doing some similar things in python submitting batch job was taking around 100 ms, added validation of xml requests using xmlschema - had to bumpup memory to stop python crashing (500 MB I think) and went to 3s each invocation - but not a fair comparison - didn't spend a lot of time trying to tune this
@@ -108,15 +113,6 @@ Considered borrowing from
 but geoserver's implementation is not ideal and all are tightly coupled with their own execution model
 
 Some work to write our own but focus on minimum for marvl
-
-#### Java prototype
-
-200ms without loading classes for jaxb/submitting aws batch request.
-
-Can take up to 10 secs to process a request from a cold start - then varies from around 1s to 3s
-
-Over 6 seconds to submit job the first time
-Over 3 seconds to parse deserialise/serialise xml the first time
 
 #### Configuration for lambda
 
