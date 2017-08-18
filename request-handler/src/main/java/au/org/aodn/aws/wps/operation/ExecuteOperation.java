@@ -15,10 +15,17 @@ import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.datatype.DatatypeFactory;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Properties;
 
 public class ExecuteOperation implements Operation {
-    //TODO:  need to get from config
-    private static final String STATUS_LOCATION = "https://bucket/prefix/";
+
+    //  Configuration key names
+    private static final String STATUS_LOCATION_BASE_CONFIG_KEY = "STATUS_LOCATION";
+    private static final String STATUS_FILE_FILENAME_CONFIG_KEY = "STATUS_FILENAME";
+    private static final String JOB_NAME_CONFIG_KEY = "JOB_NAME";
+    private static final String JOB_QUEUE_NAME_CONFIG_KEY = "JOB_QUEUE_NAME";
+    private static final String AWS_REGION_CONFIG_KEY = "AWS_REGION";
+
 
     private final Execute executeRequest;
 
@@ -27,28 +34,43 @@ public class ExecuteOperation implements Operation {
     }
 
     @Override
-    public Object execute() {
-        //TODO: Read config
+    public Object execute(Properties config) {
+
+        //  Config items:
+        //      queue names
+        //      job name
+        //      AWS region
+        //      status filename
+        //      status location
+        String statusLocationBase = config.getProperty(STATUS_LOCATION_BASE_CONFIG_KEY);
+        String statusFileName = config.getProperty(STATUS_FILE_FILENAME_CONFIG_KEY);
+        String jobName = config.getProperty(JOB_NAME_CONFIG_KEY);
+        String jobQueueName = config.getProperty(JOB_QUEUE_NAME_CONFIG_KEY);
+        String awsRegion = config.getProperty(AWS_REGION_CONFIG_KEY);
+
+        System.out.println("Configuration: " + config.toString());
 
         String processIdentifier = executeRequest.getIdentifier().getValue();  // code spaces not supported for the moment
         Map<String, String> parameterMap = getJobParameters();
 
+        System.out.println("Submitting job request...");
         SubmitJobRequest submitJobRequest = new SubmitJobRequest();
-        submitJobRequest.setJobQueue("javaduck-small-in");  //TODO: config/jobqueue selection
-        submitJobRequest.setJobName("javaduck");
+        submitJobRequest.setJobQueue(jobQueueName);  //TODO: config/jobqueue selection
+        submitJobRequest.setJobName(jobName);
         submitJobRequest.setJobDefinition(processIdentifier);  //TODO: either map to correct job def or set vcpus/memory required appropriately
         submitJobRequest.setParameters(parameterMap);
 
         AWSBatchClientBuilder builder = AWSBatchClientBuilder.standard();
-        builder.setRegion("us-east-1");  // TODO: get from config
+        builder.setRegion(awsRegion);
         AWSBatch client = builder.build();
         SubmitJobResult result = client.submitJob(submitJobRequest);
 
         String jobId = result.getJobId();
 
+        System.out.println("Job submitted.  Job ID : " + jobId);
         //TODO: create job status document - status = submitted!
 
-        String statusLocation = STATUS_LOCATION + jobId + "/status.xml";
+        String statusLocation = statusLocationBase + jobId + "/" + statusFileName;
 
         ExecuteResponse response = new ExecuteResponse();
         response.setStatusLocation(statusLocation);

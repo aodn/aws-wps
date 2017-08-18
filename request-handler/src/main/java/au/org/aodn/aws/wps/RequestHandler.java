@@ -8,9 +8,10 @@ import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
 import java.io.StringWriter;
+import java.util.Properties;
 
 public class RequestHandler {
-    public AwsApiResponse handleRequest(AwsApiRequest request) {
+    public AwsApiResponse handleRequest(AwsApiRequest request, Properties config) {
         ResponseBuilder responseBuilder = new ResponseBuilder();
 
         try {
@@ -18,9 +19,13 @@ public class RequestHandler {
             RequestParserFactory requestParserFactory = new RequestParserFactory(context);
             RequestParser requestParser = requestParserFactory.getRequestParser(request);
             Operation operation = requestParser.getOperation();
-            Object result = operation.execute();
+            System.out.println("Operation : " + operation.getClass());
+            Object result = operation.execute(config);
+            System.out.print("Executed");
             responseBuilder.body(getString(context, result));
         } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("Exception : " + e.getMessage());
             //TODO: handle as per wps/ogc exception handling requirements
             responseBuilder.statusCode(500);
             responseBuilder.body(e.getMessage());

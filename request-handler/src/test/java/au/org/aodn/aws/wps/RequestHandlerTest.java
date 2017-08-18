@@ -4,6 +4,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Date;
+import java.util.Properties;
 
 /**
  * Created by craigj on 7/08/17.
@@ -46,7 +47,15 @@ public class RequestHandlerTest {
 
         RequestHandler dispatcher = new RequestHandler();
 
-        dispatcher.handleRequest(input);
+        Properties config = new Properties();
+        config.setProperty("STATUS_LOCATION", "http://bucket/prefix/");
+        config.setProperty("STATUS_FILENAME", "status.xml");
+        config.setProperty("JOB_NAME", "javaduck");
+        config.setProperty("JOB_QUEUE_NAME", "javaduck-small-in");
+        config.setProperty("AWS_REGION", "us-east-1");
+
+        input.setHttpMethod("POST");
+        dispatcher.handleRequest(input, config);
         System.out.println(new Date());
     }
 }
