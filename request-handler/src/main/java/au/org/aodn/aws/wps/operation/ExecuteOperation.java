@@ -1,18 +1,24 @@
 package au.org.aodn.aws.wps.operation;
 
+import au.org.aodn.aws.wps.EnumStatus;
+import au.org.aodn.aws.wps.StatusCreator;
 import com.amazonaws.services.batch.AWSBatch;
 import com.amazonaws.services.batch.AWSBatchClientBuilder;
 import com.amazonaws.services.batch.model.SubmitJobRequest;
 import com.amazonaws.services.batch.model.SubmitJobResult;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.model.CannedAccessControlList;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.util.StringInputStream;
 import net.opengis.wps._1_0.DataInputsType;
 import net.opengis.wps._1_0.DataType;
 import net.opengis.wps._1_0.Execute;
 import net.opengis.wps._1_0.ExecuteResponse;
 import net.opengis.wps._1_0.InputType;
-import net.opengis.wps._1_0.StatusType;
 
-import javax.xml.datatype.DatatypeConfigurationException;
-import javax.xml.datatype.DatatypeFactory;
+import java.io.UnsupportedEncodingException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -68,23 +74,23 @@ public class ExecuteOperation implements Operation {
         String jobId = result.getJobId();
 
         System.out.println("Job submitted.  Job ID : " + jobId);
-        //TODO: create job status document - status = submitted!
+        StatusCreator statusUpdater = new StatusCreator("http://" + statusLocationBase + "/" + jobId + "/" + statusFileName, jobId);
+        ExecuteResponse response = statusUpdater.createResponseDocument(EnumStatus.ACCEPTED);
 
-        String statusLocation = statusLocationBase + jobId + "/" + statusFileName;
+        String document = StatusCreator.createXmlDocument(response);
 
-        ExecuteResponse response = new ExecuteResponse();
-        response.setStatusLocation(statusLocation);
-        StatusType status = new StatusType();
+        AmazonS3 cl = AmazonS3ClientBuilder.defaultClient();
 
         try {
-            status.setCreationTime(DatatypeFactory.newInstance().newXMLGregorianCalendar());
-        } catch (DatatypeConfigurationException e) {
-            throw new RuntimeException(e);
+            cl.putObject(
+                    new PutObjectRequest(statusLocationBase, jobId + "/" + statusFileName, new StringInputStream(document), new ObjectMetadata())
+                            .withCannedAcl(CannedAccessControlList.PublicRead));
+        } catch (UnsupportedEncodingException e) {
+            //TODO: if uploading status file fails should we return a failed status?
+            e.printStackTrace();
         }
 
-        status.setProcessAccepted("Accepted job " + jobId + " for processing");
-        response.setStatus(status);
-        return response;
+        return document;
     }
 
     private Map<String, String> getJobParameters() {
