@@ -11,6 +11,7 @@ import net.opengis.wps._1_0.Execute;
 import net.opengis.wps._1_0.ExecuteResponse;
 import net.opengis.wps._1_0.InputType;
 import net.opengis.wps._1_0.StatusType;
+import org.apache.log4j.Logger;
 
 import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.datatype.DatatypeFactory;
@@ -19,6 +20,8 @@ import java.util.Map;
 import java.util.Properties;
 
 public class ExecuteOperation implements Operation {
+
+    private static final Logger LOGGER = Logger.getLogger(ExecuteOperation.class);
 
     //  Configuration key names
     private static final String STATUS_S3_BUCKET_CONFIG_KEY = "STATUS_S3_BUCKET";
@@ -49,12 +52,12 @@ public class ExecuteOperation implements Operation {
         String jobQueueName = config.getProperty(AWS_BATCH_JOB_QUEUE_NAME_CONFIG_KEY);
         String awsRegion = config.getProperty(AWS_REGION_CONFIG_KEY);
 
-        System.out.println("Configuration: " + config.toString());
+        LOGGER.debug("Configuration: " + config.toString());
 
         String processIdentifier = executeRequest.getIdentifier().getValue();  // code spaces not supported for the moment
         Map<String, String> parameterMap = getJobParameters();
 
-        System.out.println("Submitting job request...");
+        LOGGER.debug("Submitting job request...");
         SubmitJobRequest submitJobRequest = new SubmitJobRequest();
         submitJobRequest.setJobQueue(jobQueueName);  //TODO: config/jobqueue selection
         submitJobRequest.setJobName(jobName);
@@ -68,7 +71,7 @@ public class ExecuteOperation implements Operation {
 
         String jobId = result.getJobId();
 
-        System.out.println("Job submitted.  Job ID : " + jobId);
+        LOGGER.debug("Job submitted.  Job ID : " + jobId);
         //TODO: create job status document - status = submitted!
 
         String statusLocation = statusLocationBase + jobId + "/" + statusFileName;
