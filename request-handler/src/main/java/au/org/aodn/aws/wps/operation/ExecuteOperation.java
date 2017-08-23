@@ -1,5 +1,6 @@
 package au.org.aodn.aws.wps.operation;
 
+import au.org.aodn.aws.wps.exception.ValidationException;
 import com.amazonaws.services.batch.AWSBatch;
 import com.amazonaws.services.batch.AWSBatchClientBuilder;
 import com.amazonaws.services.batch.model.SubmitJobRequest;
@@ -20,10 +21,10 @@ import java.util.Properties;
 public class ExecuteOperation implements Operation {
 
     //  Configuration key names
-    private static final String STATUS_LOCATION_BASE_CONFIG_KEY = "STATUS_LOCATION";
-    private static final String STATUS_FILE_FILENAME_CONFIG_KEY = "STATUS_FILENAME";
-    private static final String JOB_NAME_CONFIG_KEY = "JOB_NAME";
-    private static final String JOB_QUEUE_NAME_CONFIG_KEY = "JOB_QUEUE_NAME";
+    private static final String STATUS_S3_BUCKET_CONFIG_KEY = "STATUS_S3_BUCKET";
+    private static final String STATUS_S3_KEY_CONFIG_KEY = "STATUS_S3_FILENAME";
+    private static final String AWS_BATCH_JOB_NAME_CONFIG_KEY = "AWS_BATCH_JOB_NAME";
+    private static final String AWS_BATCH_JOB_QUEUE_NAME_CONFIG_KEY = "AWS_BATCH_JOB_QUEUE_NAME";
     private static final String AWS_REGION_CONFIG_KEY = "AWS_REGION";
 
 
@@ -42,10 +43,10 @@ public class ExecuteOperation implements Operation {
         //      AWS region
         //      status filename
         //      status location
-        String statusLocationBase = config.getProperty(STATUS_LOCATION_BASE_CONFIG_KEY);
-        String statusFileName = config.getProperty(STATUS_FILE_FILENAME_CONFIG_KEY);
-        String jobName = config.getProperty(JOB_NAME_CONFIG_KEY);
-        String jobQueueName = config.getProperty(JOB_QUEUE_NAME_CONFIG_KEY);
+        String statusLocationBase = config.getProperty(STATUS_S3_BUCKET_CONFIG_KEY);
+        String statusFileName = config.getProperty(STATUS_S3_KEY_CONFIG_KEY);
+        String jobName = config.getProperty(AWS_BATCH_JOB_NAME_CONFIG_KEY);
+        String jobQueueName = config.getProperty(AWS_BATCH_JOB_QUEUE_NAME_CONFIG_KEY);
         String awsRegion = config.getProperty(AWS_REGION_CONFIG_KEY);
 
         System.out.println("Configuration: " + config.toString());
@@ -110,5 +111,10 @@ public class ExecuteOperation implements Operation {
         return result;
     }
 
+    @Override
+    public void validate(Properties config) throws ValidationException
+    {
+        //  Validate execute operation
+    }
 
 }

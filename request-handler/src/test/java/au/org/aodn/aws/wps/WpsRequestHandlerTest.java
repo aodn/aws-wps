@@ -9,7 +9,7 @@ import java.util.Properties;
 /**
  * Created by craigj on 7/08/17.
  */
-public class RequestHandlerTest {
+public class WpsRequestHandlerTest {
 
     @Test
     public void handleRequest() throws IOException, InterruptedException {
@@ -45,7 +45,7 @@ public class RequestHandlerTest {
             "  </wps:ResponseForm>\n" +
             "</wps:Execute>");
 
-        RequestHandler dispatcher = new RequestHandler();
+        WpsRequestHandler dispatcher = new WpsRequestHandler();
 
         Properties config = new Properties();
         config.setProperty("STATUS_LOCATION", "http://bucket/prefix/");
