@@ -54,6 +54,9 @@ public class AggregationRunner implements CommandLineRunner {
 
     private static final Logger logger = LoggerFactory.getLogger(au.org.emii.aggregationworker.AggregationRunner.class);
 
+    //  TODO:  change parameters to reflect the current GoGoDuck interface - ie: pass a layer name, temporal extents & geographical extents.
+    //         This prototype currently gets a list of files plus the extents.
+    //         This component will need to contact geoserver + get the list of files for the named layer.
     @Override
     public void run(String... args) {
         try {

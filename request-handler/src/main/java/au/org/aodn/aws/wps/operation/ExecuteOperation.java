@@ -59,6 +59,9 @@ public class ExecuteOperation implements Operation {
 
         LOGGER.debug("Submitting job request...");
         SubmitJobRequest submitJobRequest = new SubmitJobRequest();
+
+        //  TODO: at this point we will need to invoke the correct AWS batch processing job for the function that is specified in the Execute Operation
+        //  This will probably involve selecting the appropriate queue, jobName (mainly for display in AWS console) & job definition based on the processIdentifier.
         submitJobRequest.setJobQueue(jobQueueName);  //TODO: config/jobqueue selection
         submitJobRequest.setJobName(jobName);
         submitJobRequest.setJobDefinition(processIdentifier);  //TODO: either map to correct job def or set vcpus/memory required appropriately
