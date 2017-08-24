@@ -3,6 +3,7 @@ package au.org.aodn.aws.wps.operation;
 import au.org.aodn.aws.wps.exception.ValidationException;
 import au.org.aodn.aws.wps.status.EnumStatus;
 import au.org.aodn.aws.wps.status.ExecuteStatusBuilder;
+import au.org.aodn.aws.wps.status.S3StatusUpdater;
 import com.amazonaws.services.batch.AWSBatch;
 import com.amazonaws.services.batch.AWSBatchClientBuilder;
 import com.amazonaws.services.batch.model.SubmitJobRequest;
@@ -81,15 +82,13 @@ public class ExecuteOperation implements Operation {
 
         LOGGER.debug("Job submitted.  Job ID : " + jobId);
 
-        String statusLocation = statusLocationBase + jobId + "/" + statusFileName;
+        String statusLocation = statusLocationBase + "prototypeId" + "/" + statusFileName;
         ExecuteStatusBuilder statusBuilder = new ExecuteStatusBuilder(statusLocation,jobId);
         String statusDocument = statusBuilder.createResponseDocument(EnumStatus.ACCEPTED);
 
-        AmazonS3 cl = AmazonS3ClientBuilder.defaultClient();
+        S3StatusUpdater statusUpdater = new S3StatusUpdater(statusLocationBase, "prototypeId");
         try {
-            cl.putObject(
-                    new PutObjectRequest(statusLocationBase, jobId + "/" + statusFileName, new StringInputStream(statusDocument), new ObjectMetadata())
-                            .withCannedAcl(CannedAccessControlList.PublicRead));
+            statusUpdater.updateStatus(statusDocument);
         } catch (UnsupportedEncodingException e) {
             statusDocument = statusBuilder.createResponseDocument(EnumStatus.FAILED, "Failed to create status file" + e.getMessage(), "StatusFileError");
             e.printStackTrace();
