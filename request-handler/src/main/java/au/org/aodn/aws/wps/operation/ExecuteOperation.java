@@ -1,20 +1,26 @@
 package au.org.aodn.aws.wps.operation;
 
 import au.org.aodn.aws.wps.exception.ValidationException;
+import au.org.aodn.aws.wps.status.EnumStatus;
+import au.org.aodn.aws.wps.status.ExecuteStatusBuilder;
+import au.org.aodn.aws.wps.status.S3StatusUpdater;
 import com.amazonaws.services.batch.AWSBatch;
 import com.amazonaws.services.batch.AWSBatchClientBuilder;
 import com.amazonaws.services.batch.model.SubmitJobRequest;
 import com.amazonaws.services.batch.model.SubmitJobResult;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.model.CannedAccessControlList;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.util.StringInputStream;
 import net.opengis.wps._1_0.DataInputsType;
 import net.opengis.wps._1_0.DataType;
 import net.opengis.wps._1_0.Execute;
-import net.opengis.wps._1_0.ExecuteResponse;
 import net.opengis.wps._1_0.InputType;
-import net.opengis.wps._1_0.StatusType;
 import org.apache.log4j.Logger;
 
-import javax.xml.datatype.DatatypeConfigurationException;
-import javax.xml.datatype.DatatypeFactory;
+import java.io.UnsupportedEncodingException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -38,7 +44,7 @@ public class ExecuteOperation implements Operation {
     }
 
     @Override
-    public Object execute(Properties config) {
+    public String execute(Properties config) {
 
         //  Config items:
         //      queue names
@@ -75,23 +81,20 @@ public class ExecuteOperation implements Operation {
         String jobId = result.getJobId();
 
         LOGGER.debug("Job submitted.  Job ID : " + jobId);
-        //TODO: create job status document - status = submitted!
 
-        String statusLocation = statusLocationBase + jobId + "/" + statusFileName;
+        String statusLocation = statusLocationBase + "prototypeId" + "/" + statusFileName;
+        ExecuteStatusBuilder statusBuilder = new ExecuteStatusBuilder(statusLocation,jobId);
+        String statusDocument = statusBuilder.createResponseDocument(EnumStatus.ACCEPTED);
 
-        ExecuteResponse response = new ExecuteResponse();
-        response.setStatusLocation(statusLocation);
-        StatusType status = new StatusType();
-
+        S3StatusUpdater statusUpdater = new S3StatusUpdater(statusLocationBase, "prototypeId");
         try {
-            status.setCreationTime(DatatypeFactory.newInstance().newXMLGregorianCalendar());
-        } catch (DatatypeConfigurationException e) {
-            throw new RuntimeException(e);
+            statusUpdater.updateStatus(statusDocument);
+        } catch (UnsupportedEncodingException e) {
+            statusDocument = statusBuilder.createResponseDocument(EnumStatus.FAILED, "Failed to create status file" + e.getMessage(), "StatusFileError");
+            e.printStackTrace();
         }
 
-        status.setProcessAccepted("Accepted job " + jobId + " for processing");
-        response.setStatus(status);
-        return response;
+        return statusDocument;
     }
 
     private Map<String, String> getJobParameters() {

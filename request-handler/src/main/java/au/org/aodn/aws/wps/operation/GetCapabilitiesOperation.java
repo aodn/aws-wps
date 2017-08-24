@@ -14,7 +14,7 @@ public class GetCapabilitiesOperation implements Operation {
     }
 
     @Override
-    public Object execute(Properties config) {
+    public String execute(Properties config) {
         throw new UnsupportedOperationException(Constants.UNSUPPORTED_METHOD_EXCEPTION_MESSAGE);
     }
 

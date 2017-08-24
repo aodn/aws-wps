@@ -25,9 +25,9 @@ public class WpsRequestHandler implements RequestHandler, RequestValidator {
             RequestParser requestParser = requestParserFactory.getRequestParser(request);
             Operation operation = requestParser.getOperation();
             LOGGER.debug("Operation : " + operation.getClass());
-            Object result = operation.execute(config);
+            String result = operation.execute(config);
             LOGGER.debug("Executed");
-            responseBuilder.body(getString(context, result));
+            responseBuilder.body(result);
         } catch (Exception e) {
             e.printStackTrace();
             LOGGER.error("Exception : " + e.getMessage(), e);
@@ -37,14 +37,6 @@ public class WpsRequestHandler implements RequestHandler, RequestValidator {
         }
 
         return responseBuilder.build();
-    }
-
-    private String getString(JAXBContext context, Object result) throws JAXBException {
-        Marshaller m = context.createMarshaller();
-        m.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
-        StringWriter writer = new StringWriter();
-        m.marshal(result, writer);
-        return writer.toString();
     }
 
     public void validate(AwsApiRequest request, Properties config) {
