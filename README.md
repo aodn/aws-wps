@@ -121,6 +121,63 @@ Refer https://www.concurrencylabs.com/blog/configure-your-lambda-function-like-a
 Also looked at using lambda python for providing config which was way quicker (20 ms) than s3 (100 ms)
 S3 probably easier to manage.
 
+#####Environment variables:
+
+1. CONFIGURATION_S3_BUCKET : indicates the name of the S3 bucket where the configuration file is located.
+2. CONFIG_FILENAME : the configuration file name (i have set to wps-config.properties)
+3. SECRET_KEY : The API secret key to use [Probably won't be needed if we assign roles etc]
+4. ACCESS_KEY : The API access ket to use [Probably won't be needed if we assign roles etc]
+5. S3_AWS_REGION : the region name for S3 [Needed?]
+
+#####Managing configuration for multiple environments
+Alias versions of the service code as per the suggestion in the aforementioned article - to identify which version is deployed to which environment.
+Identified environments:  DEV, SYSTEST, RC, PROD (any others?)
+The named bucket for configuration files will contain a folder for each of these environments - plus a '$LATEST' folder which will be a default config.
+
+So: configuration for the DEV environment (for instance) will live in <CONFIGURATION_S3_BUCKET_NAME>/DEV/<CONFIGURATION_FILE_NAME> 
+
+When a version of the service is aliased with an environment name (DEV for instance), the alias name can be detected in the service code by using the 
+invokedFunctionArn property of the Context.  If an alias has been assigned to that version of the service, it will appear at the end of the invokedFunctionArn string:
+
+  Example with alias   : arn:aws:lambda:us-east-1:123456789012:function:helloStagedWorld:DEV - DEV indicates the alias name
+  Example without alias: arn:aws:lambda:us-east-1:123456789012:function:helloStagedWorld
+
+Code similar to this (this is Python) can be used to determine the presence of an alias:
+
+    functionName = context.functionName
+    functionArn = context.invokedFunctionArn
+    alias = functionArn.split(":").pop()
+    
+    //the ARN doesn't include an alias token, therefore we must be executing $LATEST
+    if (alias == functionName)
+    	alias = "$LATEST"
+    else
+        //  alias contains the environment name
+
+ie:  If the last part of the invokedFunctionArn matches the functionName - there is no alias assigned.
+     If they don't match, then the last part of the invokedFunctionArn is the alias name (the environment name for our purposes).
+
+#####Configuration file contents:
+
+Simple properties file containing the following items -
+    
+    STATUS_LOCATION - the base location in which status files will be located
+    STATUS_FILENAME - the filename that job status information will be written to.
+    JOB_NAME - the name of the AWS batch job
+    JOB_QUEUE_NAME - the queue name for the AWS batch job [might be replaced by a more sophistocated mechanism to dynamically work out the queue to put the job on]
+    AWS_REGION - the AWS region name for the AWS Batch job to invoke
+
+Example:
+    
+    STATUS_LOCATION=http://bucket/prefix/
+    STATUS_FILENAME=status.xml
+    JOB_NAME=javaduck
+    JOB_QUEUE_NAME=javaduck-small-in
+    AWS_REGION=us-east-1
+    
+
+
+
 ### TODO
 
  - agree on lambda language to use although would be good if wrapped process could be any
