@@ -34,18 +34,25 @@
             <artifactId>xstream</artifactId>
             <version>1.4.7</version>
         </dependency>
+        <!-- In Maven -->
         <dependency>
             <groupId>edu.ucar</groupId>
-            <artifactId>netcdfAll</artifactId>
+            <artifactId>cdm</artifactId>
             <version>4.6.6</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.amazonaws</groupId>
-                    <artifactId>aws-java-sdk-s3</artifactId>
-                </exclusion>
-            </exclusions>
+            <scope>compile</scope>
         </dependency>
         <dependency>
+            <groupId>edu.ucar</groupId>
+            <artifactId>netcdf4</artifactId>
+            <version>4.6.6</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-jdk14</artifactId>
+            <version>1.7.25</version>
+            <scope>runtime</scope>
+        </dependency>        <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
             <version>2.1</version>
@@ -58,7 +65,7 @@
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-s3</artifactId>
-            <version>1.11.118</version>
+            <version>1.11.181</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -82,32 +89,21 @@
     <build>
         <plugins>
             <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>truezip-maven-plugin</artifactId>
-                <version>1.1</version>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>2.3</version>
+                <configuration>
+                    <createDependencyReducedPom>false</createDependencyReducedPom>
+                </configuration>
                 <executions>
                     <execution>
-                        <id>remove-a-file</id>
-                        <goals>
-                            <goal>remove</goal>
-                        </goals>
                         <phase>package</phase>
-                        <configuration>
-                            <fileset>
-                                <directory>target/aggregation-worker-1.0-SNAPSHOT.jar/lib/netcdfAll-4.6.6.jar/com</directory>
-                                <includes>
-                                    <include>amazonaws</include>
-                                </includes>
-                            </fileset>
-                        </configuration>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
                     </execution>
                 </executions>
             </plugin>
-
         </plugins>
     </build>
 </project>
