@@ -6,12 +6,13 @@
 
     <groupId>au.org.emii</groupId>
     <artifactId>request-handler</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>${request.handler.version}</version>
     <packaging>pom</packaging>
 
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
+        <request.handler.version>1.0-SNAPSHOT</request.handler.version>
     </properties>
 
     <dependencies>
