@@ -6,7 +6,7 @@
 
     <groupId>au.org.emii</groupId>
     <artifactId>wps-common</artifactId>
-    <version>1.01-SNAPSHOT</version>
+    <version>0.2</version>
 
     <parent>
         <groupId>au.org.emii</groupId>
