@@ -7,13 +7,13 @@
     <groupId>au.org.emii</groupId>
     <artifactId>request-handler</artifactId>
     <version>${request.handler.version}</version>
-    <packaging>pom</packaging>
 
-    <properties>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
-        <request.handler.version>1.0-SNAPSHOT</request.handler.version>
-    </properties>
+    <parent>
+        <groupId>au.org.emii</groupId>
+        <artifactId>aws-wps</artifactId>
+        <relativePath>../pom.xml</relativePath>
+        <version>${request.handler.version}</version>
+    </parent>
 
     <dependencies>
         <dependency>
@@ -41,6 +41,11 @@
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
             <version>1.2.17</version>
+        </dependency>
+        <dependency>
+            <groupId>au.org.emii</groupId>
+            <artifactId>wps-common</artifactId>
+            <version>${request.handler.version}</version>
         </dependency>
     </dependencies>
 
@@ -104,7 +109,4 @@
         </plugins>
     </build>
 
-    <modules>
-        <module>wps-common</module>
-    </modules>
 </project>
