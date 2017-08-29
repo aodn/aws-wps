@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>au.org.emii</groupId>
+    <artifactId>aws-wps</artifactId>
+    <version>${aws.wps.version}</version>
+    <packaging>pom</packaging>
+
+    <properties>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <aws.wps.version>1.0-SNAPSHOT</aws.wps.version>
+    </properties>
+
+    <modules>
+        <module>wps-common</module>
+        <module>request-handler</module>
+    </modules>
+</project>
