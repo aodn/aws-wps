@@ -6,13 +6,13 @@
 
     <groupId>au.org.emii</groupId>
     <artifactId>wps-common</artifactId>
-    <version>${request.handler.version}</version>
+    <version>${aws.wps.version}</version>
 
     <parent>
         <groupId>au.org.emii</groupId>
         <artifactId>aws-wps</artifactId>
         <relativePath>../pom.xml</relativePath>
-        <version>${request.handler.version}</version>
+        <version>${aws.wps.version}</version>
     </parent>
 
     <dependencies>

@@ -6,13 +6,13 @@
 
     <groupId>au.org.emii</groupId>
     <artifactId>aws-wps</artifactId>
-    <version>${request.handler.version}</version>
+    <version>${aws.wps.version}</version>
     <packaging>pom</packaging>
 
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
-        <request.handler.version>1.0-SNAPSHOT</request.handler.version>
+        <aws.wps.version>1.0-SNAPSHOT</aws.wps.version>
     </properties>
 
     <modules>
