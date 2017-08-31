@@ -29,19 +29,19 @@ public class ExecuteOperation implements Operation {
 
     private static final Logger LOGGER = Logger.getLogger(ExecuteOperation.class);
 
-    //  Configuration key names
-    private static final String STATUS_S3_BUCKET_CONFIG_KEY = "STATUS_S3_BUCKET";
-    private static final String STATUS_S3_KEY_CONFIG_KEY = "STATUS_S3_FILENAME";
-    private static final String AWS_BATCH_JOB_NAME_CONFIG_KEY = "AWS_BATCH_JOB_NAME";
-    private static final String AWS_BATCH_JOB_QUEUE_NAME_CONFIG_KEY = "AWS_BATCH_JOB_QUEUE_NAME";
-    private static final String AWS_REGION_CONFIG_KEY = "AWS_REGION";
-
 
     private final Execute executeRequest;
 
     public ExecuteOperation(Execute executeRequest) {
         this.executeRequest = executeRequest;
     }
+
+    //  Configuration key names
+    private static final String STATUS_S3_BUCKET_CONFIG_KEY = "STATUS_S3_BUCKET";
+    private static final String STATUS_S3_KEY_CONFIG_KEY = "STATUS_S3_FILENAME";
+    private static final String AWS_BATCH_JOB_NAME_CONFIG_KEY = "AWS_BATCH_JOB_NAME";
+    private static final String AWS_BATCH_JOB_QUEUE_NAME_CONFIG_KEY = "AWS_BATCH_JOB_QUEUE_NAME";
+    private static final String AWS_REGION_CONFIG_KEY = "AWS_REGION";
 
     @Override
     public String execute(Properties config) {
@@ -52,7 +52,7 @@ public class ExecuteOperation implements Operation {
         //      AWS region
         //      status filename
         //      status location
-        String statusLocationBase = config.getProperty(STATUS_S3_BUCKET_CONFIG_KEY);
+        String statusS3BucketName = config.getProperty(STATUS_S3_BUCKET_CONFIG_KEY);
         String statusFileName = config.getProperty(STATUS_S3_KEY_CONFIG_KEY);
         String jobName = config.getProperty(AWS_BATCH_JOB_NAME_CONFIG_KEY);
         String jobQueueName = config.getProperty(AWS_BATCH_JOB_QUEUE_NAME_CONFIG_KEY);
@@ -82,11 +82,11 @@ public class ExecuteOperation implements Operation {
 
         LOGGER.debug("Job submitted.  Job ID : " + jobId);
 
-        String statusLocation = statusLocationBase + "/" + jobId + "/" + statusFileName;
+        String statusLocation = "https://s3.amazonaws.com/" + statusS3BucketName + "/" + jobId + "/" + statusFileName;
         ExecuteStatusBuilder statusBuilder = new ExecuteStatusBuilder(statusLocation, jobId);
         String statusDocument = statusBuilder.createResponseDocument(EnumStatus.ACCEPTED);
 
-        S3StatusUpdater statusUpdater = new S3StatusUpdater(statusLocationBase, jobId);
+        S3StatusUpdater statusUpdater = new S3StatusUpdater(statusS3BucketName, jobId);
         try {
             statusUpdater.updateStatus(statusDocument);
         } catch (UnsupportedEncodingException e) {
