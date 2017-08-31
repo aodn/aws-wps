@@ -10,14 +10,13 @@ import au.org.emii.download.DownloadConfig;
 import au.org.emii.download.DownloadRequest;
 import au.org.emii.download.Downloader;
 import au.org.emii.download.ParallelDownloadManager;
+import au.org.emii.geoserver.client.HttpIndexReader;
+import au.org.emii.geoserver.client.SubsetParameters;
+import au.org.emii.geoserver.client.URIList;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.services.s3.transfer.TransferManager;
 import com.amazonaws.services.s3.transfer.Upload;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
+import org.apache.commons.cli.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +35,7 @@ import ucar.unidata.geoloc.LatLonRect;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.Charset;
@@ -60,6 +60,17 @@ public class AggregationRunner implements CommandLineRunner {
     @Override
     public void run(String... args) {
         try {
+
+            //  Capture the AWS job specifics - they are passed to the docker runtime as
+            //  environment variables.
+            String awsBatchJobId = System.getenv("AWS_BATCH_JOB_ID");
+            String awsBatchComputeEnvName = System.getenv("AWS_BATCH_CE_NAME");
+            String awsBatchQueueName = System.getenv("AWS_BATCH_JQ_NAME");
+
+            logger.info("AWS BATCH JOB ID     : " + awsBatchJobId);
+            logger.info("AWS BATCH CE NAME    : " + awsBatchComputeEnvName);
+            logger.info("AWS BATCH QUEUE NAME : " + awsBatchQueueName);
+
             Options options = new Options();
 
             options.addOption("b", true, "restrict to bounding box specified by left lower/right upper coordinates e.g. -b 120,-32,130,-29");
@@ -71,6 +82,42 @@ public class AggregationRunner implements CommandLineRunner {
             CommandLineParser parser = new DefaultParser();
             CommandLine line = parser.parse(options, args);
 
+            //  Check parameters:
+            //      Expecting the following params -
+            //        - layerName
+            //        - subset
+            //        - outputFile
+
+            String layerName = line.getArgs()[0];
+            String subset = line.getArgs()[1];
+            String destinationFile = line.getArgs()[2];
+            SubsetParameters subsetParams = new SubsetParameters(subset);
+
+            logger.info("args[0]=" + layerName);
+            logger.info("args[1]=" + subset);
+            logger.info("args[2]=" + destinationFile);
+
+            //  Query geoserver to get a list of files for the aggregation
+            //  TODO: source geoserver location from config
+            HttpIndexReader indexReader = new HttpIndexReader("http://geoserver-123.aodn.org.au/geoserver/imos/ows");
+
+            URIList fileUriList = indexReader.getUriList(layerName, "time", "file_url", subsetParams);
+
+            if(fileUriList != null)
+            {
+                logger.info("# files : " + fileUriList.size());
+                for(URI file : fileUriList)
+                {
+                    logger.info(" - " + file.toString());
+                }
+            }
+
+
+            Set<DownloadRequest> downloads = indexReader.getDownloadRequestList(layerName, "time", "file_url", subsetParams);
+            //List<String> inputFiles = new ArrayList<>();
+            S3URI s3URI = new S3URI(destinationFile);
+
+/*
             URL url = new URL(line.getArgs()[0]);
             URLConnection conn = url.openConnection();
 
@@ -80,18 +127,19 @@ public class AggregationRunner implements CommandLineRunner {
                 inputFiles = reader.lines().collect(Collectors.toList());
             }
 
-            String destination = line.getArgs()[1];
-            S3URI s3URI = new S3URI(destination);
+
 
             Set<DownloadRequest> downloads = new LinkedHashSet<>();
 
-            for (String inputFile: inputFiles.subList(1, inputFiles.size()-1)) {
-                if (inputFile.trim().isEmpty()) continue;
-                URL fileUrl = new URL("http://s3-ap-southeast-2.amazonaws.com/imos-data/" + inputFile.split(",")[1]);
-                long size = Long.parseLong(inputFile.split(",")[2]);
-                downloads.add(new DownloadRequest(fileUrl, size));
+            if(inputFiles != null && inputFiles.size() > 0) {
+                for (String inputFile : inputFiles.subList(1, inputFiles.size() - 1)) {
+                    if (inputFile.trim().isEmpty()) continue;
+                    //URL fileUrl = new URL("http://s3-ap-southeast-2.amazonaws.com/imos-data/" + inputFile.split(",")[1]);
+                    //long size = Long.parseLong(inputFile.split(",")[2]);
+                    //downloads.add(new DownloadRequest(fileUrl, size));
+                }
             }
-
+*/
             String bboxArg = line.getOptionValue("b");
             String zSubsetArg = line.getOptionValue("z");
             String timeArg = line.getOptionValue("t");
@@ -143,9 +191,9 @@ public class AggregationRunner implements CommandLineRunner {
             Path outputFile = Files.createTempFile("agg", ".nc");
 
             try (
-                ParallelDownloadManager downloadManager = new ParallelDownloadManager(downloadConfig, downloader);
-                NetcdfAggregator netcdfAggregator = new NetcdfAggregator(
-                    outputFile, overrides, bbox, zSubset, timeRange)
+                    ParallelDownloadManager downloadManager = new ParallelDownloadManager(downloadConfig, downloader);
+                    NetcdfAggregator netcdfAggregator = new NetcdfAggregator(
+                            outputFile, overrides, bbox, zSubset, timeRange)
             ){
                 for (Download download : downloadManager.download(downloads)) {
                     netcdfAggregator.add(download.getPath());

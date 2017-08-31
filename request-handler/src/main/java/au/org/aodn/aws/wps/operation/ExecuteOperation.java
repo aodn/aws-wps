@@ -82,11 +82,11 @@ public class ExecuteOperation implements Operation {
 
         LOGGER.debug("Job submitted.  Job ID : " + jobId);
 
-        String statusLocation = statusLocationBase + "prototypeId" + "/" + statusFileName;
-        ExecuteStatusBuilder statusBuilder = new ExecuteStatusBuilder(statusLocation,jobId);
+        String statusLocation = statusLocationBase + "/" + jobId + "/" + statusFileName;
+        ExecuteStatusBuilder statusBuilder = new ExecuteStatusBuilder(statusLocation, jobId);
         String statusDocument = statusBuilder.createResponseDocument(EnumStatus.ACCEPTED);
 
-        S3StatusUpdater statusUpdater = new S3StatusUpdater(statusLocationBase, "prototypeId");
+        S3StatusUpdater statusUpdater = new S3StatusUpdater(statusLocationBase, jobId);
         try {
             statusUpdater.updateStatus(statusDocument);
         } catch (UnsupportedEncodingException e) {
