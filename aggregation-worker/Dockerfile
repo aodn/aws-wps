@@ -17,12 +17,9 @@ RUN \
   apt-get install -y libnetcdf11 && \
   rm -rf /var/lib/apt/lists/*
 
-# copy aggregator to image
-COPY target/*.jar /opt/aggregator/
-COPY aggregate.sh /opt/aggregator/
+ADD target/lib /opt/aggregator/lib
+ADD target/*.jar /opt/aggregator/
 
-RUN chmod -R 755 /opt/aggregator/aggregate.sh
-
-ENTRYPOINT ["/opt/aggregator/aggregate.sh"]
+ENTRYPOINT ["/usr/bin/java", "-jar", "/opt/aggregator/*.jar"]
 
 
