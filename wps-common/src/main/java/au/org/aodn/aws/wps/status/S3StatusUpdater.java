@@ -5,6 +5,7 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.PutObjectResult;
 import com.amazonaws.util.StringInputStream;
 
 import java.io.UnsupportedEncodingException;
@@ -25,10 +26,26 @@ public class S3StatusUpdater {
     }
 
     public void updateStatus (String statusDocument) throws UnsupportedEncodingException {
-        AmazonS3 cl = AmazonS3ClientBuilder.defaultClient();
-        cl.putObject(
-                new PutObjectRequest(s3bucket, uniqueId + "/" + statusFilename, new StringInputStream(statusDocument), new ObjectMetadata())
-                        .withCannedAcl(CannedAccessControlList.PublicRead));
+        System.out.println("Updating status in S3 : " + statusDocument);
+        System.out.println("-  s3Bucket = " + s3bucket);
+        System.out.println("-  uniqueId = " + uniqueId);
+        StringInputStream inputStream = new StringInputStream(statusDocument);
+        try {
+            AmazonS3 cl = AmazonS3ClientBuilder.defaultClient();
+            PutObjectRequest putRequest = new PutObjectRequest(s3bucket, uniqueId + "/" + statusFilename, inputStream, new ObjectMetadata());
+            putRequest.setCannedAcl(CannedAccessControlList.PublicRead);
+            PutObjectResult result = cl.putObject(putRequest);
+            ObjectMetadata fileMetadata = result.getMetadata();
+            System.out.println("File size : " + fileMetadata.getInstanceLength());
+            System.out.println("Wrote status file.");
+        }
+        finally
+        {
+            try {
+                inputStream.close();
+            }
+            catch(Exception e){}
+        }
 
     }
 }

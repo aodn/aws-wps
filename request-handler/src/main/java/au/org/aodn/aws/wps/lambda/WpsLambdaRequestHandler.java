@@ -66,6 +66,8 @@ public class WpsLambdaRequestHandler implements RequestHandler<AwsApiRequest, Aw
             //  Load configuration from S3 file
             config.load(contentStream);
 
+            LOGGER.log("Loaded configuration from S3.");
+
             //  Execute the request
             response = handler.handleRequest(request, config);
 
