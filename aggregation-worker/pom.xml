@@ -12,11 +12,13 @@
 
     <groupId>au.org.emii</groupId>
     <artifactId>aggregation-worker</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>${version}</version>
 
     <properties>
         <java.version>1.8</java.version>
         <start-class>au.org.emii.aggregationworker.Application</start-class>
+        <version>1.0-SNAPSHOT</version>
+        <aws.docker.repository.uri>104044260116.dkr.ecr.us-east-1.amazonaws.com/javaduck</aws.docker.repository.uri>
     </properties>
 
     <dependencies>
@@ -86,6 +88,13 @@
         </repository>
     </repositories>
 
+    <distributionManagement>
+        <repository>
+            <id>awsdocker</id>
+            <url>https://${aws.docker.repository.uri}</url>
+        </repository>
+    </distributionManagement>
+
     <build>
         <plugins>
             <plugin>
@@ -100,6 +109,28 @@
                         <phase>package</phase>
                         <goals>
                             <goal>shade</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>com.spotify</groupId>
+                <artifactId>dockerfile-maven-plugin</artifactId>
+                <version>1.3.5</version>
+                <configuration>
+                    <repository>${aws.docker.repository.uri}</repository>
+                    <googleContainerRegistryEnabled>false</googleContainerRegistryEnabled>
+                    <verbose>true</verbose>
+                    <tag>latest</tag>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>build-tag-push-image</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>build</goal>
+                            <goal>tag</goal>
+                            <goal>push</goal>
                         </goals>
                     </execution>
                 </executions>
