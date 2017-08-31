@@ -10,9 +10,9 @@ import java.util.Properties;
 
 public class WpsConfig {
 
-    private static final String REGION_NAME_ENV_VARIABLE_NAME = "S3_AWS_REGION";
-    private static final String S3_BUCKET_ENV_VARIABLE_NAME = "CONFIG_PREFIX";
-    private static final String CONFIG_FILENAME_ENV_VARIABLE_NAME = "CONFIG_FILENAME";
+    public static final String REGION_NAME_ENV_VARIABLE_NAME = "S3_AWS_REGION";
+    public static final String S3_BUCKET_ENV_VARIABLE_NAME = "CONFIG_PREFIX";
+    public static final String CONFIG_FILENAME_ENV_VARIABLE_NAME = "CONFIG_FILENAME";
 
     public static Properties getConfigProperties(String envName)
     {
