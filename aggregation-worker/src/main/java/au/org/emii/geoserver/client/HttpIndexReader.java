@@ -11,7 +11,6 @@ import java.net.URLEncoder;
 import java.util.*;
 
 import au.org.emii.aggregator.exception.AggregationException;
-import au.org.emii.download.Download;
 import au.org.emii.download.DownloadRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +33,8 @@ public class HttpIndexReader implements IndexReader {
 
         URIList uriList = new URIList();
 
-        try {
+        try
+        {
             String downloadUrl = String.format("%s/wfs", geoserver);
             String cqlFilter = String.format("%s >= %s AND %s <= %s",
                     timeField, timeCoverageStart, timeField, timeCoverageEnd
@@ -51,31 +51,57 @@ public class HttpIndexReader implements IndexReader {
             byte[] postDataBytes = encodeMapForPostRequest(params);
 
             URL url = new URL(downloadUrl);
-            HttpURLConnection conn = (HttpURLConnection)url.openConnection();
-            conn.setRequestMethod("GET");
-            conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-            conn.setRequestProperty("Content-Length", String.valueOf(postDataBytes.length));
-            conn.setDoOutput(true);
-            conn.getOutputStream().write(postDataBytes);
+            HttpURLConnection conn = null;
+            InputStream inputStream = null;
+            BufferedInputStream bufferedStream = null;
+            DataInputStream dataInputStream = null;
 
-            InputStream inputStream = conn.getInputStream();
-            DataInputStream dataInputStream = new DataInputStream(new BufferedInputStream(inputStream));
+            try
+            {
+                //  Make HTTP request to geoserver
+                conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("GET");
+                conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+                conn.setRequestProperty("Content-Length", String.valueOf(postDataBytes.length));
+                conn.setDoOutput(true);
+                conn.getOutputStream().write(postDataBytes);
+                int responseCode = conn.getResponseCode();
+                String responseMessage = conn.getResponseMessage();
 
-            logger.info(String.format("Getting list of files from '%s'", downloadUrl));
-            logger.info(String.format("Parameters: '%s'", new String(postDataBytes)));
-            String line = null;
-            Integer i = 0;
-            while ((line = dataInputStream.readLine()) != null) {
-                if (i > 0) { // Skip first line - it's the headers
-                    logger.info("CSV line    = " + line);
-                    String[] lineParts = line.split(",");
-                    uriList.add(new URI(lineParts[2]));
+                logger.info("HTTP Response : Code [" + responseCode + "], Message [" + responseMessage + "]");
+
+                inputStream = conn.getInputStream();
+                bufferedStream = new BufferedInputStream(inputStream);
+                dataInputStream = new DataInputStream(bufferedStream);
+
+                logger.info(String.format("Getting list of files from '%s'", downloadUrl));
+                logger.info(String.format("Parameters: '%s'", new String(postDataBytes)));
+
+                //  Read response from geoserver - CSV format
+                //  Example structure:
+                //  acorn_hourly_avg_rot_qc_timeseries_url.fid-7a10c7e5_15e34df590d_2000,939620,IMOS/ACORN/gridded_1h-avg-current-map_QC/ROT/2017/03/31/IMOS_ACORN_V_20170331T233000Z_ROT_FV01_1-hour-avg.nc,128950,"ROT, Rottnest Shelf",2017-03-31T23:30:00,POINT (1 2)
+                String line;
+                Integer i = 0;
+                while ((line = dataInputStream.readLine()) != null) {
+                    if (i > 0) { // Skip first line - it's the headers
+                        logger.debug("CSV line    = " + line);
+                        String[] lineParts = line.split(",");
+                        uriList.add(new URI(lineParts[2]));
+                    } else {
+                        logger.debug("CSV headers = " + line);
+                    }
+                    i++;
                 }
-                else
-                {
-                    logger.info("CSV headers = " + line);
-                }
-                i++;
+            }
+            finally
+            {
+                if(inputStream != null) { inputStream.close(); }
+
+                if(bufferedStream != null) { bufferedStream.close(); }
+
+                if(dataInputStream != null) { dataInputStream.close(); }
+
+                if(conn != null) { conn.disconnect(); }
             }
         }
         catch (Exception e) {
@@ -92,7 +118,6 @@ public class HttpIndexReader implements IndexReader {
         String timeCoverageEnd = subset.get("TIME").end;
 
         HashSet<DownloadRequest> downloadList = new HashSet<DownloadRequest>();
-        //URIList uriList = new URIList();
 
         try {
 

@@ -80,7 +80,7 @@ public class AggregationRunner implements CommandLineRunner {
             options.addOption("c", true, "aggregation overrides to be applied - xml");
 
             CommandLineParser parser = new DefaultParser();
-            CommandLine line = parser.parse(options, args);
+            CommandLine commandLine = parser.parse(options, args);
 
             //  Check parameters:
             //      Expecting the following params -
@@ -88,9 +88,9 @@ public class AggregationRunner implements CommandLineRunner {
             //        - subset
             //        - outputFile
 
-            String layerName = line.getArgs()[0];
-            String subset = line.getArgs()[1];
-            String destinationFile = line.getArgs()[2];
+            String layerName = commandLine.getArgs()[0];
+            String subset = commandLine.getArgs()[1];
+            String destinationFile = commandLine.getArgs()[2];
             SubsetParameters subsetParams = new SubsetParameters(subset);
 
             logger.info("args[0]=" + layerName);
@@ -108,42 +108,19 @@ public class AggregationRunner implements CommandLineRunner {
                 logger.info("# files : " + fileUriList.size());
                 for(URI file : fileUriList)
                 {
-                    logger.info(" - " + file.toString());
+                    logger.debug(" - " + file.toString());
                 }
             }
 
 
             Set<DownloadRequest> downloads = indexReader.getDownloadRequestList(layerName, "time", "file_url", subsetParams);
-            //List<String> inputFiles = new ArrayList<>();
             S3URI s3URI = new S3URI(destinationFile);
 
-/*
-            URL url = new URL(line.getArgs()[0]);
-            URLConnection conn = url.openConnection();
+            String overridesArg = commandLine.getOptionValue("c");
+            String bboxArg = commandLine.getOptionValue("b");
+            String zSubsetArg = commandLine.getOptionValue("z");
+            String timeArg = commandLine.getOptionValue("t");
 
-            List<String> inputFiles = new ArrayList<>();
-
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
-                inputFiles = reader.lines().collect(Collectors.toList());
-            }
-
-
-
-            Set<DownloadRequest> downloads = new LinkedHashSet<>();
-
-            if(inputFiles != null && inputFiles.size() > 0) {
-                for (String inputFile : inputFiles.subList(1, inputFiles.size() - 1)) {
-                    if (inputFile.trim().isEmpty()) continue;
-                    //URL fileUrl = new URL("http://s3-ap-southeast-2.amazonaws.com/imos-data/" + inputFile.split(",")[1]);
-                    //long size = Long.parseLong(inputFile.split(",")[2]);
-                    //downloads.add(new DownloadRequest(fileUrl, size));
-                }
-            }
-*/
-            String bboxArg = line.getOptionValue("b");
-            String zSubsetArg = line.getOptionValue("z");
-            String timeArg = line.getOptionValue("t");
-            String overridesArg = line.getOptionValue("c");
 
             LatLonRect bbox = null;
 
@@ -175,6 +152,7 @@ public class AggregationRunner implements CommandLineRunner {
                 CalendarDate endTime = CalendarDate.parseISOformat("Gregorian", timeRangeComponents[1]);
                 timeRange = CalendarDateRange.of(startTime, endTime);
             }
+
 
             AggregationOverrides overrides;
 
