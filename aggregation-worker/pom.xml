@@ -12,12 +12,11 @@
 
     <groupId>au.org.emii</groupId>
     <artifactId>aggregation-worker</artifactId>
-    <version>${version}</version>
+    <version>1.0-SNAPSHOT</version>
 
     <properties>
         <java.version>1.8</java.version>
         <start-class>au.org.emii.aggregationworker.Application</start-class>
-        <version>1.0-SNAPSHOT</version>
         <aws.docker.repository.uri>104044260116.dkr.ecr.us-east-1.amazonaws.com/javaduck</aws.docker.repository.uri>
     </properties>
 
@@ -139,11 +138,20 @@
                 </configuration>
                 <executions>
                     <execution>
-                        <id>build-tag-push-image</id>
-                        <phase>package</phase>
+                        <id>package</id>
                         <goals>
                             <goal>build</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>install</id>
+                        <goals>
                             <goal>tag</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>deploy</id>
+                        <goals>
                             <goal>push</goal>
                         </goals>
                     </execution>
