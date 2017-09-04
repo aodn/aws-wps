@@ -7,7 +7,9 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.PutObjectResult;
 import com.amazonaws.util.StringInputStream;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 import java.io.UnsupportedEncodingException;
 
@@ -16,7 +18,7 @@ import java.io.UnsupportedEncodingException;
  */
 public class S3StatusUpdater {
 
-    private static final Logger LOGGER = Logger.getLogger(S3StatusUpdater.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(S3StatusUpdater.class);
 
     private final String s3bucket;
     private final String statusFilename;
@@ -49,7 +51,7 @@ public class S3StatusUpdater {
     }
 
 
-    public String updateStatus(String operation, String jobId, EnumStatus jobStatus, String message, String messageCode) throws UnsupportedEncodingException
+    public String updateStatus(EnumOperation operation, String jobId, EnumStatus jobStatus, String message, String messageCode) throws UnsupportedEncodingException
     {
         String statusDocument = StatusHelper.getStatusDocument(s3bucket, statusFilename, operation, jobId, jobStatus, message, messageCode);
 
