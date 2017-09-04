@@ -1,4 +1,7 @@
 package au.org.aodn.aws.wps.status;
 
-public class EnumOperation {
+public enum EnumOperation {
+    DESCRIBE_PROCESS,
+    EXECUTE,
+    GET_CAPABILITIES;
 }

@@ -69,9 +69,9 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>log4j</groupId>
-            <artifactId>log4j</artifactId>
-            <version>1.2.17</version>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>1.6.3</version>
         </dependency>
         <dependency>
             <groupId>au.org.emii</groupId>
@@ -79,7 +79,6 @@
             <version>${aws.wps.version}</version>
         </dependency>
     </dependencies>
-
     <repositories>
         <repository>
             <id>unidata-releases</id>
@@ -91,7 +90,6 @@
             <url>https://mvnrepository.com/artifact/</url>
         </repository>
     </repositories>
-
     <build>
         <plugins>
             <plugin>

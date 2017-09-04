@@ -1,6 +1,7 @@
 package au.org.aodn.aws.wps.operation;
 
 import au.org.aodn.aws.wps.exception.ValidationException;
+import au.org.aodn.aws.wps.status.EnumOperation;
 import au.org.aodn.aws.wps.status.EnumStatus;
 import au.org.aodn.aws.wps.status.S3StatusUpdater;
 import au.org.aodn.aws.wps.status.StatusHelper;
@@ -14,7 +15,9 @@ import net.opengis.wps._1_0.DataInputsType;
 import net.opengis.wps._1_0.DataType;
 import net.opengis.wps._1_0.Execute;
 import net.opengis.wps._1_0.InputType;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 import java.io.UnsupportedEncodingException;
 import java.util.*;
@@ -23,7 +26,7 @@ import static au.org.aodn.aws.wps.status.WpsConfig.*;
 
 public class ExecuteOperation implements Operation {
 
-    private static final Logger LOGGER = Logger.getLogger(ExecuteOperation.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ExecuteOperation.class);
 
 
     private final Execute executeRequest;
@@ -50,12 +53,12 @@ public class ExecuteOperation implements Operation {
         String awsRegion = config.getProperty(AWS_REGION_CONFIG_KEY);
         String environmentName = config.getProperty(ENVIRONMENT_NAME_ENV_VARIABLE_NAME);
 
-        LOGGER.debug("Configuration: " + config.toString());
+        LOGGER.info("Configuration: " + config.toString());
 
         String processIdentifier = executeRequest.getIdentifier().getValue();  // code spaces not supported for the moment
         Map<String, String> parameterMap = getJobParameters();
 
-        LOGGER.debug("Submitting job request...");
+        LOGGER.info("Submitting job request...");
         SubmitJobRequest submitJobRequest = new SubmitJobRequest();
 
         //  TODO: at this point we will need to invoke the correct AWS batch processing job for the function that is specified in the Execute Operation
@@ -65,6 +68,8 @@ public class ExecuteOperation implements Operation {
         submitJobRequest.setJobDefinition(processIdentifier);  //TODO: either map to correct job def or set vcpus/memory required appropriately
         submitJobRequest.setParameters(parameterMap);
 
+        //  Add environment name to the submit job request as an environment
+        //  variable.
         ContainerOverrides jobOverrides = new ContainerOverrides();
         Set<KeyValuePair> envVariables = new HashSet<KeyValuePair>();
         KeyValuePair envNameVariable = new KeyValuePair();
@@ -73,6 +78,9 @@ public class ExecuteOperation implements Operation {
         envNameVariable.setValue(environmentName);
         envVariables.add(envNameVariable);
         jobOverrides.setEnvironment(envVariables);
+
+        submitJobRequest.setContainerOverrides(jobOverrides);
+
         AWSBatchClientBuilder builder = AWSBatchClientBuilder.standard();
         builder.setRegion(awsRegion);
 
@@ -81,19 +89,19 @@ public class ExecuteOperation implements Operation {
 
         String jobId = result.getJobId();
 
-        LOGGER.debug("Job submitted.  Job ID : " + jobId);
+        LOGGER.info("Job submitted.  Job ID : " + jobId);
 
         String statusDocument = null;
         S3StatusUpdater statusUpdater = new S3StatusUpdater(statusS3BucketName, statusFileName);
         try
         {
-            statusUpdater.updateStatus("EXECUTE", jobId, EnumStatus.ACCEPTED, null, null);
+            statusUpdater.updateStatus(EnumOperation.EXECUTE, jobId, EnumStatus.ACCEPTED, null, null);
         }
         catch (UnsupportedEncodingException e)
         {
             e.printStackTrace();
             //  Form failed status document
-            statusDocument = StatusHelper.getStatusDocument(statusS3BucketName, statusFileName, "EXECUTE", jobId, EnumStatus.FAILED, "Failed to create status file" + e.getMessage(), "StatusFileError");
+            statusDocument = StatusHelper.getStatusDocument(statusS3BucketName, statusFileName, EnumOperation.EXECUTE, jobId, EnumStatus.FAILED, "Failed to create status file" + e.getMessage(), "StatusFileError");
         }
 
         return statusDocument;

@@ -1,9 +1,6 @@
 package au.org.emii.aggregationworker;
 
-import au.org.aodn.aws.wps.status.EnumStatus;
-import au.org.aodn.aws.wps.status.ExecuteStatusBuilder;
-import au.org.aodn.aws.wps.status.S3StatusUpdater;
-import au.org.aodn.aws.wps.status.WpsConfig;
+import au.org.aodn.aws.wps.status.*;
 import au.org.emii.aggregator.NetcdfAggregator;
 import au.org.emii.aggregator.overrides.AggregationOverrides;
 import au.org.emii.aggregator.overrides.AggregationOverridesReader;
@@ -14,22 +11,22 @@ import au.org.emii.download.Downloader;
 import au.org.emii.download.ParallelDownloadManager;
 import au.org.emii.geoserver.client.HttpIndexReader;
 import au.org.emii.geoserver.client.SubsetParameters;
-import au.org.emii.geoserver.client.URIList;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.services.s3.transfer.TransferManager;
 import com.amazonaws.services.s3.transfer.Upload;
 import org.apache.commons.cli.*;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import thredds.crawlabledataset.s3.S3URI;
-import ucar.ma2.Range;
 import ucar.nc2.time.CalendarDate;
 import ucar.nc2.time.CalendarDateRange;
 import ucar.unidata.geoloc.LatLonPoint;
 import ucar.unidata.geoloc.LatLonPointImmutable;
 import ucar.unidata.geoloc.LatLonRect;
-import java.net.URI;
+
+import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -39,18 +36,22 @@ import java.util.Set;
 @Component
 public class AggregationRunner implements CommandLineRunner {
 
-    private static final Logger logger = Logger.getLogger(au.org.emii.aggregationworker.AggregationRunner.class);
+    private static final Logger logger = LoggerFactory.getLogger(au.org.emii.aggregationworker.AggregationRunner.class);
 
     //  TODO:  change parameters to reflect the current GoGoDuck interface - ie: pass a layer name, temporal extents & geographical extents.
     //         This prototype currently gets a list of files plus the extents.
     //         This component will need to contact geoserver + get the list of files for the named layer.
     @Override
     public void run(String... args) {
+
+        S3StatusUpdater statusUpdater = null;
+        String batchJobId = null;
+
         try {
 
             //  Capture the AWS job specifics - they are passed to the docker runtime as
             //  environment variables.
-            String awsBatchJobId = System.getenv("AWS_BATCH_JOB_ID");
+            batchJobId = System.getenv("AWS_BATCH_JOB_ID");
             String awsBatchComputeEnvName = System.getenv("AWS_BATCH_CE_NAME");
             String awsBatchQueueName = System.getenv("AWS_BATCH_JQ_NAME");
             String environmentName = System.getenv(WpsConfig.ENVIRONMENT_NAME_ENV_VARIABLE_NAME);
@@ -60,12 +61,10 @@ public class AggregationRunner implements CommandLineRunner {
             String statusFileName = configuration.getProperty(WpsConfig.STATUS_S3_KEY_CONFIG_KEY);
 
             //  Update status document to indicate job has started
-            S3StatusUpdater statusUpdater = new S3StatusUpdater(statusS3Bucket, statusFileName);
-            //ExecuteStatusBuilder documentBuilder = new ExecuteStatusBuilder();
-            //String statusDocument = documentBuilder.createResponseDocument(EnumStatus.STARTED);
-            statusUpdater.updateStatus("EXECUTE", awsBatchJobId, EnumStatus.STARTED, null, null);
+            statusUpdater = new S3StatusUpdater(statusS3Bucket, statusFileName);
+            statusUpdater.updateStatus(EnumOperation.EXECUTE, batchJobId, EnumStatus.STARTED, null, null);
 
-            logger.info("AWS BATCH JOB ID     : " + awsBatchJobId);
+            logger.info("AWS BATCH JOB ID     : " + batchJobId);
             logger.info("AWS BATCH CE NAME    : " + awsBatchComputeEnvName);
             logger.info("AWS BATCH QUEUE NAME : " + awsBatchQueueName);
             logger.info("ENVIRONMENT NAME     : " + environmentName);
@@ -117,9 +116,9 @@ public class AggregationRunner implements CommandLineRunner {
             if (latSubset != null && lonSubset != null) {
 
                 double minLon = Double.parseDouble(lonSubset.start);
-                double minLat = Double.parseDouble(lonSubset.start);
+                double minLat = Double.parseDouble(latSubset.start);
                 double maxLon = Double.parseDouble(lonSubset.end);
-                double maxLat = Double.parseDouble(lonSubset.end);
+                double maxLat = Double.parseDouble(latSubset.end);
                 LatLonPoint lowerLeft = new LatLonPointImmutable(minLat, minLon);
                 LatLonPoint upperRight = new LatLonPointImmutable(maxLat, maxLon);
                 bbox = new LatLonRect(lowerLeft, upperRight);
@@ -176,11 +175,26 @@ public class AggregationRunner implements CommandLineRunner {
                 Upload myUpload = tx.upload(s3URI.getBucket(), s3URI.getKey(), outputFile.toFile());
                 myUpload.waitForCompletion();
                 tx.shutdownNow();
+
+                statusUpdater.updateStatus(EnumOperation.EXECUTE, batchJobId, EnumStatus.SUCCEEDED, null, null);
             } finally {
                 Files.deleteIfExists(outputFile);
             }
         } catch (Throwable e) {
             e.printStackTrace();
+            if(statusUpdater != null) {
+                if(batchJobId != null) {
+                    String statusDocument = null;
+                    try {
+                        statusDocument = statusUpdater.updateStatus(EnumOperation.EXECUTE, batchJobId, EnumStatus.FAILED, null, null);
+                    }
+                    catch (UnsupportedEncodingException uex)
+                    {
+                        logger.error("Unable to update status. Status: " + statusDocument);
+                        uex.printStackTrace();
+                    }
+                }
+            }
             System.exit(1);
         }
     }

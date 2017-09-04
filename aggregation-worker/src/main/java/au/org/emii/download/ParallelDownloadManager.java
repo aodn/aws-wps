@@ -1,7 +1,8 @@
 package au.org.emii.download;
 
 import org.apache.commons.io.FilenameUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -48,7 +49,7 @@ import static au.org.emii.util.IntegerHelper.suffix;
  */
 
 public class ParallelDownloadManager implements Iterable<Download>, Iterator<Download>, AutoCloseable {
-    private static final Logger logger = Logger.getLogger(au.org.emii.download.ParallelDownloadManager.class);
+    private static final Logger logger = LoggerFactory.getLogger(au.org.emii.download.ParallelDownloadManager.class);
     private final au.org.emii.download.DownloadConfig config;
     private final LinkedList<DownloadRequest> unactionedQueue;
     private final LinkedList<Future<Download>> inProgressQueue;

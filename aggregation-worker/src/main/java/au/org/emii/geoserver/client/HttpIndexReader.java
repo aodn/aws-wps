@@ -11,11 +11,12 @@ import java.net.URLEncoder;
 import java.util.*;
 import au.org.emii.aggregator.exception.AggregationException;
 import au.org.emii.download.DownloadRequest;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class HttpIndexReader implements IndexReader {
-    private static final Logger logger = Logger.getLogger(HttpIndexReader.class);
+    private static final Logger logger = LoggerFactory.getLogger(HttpIndexReader.class);
 
     protected String geoserver = null;
 
@@ -84,11 +85,11 @@ public class HttpIndexReader implements IndexReader {
                 Integer i = 0;
                 while ((line = dataInputStream.readLine()) != null) {
                     if (i > 0) { // Skip first line - it's the headers
-                        logger.debug("CSV line    = " + line);
+                        logger.info("CSV line    = " + line);
                         String[] lineParts = line.split(",");
                         uriList.add(new URI(lineParts[2]));
                     } else {
-                        logger.debug("CSV headers = " + line);
+                        logger.info("CSV headers = " + line);
                     }
                     i++;
                 }
