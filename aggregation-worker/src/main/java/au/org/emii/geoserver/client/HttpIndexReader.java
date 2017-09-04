@@ -9,16 +9,13 @@ import java.net.URI;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.*;
-
 import au.org.emii.aggregator.exception.AggregationException;
 import au.org.emii.download.DownloadRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import org.apache.log4j.Logger;
 
 
 public class HttpIndexReader implements IndexReader {
-    private static final Logger logger = LoggerFactory.getLogger(HttpIndexReader.class);
+    private static final Logger logger = Logger.getLogger(HttpIndexReader.class);
 
     protected String geoserver = null;
 
@@ -28,17 +25,12 @@ public class HttpIndexReader implements IndexReader {
 
     @Override
     public URIList getUriList(String profile, String timeField, String urlField, SubsetParameters subset) throws AggregationException {
-        String timeCoverageStart = subset.get("TIME").start;
-        String timeCoverageEnd = subset.get("TIME").end;
 
         URIList uriList = new URIList();
 
-        try
-        {
+        try {
             String downloadUrl = String.format("%s/wfs", geoserver);
-            String cqlFilter = String.format("%s >= %s AND %s <= %s",
-                    timeField, timeCoverageStart, timeField, timeCoverageEnd
-            );
+
 
             Map<String, String> params = new HashMap<String, String>();
             params.put("typeName", profile);
@@ -46,7 +38,13 @@ public class HttpIndexReader implements IndexReader {
             params.put("outputFormat", "csv");
             params.put("REQUEST", "GetFeature");
             params.put("VERSION", "1.0.0");
-            params.put("CQL_FILTER", cqlFilter);
+
+            //  Apply time filter if time parameters supplied
+            String cqlTimeFilter = getCqlTimeFilter(subset, timeField);
+            if (cqlTimeFilter != null) {
+                params.put("CQL_FILTER", cqlTimeFilter);
+            }
+
 
             byte[] postDataBytes = encodeMapForPostRequest(params);
 
@@ -56,10 +54,12 @@ public class HttpIndexReader implements IndexReader {
             BufferedInputStream bufferedStream = null;
             DataInputStream dataInputStream = null;
 
+
+            //  Make HTTP request to geoserver
+            conn = (HttpURLConnection) url.openConnection();
+
             try
             {
-                //  Make HTTP request to geoserver
-                conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");
                 conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
                 conn.setRequestProperty("Content-Length", String.valueOf(postDataBytes.length));
@@ -92,19 +92,24 @@ public class HttpIndexReader implements IndexReader {
                     }
                     i++;
                 }
+            } finally {
+                if (inputStream != null) {
+                    inputStream.close();
+                }
+
+                if (bufferedStream != null) {
+                    bufferedStream.close();
+                }
+
+                if (dataInputStream != null) {
+                    dataInputStream.close();
+                }
+
+                if (conn != null) {
+                    conn.disconnect();
+                }
             }
-            finally
-            {
-                if(inputStream != null) { inputStream.close(); }
-
-                if(bufferedStream != null) { bufferedStream.close(); }
-
-                if(dataInputStream != null) { dataInputStream.close(); }
-
-                if(conn != null) { conn.disconnect(); }
-            }
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             logger.error("We could not obtain list of URLs, does the collection still exist?");
             throw new AggregationException(String.format("Could not obtain list of URLs: '%s'", e.getMessage()));
         }
@@ -114,17 +119,12 @@ public class HttpIndexReader implements IndexReader {
 
 
     public Set<DownloadRequest> getDownloadRequestList(String profile, String timeField, String urlField, SubsetParameters subset) throws AggregationException {
-        String timeCoverageStart = subset.get("TIME").start;
-        String timeCoverageEnd = subset.get("TIME").end;
 
         HashSet<DownloadRequest> downloadList = new HashSet<DownloadRequest>();
 
         try {
 
             String downloadUrl = String.format("%s/wfs", geoserver);
-            String cqlFilter = String.format("%s >= %s AND %s <= %s",
-                    timeField, timeCoverageStart, timeField, timeCoverageEnd
-            );
 
             Map<String, String> params = new HashMap<String, String>();
             params.put("typeName", profile);
@@ -132,12 +132,17 @@ public class HttpIndexReader implements IndexReader {
             params.put("outputFormat", "csv");
             params.put("REQUEST", "GetFeature");
             params.put("VERSION", "1.0.0");
-            params.put("CQL_FILTER", cqlFilter);
+
+            //  Apply time filter if time parameters supplied
+            String cqlTimeFilter = getCqlTimeFilter(subset, timeField);
+            if (cqlTimeFilter != null) {
+                params.put("CQL_FILTER", cqlTimeFilter);
+            }
 
             byte[] postDataBytes = encodeMapForPostRequest(params);
 
             URL url = new URL(downloadUrl);
-            HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
             conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
             conn.setRequestProperty("Content-Length", String.valueOf(postDataBytes.length));
@@ -166,8 +171,7 @@ public class HttpIndexReader implements IndexReader {
                 }
                 i++;
             }
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             logger.error("We could not obtain list of URLs, does the collection still exist?");
             throw new AggregationException(String.format("Could not obtain list of URLs: '%s'", e.getMessage()));
         }
@@ -187,33 +191,48 @@ public class HttpIndexReader implements IndexReader {
                 postData.append(URLEncoder.encode(String.valueOf(param.getValue()), "UTF-8"));
             }
             postDataBytes = postData.toString().getBytes("UTF-8");
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             logger.error(String.format("Error encoding parameters: '%s'", e.getMessage()));
         }
 
         return postDataBytes;
     }
 
-    public static void main(String[] args)
-    {
+    public static void main(String[] args) {
         HttpIndexReader indexReader = new HttpIndexReader("http://geoserver-123.aodn.org.au/geoserver/imos");
         String subsetString = "TIME,2009-01-01T00:00:00.000Z,2017-12-25T23:04:00.000Z;LATITUDE,-33.433849,-32.150743;LONGITUDE,114.15197,115.741219;DEPTH,0.0,100.0";
         SubsetParameters subsetParams = new SubsetParameters(subsetString);
-        URIList uriList = null;
+        Set<DownloadRequest> downloadList = null;
 
         try {
-            uriList = indexReader.getUriList("imos:acorn_hourly_avg_rot_qc_timeseries_url", "time", "file_url", subsetParams);
-            System.out.println("uriList size: " + uriList.size());
-            for(URI currentUri : uriList)
-            {
-                System.out.println("  - " + currentUri.toString());
+            downloadList = indexReader.getDownloadRequestList("imos:acorn_hourly_avg_rot_qc_timeseries_url", "time", "file_url", subsetParams);
+            System.out.println("File list size: " + downloadList.size());
+            for (DownloadRequest currentDownload : downloadList) {
+                System.out.println("  - " + currentDownload.getUrl().toString());
             }
-        }
-        catch(Exception ex)
-        {
+        } catch (Exception ex) {
             ex.printStackTrace();
             System.out.println("Bad Juju!");
         }
+    }
+
+    private String getCqlTimeFilter(SubsetParameters subset, String timeField)
+    {
+        String cqlTimeFilter = null;
+
+        if(subset.get("TIME") != null) {
+            String timeCoverageStart = subset.get("TIME").start;
+            String timeCoverageEnd = subset.get("TIME").end;
+
+            if (timeCoverageStart != null && timeCoverageEnd != null) {  //  Start + end dates
+                cqlTimeFilter = String.format("%s >= %s AND %s <= %s",
+                        timeField, timeCoverageStart, timeField, timeCoverageEnd);
+            } else if (timeCoverageStart != null) {  //  Start date only
+                cqlTimeFilter = String.format("%s >= %s", timeField, timeCoverageStart);
+            } else if (timeCoverageEnd != null) {  //  End date only
+                cqlTimeFilter = String.format("%s <= %s", timeField, timeCoverageEnd);
+            }
+        }
+        return cqlTimeFilter;
     }
 }

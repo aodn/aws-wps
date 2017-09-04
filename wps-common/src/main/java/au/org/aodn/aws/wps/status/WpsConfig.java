@@ -14,6 +14,15 @@ public class WpsConfig {
     public static final String S3_BUCKET_ENV_VARIABLE_NAME = "CONFIG_PREFIX";
     public static final String CONFIG_FILENAME_ENV_VARIABLE_NAME = "CONFIG_FILENAME";
 
+    //  Configuration key names
+    public static final String AWS_BATCH_JOB_NAME_CONFIG_KEY = "AWS_BATCH_JOB_NAME";
+    public static final String AWS_BATCH_JOB_QUEUE_NAME_CONFIG_KEY = "AWS_BATCH_JOB_QUEUE_NAME";
+    public static final String AWS_REGION_CONFIG_KEY = "AWS_REGION";
+    public static final String ENVIRONMENT_NAME_ENV_VARIABLE_NAME = "ENVIRONMENT_NAME";
+
+    public static final String STATUS_S3_BUCKET_CONFIG_KEY = "STATUS_S3_BUCKET";
+    public static final String STATUS_S3_KEY_CONFIG_KEY = "STATUS_S3_FILENAME";
+
     public static Properties getConfigProperties(String envName)
     {
         //  Read environment variables

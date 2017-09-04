@@ -19,8 +19,7 @@ import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.log4j.Logger;
 import ucar.ma2.Array;
 import ucar.ma2.InvalidRangeException;
 import ucar.ma2.Range;
@@ -56,7 +55,7 @@ import java.util.Set;
 
 public class NetcdfAggregator implements AutoCloseable {
 
-    private static final Logger logger = LoggerFactory.getLogger(au.org.emii.aggregator.NetcdfAggregator.class);
+    private static final Logger logger = Logger.getLogger(au.org.emii.aggregator.NetcdfAggregator.class);
     private static final Group GLOBAL = null;
 
     private final Path outputPath;
@@ -95,14 +94,14 @@ public class NetcdfAggregator implements AutoCloseable {
 
             if (!fileProcessed) {
                 unpackerOverrides = getOverridesApplied(dataset); // ensure same changes applied to all other datasets
-                logger.info("Creating output file {} using {} as a template", outputPath, datasetLocation);
+                logger.info("Creating output file " + outputPath + " using " + datasetLocation + " as a template");
                 templateDataset = new TemplateDataset(subsettedDataset, aggregationOverrides,
                     dateRange, verticalSubset, bbox);
                 copyToOutputFile(templateDataset);
                 fileProcessed = true;
             }
 
-            logger.info("Adding {} to output file", datasetLocation);
+            logger.info("Adding " + datasetLocation + " to output file");
 
             appendRecordVariables(subsettedDataset);
 

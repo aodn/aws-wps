@@ -19,6 +19,7 @@ public class WpsLambdaRequestHandler implements RequestHandler<AwsApiRequest, Aw
 
     private LambdaLogger LOGGER;
     private static final String DEFAULT_ENV_NAME = "$LATEST";
+    private static final String ENVIRONMENT_NAME_CONFIG_KEY = "ENVIRONMENT_NAME";
 
 
     @Override
@@ -33,7 +34,7 @@ public class WpsLambdaRequestHandler implements RequestHandler<AwsApiRequest, Aw
         {
             String envName = getEnvironmentName(context);
             Properties config = WpsConfig.getConfigProperties(envName);
-
+            config.setProperty(ENVIRONMENT_NAME_CONFIG_KEY, envName);
             LOGGER.log("Loaded configuration from S3.");
 
             //  Execute the request
@@ -44,6 +45,7 @@ public class WpsLambdaRequestHandler implements RequestHandler<AwsApiRequest, Aw
         {
             //  Bad stuff happened
             LOGGER.log("Exception running WPS Lambda function: " + ex.getMessage());
+            //  TODO:  send caller a WPS error response
         }
 
         return response;
