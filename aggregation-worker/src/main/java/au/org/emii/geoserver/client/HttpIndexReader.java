@@ -119,7 +119,7 @@ public class HttpIndexReader implements IndexReader {
     }
 
 
-    public Set<DownloadRequest> getDownloadRequestList(String profile, String timeField, String urlField, SubsetParameters subset) throws AggregationException {
+    public Set<DownloadRequest> getDownloadRequestList(String layer, String timeField, String urlField, SubsetParameters subset) throws AggregationException {
 
         HashSet<DownloadRequest> downloadList = new HashSet<DownloadRequest>();
 
@@ -128,7 +128,7 @@ public class HttpIndexReader implements IndexReader {
             String downloadUrl = String.format("%s/wfs", geoserver);
 
             Map<String, String> params = new HashMap<String, String>();
-            params.put("typeName", profile);
+            params.put("typeName", layer);
             params.put("SERVICE", "WFS");
             params.put("outputFormat", "csv");
             params.put("REQUEST", "GetFeature");
