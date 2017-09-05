@@ -1,0 +1,335 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  A template for AWS-WPS
+Parameters:
+  securityGroup:
+    Type: String
+  subnets:
+    Type: CommaDelimitedList
+  s3LambdaCodeBucket:
+    Type: String
+    Default: imos-binary-frankfurt
+  s3LambdaCodeKey:
+    Type: String
+    Default: 'lambda/request-handler-1.0-SNAPSHOT-lambda-package.zip'
+  jobVCPUs:
+    Type: String
+    Default: '1'
+  jobMemory:
+    Type: String
+    Default: '2000'
+  maxVCPUs:
+    Type: String
+    Default: '256'
+  geoserver:
+    Type: String
+  dockerImage:
+    Type: String
+  s3OutputBucket:
+    Type: String
+    Default: 'imos-test-data.aodn.org.au'
+  s3StatusBucket:
+    Type: String
+    Default: 'imos-test-data.aodn.org.au'
+  s3ConfigBucket:
+    Type: String
+    Default: 'wps-lambda-config'
+Resources:
+  BatchServiceRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: batch.amazonaws.com
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSBatchServiceRole'
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 119037ec-2cef-4c76-bbea-9e62091e725d
+  IamInstanceProfile:
+    Type: 'AWS::IAM::InstanceProfile'
+    Properties:
+      Roles:
+        - !Ref EcsInstanceRole
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 65b9b65e-442f-4006-bffb-39aa71c5708c
+  EcsInstanceRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2008-10-17
+        Statement:
+          - Sid: ''
+            Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - >-
+          arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 303fb35e-a959-48ec-a564-e36ae4902115
+  JobInstanceRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2008-10-17
+        Statement:
+          - Sid: ''
+            Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Policies:
+        -
+          PolicyName: "wps-job-s3-access"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action: "s3:*"
+                Resource: !Join ["",
+                ["arn:aws:s3:::", !Ref s3OutputBucket]]
+              -
+                Effect: "Allow"
+                Action: "s3:*"
+                Resource: !Join ["",
+                ["arn:aws:s3:::", !Ref s3OutputBucket]]
+              -
+                Effect: "Allow"
+                Action: ["s3:Get*", "s3:List*"]
+                Resource: !Join ["",
+                ["arn:aws:s3:::", !Ref s3ConfigBucket]]
+  JobDefinition:
+    Type: 'AWS::Batch::JobDefinition'
+    Properties:
+      Type: container
+      ContainerProperties:
+        Image: !Ref dockerImage
+        Vcpus: !Ref jobVCPUs
+        Memory: !Ref jobMemory
+        JobRoleArn: !Ref JobInstanceRole
+        Command:
+          - 'Ref::layerName'
+          - 'Ref::subset'
+          - 'Ref::outputFile'
+        Environment:
+          -
+            Name: "CONFIG_PREFIX"
+            Value: !Ref s3ConfigBucket
+          -
+            Name: "S3_AWS_REGION"
+            Value: !Ref "AWS::Region"
+          -
+            Name: "CONFIG_FILENAME"
+            Value: "wps-config.properties"
+      RetryStrategy:
+        Attempts: 3
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: f17c8aa4-8ab7-4ee1-b3a6-7a8727b8bff5
+  JobQueue:
+    Type: 'AWS::Batch::JobQueue'
+    Properties:
+      Priority: 1
+      ComputeEnvironmentOrder:
+        - Order: 1
+          ComputeEnvironment: !Ref ComputeEnvironment
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 376a0983-1cf3-4145-bafe-96b0750be936
+  ComputeEnvironment:
+    Type: 'AWS::Batch::ComputeEnvironment'
+    Properties:
+      Type: MANAGED
+      ComputeResources:
+        Type: EC2
+        MinvCpus: 0
+        DesiredvCpus: 0
+        MaxvCpus: !Ref maxVCPUs
+        InstanceTypes:
+          - optimal
+        Subnets: !Ref subnets
+        SecurityGroupIds:
+          - !Ref securityGroup
+        InstanceRole: !Ref IamInstanceProfile
+      ServiceRole: !Ref BatchServiceRole
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 7a2b9b81-942a-4563-8b0a-7ed0cb6c6aad
+  LambdaRequestHandler:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Description: Make a wps request
+      FunctionName: !Sub 'wps-request-handler-${AWS::StackName}'
+      Handler: 'au.org.aodn.aws.wps.lambda.WpsLambdaRequestHandler'
+      MemorySize: 512
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Runtime: java8
+      Timeout: 60
+      Code:
+        S3Bucket: !Ref s3LambdaCodeBucket
+        S3Key: !Ref s3LambdaCodeKey
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 2f9d630f-4908-418a-9455-e9b730d0c673
+  LambdaExecutionRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+      Policies:
+        - PolicyName: PublishVersion
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'lambda:PublishVersion'
+                Resource: '*'
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 5a6cf0c9-ebd3-41f0-8b4c-009af363b85b
+Outputs:
+  ComputeEnvironmentArn:
+    Value: !Ref ComputeEnvironment
+  JobQueueArn:
+    Value: !Ref JobQueue
+  JobDefinitionArn:
+    Value: !Ref JobDefinition
+Metadata:
+  'AWS::CloudFormation::Designer':
+    f17c8aa4-8ab7-4ee1-b3a6-7a8727b8bff5:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 60
+        'y': 660
+      z: 1
+      embeds: []
+    303fb35e-a959-48ec-a564-e36ae4902115:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 180
+        'y': 660
+      z: 1
+      embeds: []
+    65b9b65e-442f-4006-bffb-39aa71c5708c:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 300
+        'y': 660
+      z: 1
+      embeds: []
+      isassociatedwith:
+        - 303fb35e-a959-48ec-a564-e36ae4902115
+    119037ec-2cef-4c76-bbea-9e62091e725d:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 420
+        'y': 660
+      z: 1
+      embeds: []
+    d3ba16c5-0aeb-466c-8178-faca02f99c1a:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 540
+        'y': 390
+      z: 1
+      embeds: []
+    4bc5138a-265b-4dfa-9d1e-9f9efad6ef93:
+      size:
+        width: 600
+        height: 510
+      position:
+        x: 60
+        'y': 90
+      z: 1
+      embeds:
+        - ec8b2cb0-b28c-4d69-bf68-486d10499b6f
+    ec8b2cb0-b28c-4d69-bf68-486d10499b6f:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 390
+        'y': 360
+      z: 2
+      parent: 4bc5138a-265b-4dfa-9d1e-9f9efad6ef93
+      embeds: []
+    7a2b9b81-942a-4563-8b0a-7ed0cb6c6aad:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 660
+        'y': 660
+      z: 1
+      embeds: []
+      isrelatedto:
+        - a41bc925-27c0-4347-893d-3de5628f24f5
+        - ec8b2cb0-b28c-4d69-bf68-486d10499b6f
+        - 65b9b65e-442f-4006-bffb-39aa71c5708c
+        - 119037ec-2cef-4c76-bbea-9e62091e725d
+    376a0983-1cf3-4145-bafe-96b0750be936:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 660
+        'y': 570
+      z: 1
+      embeds: []
+      isrelatedto:
+        - 7a2b9b81-942a-4563-8b0a-7ed0cb6c6aad
+    49a7ceae-b82e-44c7-851b-3a0590c37a44:
+      source:
+        id: d3ba16c5-0aeb-466c-8178-faca02f99c1a
+      target:
+        id: 4bc5138a-265b-4dfa-9d1e-9f9efad6ef93
+    2f9d630f-4908-418a-9455-e9b730d0c673:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 330
+        'y': 390
+      z: 1
+      embeds: []
+      isrelatedto:
+        - 5a6cf0c9-ebd3-41f0-8b4c-009af363b85b
+    5a6cf0c9-ebd3-41f0-8b4c-009af363b85b:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 320
+        'y': 260
+      z: 1
+      embeds: []
