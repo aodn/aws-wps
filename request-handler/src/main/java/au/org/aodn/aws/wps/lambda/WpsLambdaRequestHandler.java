@@ -3,19 +3,14 @@ package au.org.aodn.aws.wps.lambda;
 import au.org.aodn.aws.wps.AwsApiRequest;
 import au.org.aodn.aws.wps.AwsApiResponse;
 import au.org.aodn.aws.wps.WpsRequestHandler;
-import com.amazonaws.regions.Region;
-import com.amazonaws.regions.Regions;
+import au.org.aodn.aws.wps.status.WpsConfig;
 import com.amazonaws.services.kms.AWSKMS;
 import com.amazonaws.services.kms.AWSKMSClientBuilder;
 import com.amazonaws.services.kms.model.DecryptRequest;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.Context;
-import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.S3Object;
-import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import com.amazonaws.util.Base64;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Properties;
@@ -24,9 +19,8 @@ public class WpsLambdaRequestHandler implements RequestHandler<AwsApiRequest, Aw
 
     private LambdaLogger LOGGER;
     private static final String DEFAULT_ENV_NAME = "$LATEST";
-    private static final String REGION_NAME_ENV_VARIABLE_NAME = "S3_AWS_REGION";
-    private static final String S3_BUCKET_ENV_VARIABLE_NAME = "CONFIG_PREFIX";
-    private static final String CONFIG_FILENAME_ENV_VARIABLE_NAME = "CONFIG_FILENAME";
+    private static final String ENVIRONMENT_NAME_CONFIG_KEY = "ENVIRONMENT_NAME";
+
 
     @Override
     public AwsApiResponse handleRequest(AwsApiRequest request, Context context) {
@@ -35,49 +29,66 @@ public class WpsLambdaRequestHandler implements RequestHandler<AwsApiRequest, Aw
         WpsRequestHandler handler = new WpsRequestHandler();
         AwsApiResponse response = null;
 
-        //  Read environment variables
-        //  Identify the location of the configuration file to use
-        String s3RegionName = getEnvironmentVariable(REGION_NAME_ENV_VARIABLE_NAME);
-        String bucketName = getEnvironmentVariable(S3_BUCKET_ENV_VARIABLE_NAME);
-        String configFilename = getEnvironmentVariable(CONFIG_FILENAME_ENV_VARIABLE_NAME);
 
-
-        AmazonS3Client s3Client = new AmazonS3Client();
-        Region region = Region.getRegion(Regions.fromName(s3RegionName));
-        s3Client.setRegion(region);
-
-        String envName = getEnvironmentName(context);
-
-        //  Append an environment name to the front of the config filename
-        if(envName != null)
-        {
-            configFilename  = envName + "/" + configFilename;
-        }
-
-        LOGGER.log("S3 Config location: " + bucketName + "/" + configFilename);
-
-        //  Note:  the Lambda function needs access to read from S3 bucket location
-        //  that contains the configuration file.
-        S3Object configFile = s3Client.getObject(bucketName, configFilename);
-        S3ObjectInputStream contentStream = configFile.getObjectContent();
-        Properties config = new Properties();
         try
         {
-            //  Load configuration from S3 file
-            config.load(contentStream);
+            String envName = getEnvironmentName(context);
+            Properties config = WpsConfig.getConfigProperties(envName);
+
+            //  TODO:  null check and act on null configuration
+
+            config.setProperty(ENVIRONMENT_NAME_CONFIG_KEY, envName);
+            LOGGER.log("Loaded configuration from S3.");
 
             //  Execute the request
             response = handler.handleRequest(request, config);
 
         }
-        catch(IOException ioex)
+        catch(Exception ex)
         {
             //  Bad stuff happened
-            LOGGER.log("Exception running WPS Lambda function: " + ioex.getMessage());
+            LOGGER.log("Exception running WPS Lambda function: " + ex.getMessage());
+            //  TODO:  send caller a WPS error response
         }
 
         return response;
     }
+
+
+
+
+
+    /**
+     * Decrypt the value of a named environment variable.
+     *
+     * @param keyName
+     * @return  Decrypted value of the named environment variable.
+     */
+    private String getEncryptedEnvironmentVariable(String keyName)
+    {
+        return decryptKey(System.getenv(keyName));
+    }
+
+
+    /**
+     * Decrypt an encrypted environment variable value.
+     *
+     * @param keyValue
+     * @return  Decrypted key value.
+     */
+    private String decryptKey(String keyValue) {
+        if(keyValue != null)
+        {
+            byte[] encryptedKey = Base64.decode(keyValue);
+            AWSKMS client = AWSKMSClientBuilder.defaultClient();
+            DecryptRequest request = new DecryptRequest()
+                    .withCiphertextBlob(ByteBuffer.wrap(encryptedKey));
+            ByteBuffer plainTextKey = client.decrypt(request).getPlaintext();
+            return new String(plainTextKey.array(), Charset.forName("UTF-8"));
+        }
+        return null;
+    }
+
 
     private String getEnvironmentName(Context context)
     {
@@ -114,42 +125,4 @@ public class WpsLambdaRequestHandler implements RequestHandler<AwsApiRequest, Aw
 
         return envName;
     }
-
-    private String getEnvironmentVariable(String keyName)
-    {
-        return System.getenv(keyName);
-    }
-
-    /**
-     * Decrypt the value of a named environment variable.
-     *
-     * @param keyName
-     * @return  Decrypted value of the named environment variable.
-     */
-    private String getEncryptedEnvironmentVariable(String keyName)
-    {
-        return decryptKey(System.getenv(keyName));
-    }
-
-
-    /**
-     * Decrypt an encrypted environment variable value.
-     *
-     * @param keyValue
-     * @return  Decrypted key value.
-     */
-    private String decryptKey(String keyValue) {
-        if(keyValue != null)
-        {
-            byte[] encryptedKey = Base64.decode(keyValue);
-            AWSKMS client = AWSKMSClientBuilder.defaultClient();
-            DecryptRequest request = new DecryptRequest()
-                    .withCiphertextBlob(ByteBuffer.wrap(encryptedKey));
-            ByteBuffer plainTextKey = client.decrypt(request).getPlaintext();
-            return new String(plainTextKey.array(), Charset.forName("UTF-8"));
-        }
-        return null;
-    }
-
-
 }

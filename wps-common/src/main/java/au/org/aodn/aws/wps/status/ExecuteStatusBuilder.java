@@ -20,8 +20,9 @@ import java.util.TimeZone;
 
 
 public class ExecuteStatusBuilder {
+
     private String location;
-    private String jobId;
+    String jobId;
 
     public ExecuteStatusBuilder() {}
 

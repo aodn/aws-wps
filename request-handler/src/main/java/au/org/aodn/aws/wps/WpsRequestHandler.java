@@ -3,17 +3,16 @@ package au.org.aodn.aws.wps;
 import au.org.aodn.aws.wps.AwsApiResponse.ResponseBuilder;
 import au.org.aodn.aws.wps.operation.Operation;
 import net.opengis.wps._1_0.ExecuteResponse;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Marshaller;
-import java.io.StringWriter;
 import java.util.Properties;
 
 public class WpsRequestHandler implements RequestHandler, RequestValidator {
 
-    private static final Logger LOGGER = Logger.getLogger(WpsRequestHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(WpsRequestHandler.class);
 
     public AwsApiResponse handleRequest(AwsApiRequest request, Properties config) {
 
@@ -24,9 +23,9 @@ public class WpsRequestHandler implements RequestHandler, RequestValidator {
             RequestParserFactory requestParserFactory = new RequestParserFactory(context);
             RequestParser requestParser = requestParserFactory.getRequestParser(request);
             Operation operation = requestParser.getOperation();
-            LOGGER.debug("Operation : " + operation.getClass());
+            LOGGER.info("Operation : " + operation.getClass());
             String result = operation.execute(config);
-            LOGGER.debug("Executed");
+            LOGGER.info("Executed");
             responseBuilder.body(result);
         } catch (Exception e) {
             e.printStackTrace();
