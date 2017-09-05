@@ -57,6 +57,9 @@ public class AggregationRunner implements CommandLineRunner {
             String environmentName = System.getenv(WpsConfig.ENVIRONMENT_NAME_ENV_VARIABLE_NAME);
 
             Properties configuration = WpsConfig.getConfigProperties(environmentName);
+
+            //  TODO:  null check and act on null configuration
+
             String statusS3Bucket = configuration.getProperty(WpsConfig.STATUS_S3_BUCKET_CONFIG_KEY);
             String statusFileName = configuration.getProperty(WpsConfig.STATUS_S3_KEY_CONFIG_KEY);
 

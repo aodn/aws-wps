@@ -166,7 +166,7 @@ public class HttpIndexReader implements IndexReader {
                     //  TODO:  source the base URL from configuration
                     URL fileURL = new URL("http://data.aodn.org.au/" + fileURI.toString());
 
-                    logger.info("DownloadRequest - URL [" + fileURL + "], Size [" + fileSize + "]");
+                    logger.debug("DownloadRequest - URL [" + fileURL + "], Size [" + fileSize + "]");
                     DownloadRequest downloadRequest = new DownloadRequest(fileURL, fileSize);
                     downloadList.add(downloadRequest);
                 }

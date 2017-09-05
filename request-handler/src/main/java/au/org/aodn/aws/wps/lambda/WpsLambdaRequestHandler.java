@@ -34,6 +34,9 @@ public class WpsLambdaRequestHandler implements RequestHandler<AwsApiRequest, Aw
         {
             String envName = getEnvironmentName(context);
             Properties config = WpsConfig.getConfigProperties(envName);
+
+            //  TODO:  null check and act on null configuration
+
             config.setProperty(ENVIRONMENT_NAME_CONFIG_KEY, envName);
             LOGGER.log("Loaded configuration from S3.");
 
