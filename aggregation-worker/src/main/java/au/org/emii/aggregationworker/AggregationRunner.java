@@ -20,7 +20,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import thredds.crawlabledataset.s3.S3URI;
-import ucar.nc2.time.CalendarDate;
 import ucar.nc2.time.CalendarDateRange;
 import ucar.unidata.geoloc.LatLonPoint;
 import ucar.unidata.geoloc.LatLonPointImmutable;
@@ -61,7 +60,7 @@ public class AggregationRunner implements CommandLineRunner {
             //  TODO:  null check and act on null configuration
 
             String statusS3Bucket = configuration.getProperty(WpsConfig.STATUS_S3_BUCKET_CONFIG_KEY);
-            String statusFileName = configuration.getProperty(WpsConfig.STATUS_S3_KEY_CONFIG_KEY);
+            String statusFileName = configuration.getProperty(WpsConfig.STATUS_S3_FILENAME_CONFIG_KEY);
 
             //  Update status document to indicate job has started
             statusUpdater = new S3StatusUpdater(statusS3Bucket, statusFileName);
@@ -71,6 +70,7 @@ public class AggregationRunner implements CommandLineRunner {
             logger.info("AWS BATCH CE NAME    : " + awsBatchComputeEnvName);
             logger.info("AWS BATCH QUEUE NAME : " + awsBatchQueueName);
             logger.info("ENVIRONMENT NAME     : " + environmentName);
+            logger.info("-----------------------------------------------------");
 
             Options options = new Options();
 
@@ -89,27 +89,34 @@ public class AggregationRunner implements CommandLineRunner {
             //        - subset
             //        - outputFile
 
-            String layerName = commandLine.getArgs()[0];
+            String layer = commandLine.getArgs()[0];
             String subset = commandLine.getArgs()[1];
-            String destinationFile = commandLine.getArgs()[2];
+            String requestedOutputMimeType = commandLine.getArgs()[2];
             SubsetParameters subsetParams = new SubsetParameters(subset);
 
-            logger.info("args[0]=" + layerName);
+            logger.info("args[0]=" + layer);
             logger.info("args[1]=" + subset);
-            logger.info("args[2]=" + destinationFile);
+            logger.info("args[2]=" + requestedOutputMimeType);
+
 
             //  Query geoserver to get a list of files for the aggregation
             //  TODO: source geoserver location from config
             HttpIndexReader indexReader = new HttpIndexReader("http://geoserver-123.aodn.org.au/geoserver/imos/ows");
 
 
-            Set<DownloadRequest> downloads = indexReader.getDownloadRequestList(layerName, "time", "file_url", subsetParams);
-            S3URI s3URI = new S3URI(destinationFile);
+            String outputBucketName = configuration.getProperty(WpsConfig.OUTPUT_S3_BUCKET_CONFIG_KEY);
+            String outputFilename = configuration.getProperty(WpsConfig.OUTPUT_S3_FILENAME_CONFIG_KEY);
+            Set<DownloadRequest> downloads = indexReader.getDownloadRequestList(layer, "time", "file_url", subsetParams);
 
+            //  Form output file location
+            S3URI s3URI = new S3URI(outputBucketName, batchJobId + "/" + outputFilename);
+
+            //  TODO : remove if not required
             String overridesArg = commandLine.getOptionValue("c");
             String bboxArg = commandLine.getOptionValue("b");
             String zSubsetArg = commandLine.getOptionValue("z");
             String timeArg = commandLine.getOptionValue("t");
+
 
 
             LatLonRect bbox = null;
@@ -140,12 +147,12 @@ public class AggregationRunner implements CommandLineRunner {
 
             CalendarDateRange timeRange = null;
 
-            if (timeArg != null) {
-                String[] timeRangeComponents = timeArg.split(",");
-                CalendarDate startTime = CalendarDate.parseISOformat("Gregorian", timeRangeComponents[0]);
-                CalendarDate endTime = CalendarDate.parseISOformat("Gregorian", timeRangeComponents[1]);
-                timeRange = CalendarDateRange.of(startTime, endTime);
-            }
+            //if (timeArg != null) {
+            //    String[] timeRangeComponents = timeArg.split(",");
+            //    CalendarDate startTime = CalendarDate.parseISOformat("Gregorian", timeRangeComponents[0]);
+            //    CalendarDate endTime = CalendarDate.parseISOformat("Gregorian", timeRangeComponents[1]);
+            //    timeRange = CalendarDateRange.of(startTime, endTime);
+            //}
 
 
             AggregationOverrides overrides;

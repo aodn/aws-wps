@@ -166,12 +166,13 @@ public class HttpIndexReader implements IndexReader {
                     //  TODO:  source the base URL from configuration
                     URL fileURL = new URL("http://data.aodn.org.au/" + fileURI.toString());
 
-                    logger.debug("DownloadRequest - URL [" + fileURL + "], Size [" + fileSize + "]");
+                    //logger.debug("DownloadRequest - URL [" + fileURL + "], Size [" + fileSize + "]");
                     DownloadRequest downloadRequest = new DownloadRequest(fileURL, fileSize);
                     downloadList.add(downloadRequest);
                 }
                 i++;
             }
+            logger.debug("DownloadRequest - # files requested : " + downloadList.size());
         } catch (Exception e) {
             logger.error("We could not obtain list of URLs, does the collection still exist?");
             throw new AggregationException(String.format("Could not obtain list of URLs: '%s'", e.getMessage()));

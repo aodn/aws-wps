@@ -11,10 +11,7 @@ import com.amazonaws.services.batch.model.ContainerOverrides;
 import com.amazonaws.services.batch.model.KeyValuePair;
 import com.amazonaws.services.batch.model.SubmitJobRequest;
 import com.amazonaws.services.batch.model.SubmitJobResult;
-import net.opengis.wps._1_0.DataInputsType;
-import net.opengis.wps._1_0.DataType;
-import net.opengis.wps._1_0.Execute;
-import net.opengis.wps._1_0.InputType;
+import net.opengis.wps._1_0.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,7 +44,7 @@ public class ExecuteOperation implements Operation {
         //      status filename
         //      status location
         String statusS3BucketName = config.getProperty(STATUS_S3_BUCKET_CONFIG_KEY);
-        String statusFileName = config.getProperty(STATUS_S3_KEY_CONFIG_KEY);
+        String statusFileName = config.getProperty(STATUS_S3_FILENAME_CONFIG_KEY);
         String jobName = config.getProperty(AWS_BATCH_JOB_NAME_CONFIG_KEY);
         String jobQueueName = config.getProperty(AWS_BATCH_JOB_QUEUE_NAME_CONFIG_KEY);
         String awsRegion = config.getProperty(AWS_REGION_CONFIG_KEY);
@@ -108,26 +105,36 @@ public class ExecuteOperation implements Operation {
     }
 
     private Map<String, String> getJobParameters() {
-        Map<String, String> result = new LinkedHashMap<>();
+        Map<String, String> parameters = new LinkedHashMap<>();
 
         DataInputsType dataInputs = executeRequest.getDataInputs();
+        ResponseFormType responseForm = executeRequest.getResponseForm();
 
-        if (dataInputs == null) {
-            return result;
+        if (dataInputs == null && responseForm == null) {
+            return parameters;
         }
 
-        for (InputType inputType : dataInputs.getInput()) {
-            if (inputType.getReference() != null) {
-                throw new UnsupportedOperationException("Input by reference not supported");
+        if(dataInputs != null) {
+            for (InputType inputType : dataInputs.getInput()) {
+                if (inputType.getReference() != null) {
+                    throw new UnsupportedOperationException("Input by reference not supported");
+                }
+
+                String identifier = inputType.getIdentifier().getValue();  // codespaces not supported for the moment
+                DataType data = inputType.getData();
+                String literalValue = data.getLiteralData().getValue();   //uom and datatype not supported for the moment
+                parameters.put(identifier, literalValue);
             }
-
-            String identifier = inputType.getIdentifier().getValue();  // codespaces not supported for the moment
-            DataType data = inputType.getData();
-            String literalValue = data.getLiteralData().getValue();   //uom and datatype not supported for the moment
-            result.put(identifier, literalValue);
         }
 
-        return result;
+        if(responseForm != null) {
+            //  Pass the requested output format to the AWS batch aggregator
+            OutputDefinitionType outputDefinition = responseForm.getRawDataOutput();
+            String outputMimeType = outputDefinition.getMimeType();
+            parameters.put(outputDefinition.getIdentifier().getValue(), outputMimeType);
+        }
+
+        return parameters;
     }
 
     @Override
