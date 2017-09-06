@@ -145,6 +145,7 @@ public class AggregationRunner implements CommandLineRunner {
                 CalendarDate startTime = CalendarDate.parseISOformat("Gregorian", timeSubset.start);
                 CalendarDate endTime = CalendarDate.parseISOformat("Gregorian", timeSubset.end);
                 timeRange = CalendarDateRange.of(startTime, endTime);
+                logger.info("Time range specified for aggregation: START [" + timeSubset.start + "], END [" + timeSubset.end + "]");
             }
 
 
