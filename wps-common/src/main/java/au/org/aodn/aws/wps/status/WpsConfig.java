@@ -21,7 +21,10 @@ public class WpsConfig {
     public static final String ENVIRONMENT_NAME_ENV_VARIABLE_NAME = "ENVIRONMENT_NAME";
 
     public static final String STATUS_S3_BUCKET_CONFIG_KEY = "STATUS_S3_BUCKET";
-    public static final String STATUS_S3_KEY_CONFIG_KEY = "STATUS_S3_FILENAME";
+    public static final String STATUS_S3_FILENAME_CONFIG_KEY = "STATUS_S3_FILENAME";
+
+    public static final String OUTPUT_S3_BUCKET_CONFIG_KEY = "OUTPUT_S3_BUCKET";
+    public static final String OUTPUT_S3_FILENAME_CONFIG_KEY = "OUTPUT_S3_FILENAME";
 
     public static Properties getConfigProperties(String envName)
     {
