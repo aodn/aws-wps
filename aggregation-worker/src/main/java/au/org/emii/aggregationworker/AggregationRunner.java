@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import thredds.crawlabledataset.s3.S3URI;
+import ucar.nc2.time.CalendarDate;
 import ucar.nc2.time.CalendarDateRange;
 import ucar.unidata.geoloc.LatLonPoint;
 import ucar.unidata.geoloc.LatLonPointImmutable;
@@ -83,12 +84,15 @@ public class AggregationRunner implements CommandLineRunner {
             CommandLineParser parser = new DefaultParser();
             CommandLine commandLine = parser.parse(options, args);
 
-            //  Check parameters:
-            //      Expecting the following params -
-            //        - layerName
+            //  TODO:  Parameters are currently passed as command line arguments & are positional.
+            //  TODO:  need to revisit to accept named parameters passed in any order.
+            //  TODO:  Some scheme like passive them as a <name>=<value> pair for each one might be workable
+            //  TODO:  (as long as the value doesn't include spaces)
+            //
+            //  Currently expects the following params (IN THIS ORDER) -
+            //        - layer
             //        - subset
-            //        - outputFile
-
+            //        - result
             String layer = commandLine.getArgs()[0];
             String subset = commandLine.getArgs()[1];
             String requestedOutputMimeType = commandLine.getArgs()[2];
@@ -113,10 +117,6 @@ public class AggregationRunner implements CommandLineRunner {
 
             //  TODO : remove if not required
             String overridesArg = commandLine.getOptionValue("c");
-            String bboxArg = commandLine.getOptionValue("b");
-            String zSubsetArg = commandLine.getOptionValue("z");
-            String timeArg = commandLine.getOptionValue("t");
-
 
 
             LatLonRect bbox = null;
@@ -136,25 +136,19 @@ public class AggregationRunner implements CommandLineRunner {
                 logger.info("Bounding box: LAT [" + minLat + ", " + maxLat + "], LON [" + minLon + ", " + maxLon + "]");
             }
 
-            //Range zSubset = null;
-
-            //if (zSubsetArg != null) {
-            //    String[] zSubsetIndexes = zSubsetArg.split(",");
-            //    int startIndex = Integer.parseInt(zSubsetIndexes[0]);
-            //    int endIndex = Integer.parseInt(zSubsetIndexes[1]);
-            //    zSubset = new Range(startIndex, endIndex);
-            //}
 
             CalendarDateRange timeRange = null;
 
-            //if (timeArg != null) {
-            //    String[] timeRangeComponents = timeArg.split(",");
-            //    CalendarDate startTime = CalendarDate.parseISOformat("Gregorian", timeRangeComponents[0]);
-            //    CalendarDate endTime = CalendarDate.parseISOformat("Gregorian", timeRangeComponents[1]);
-            //    timeRange = CalendarDateRange.of(startTime, endTime);
-            //}
+            //  Apply time range (if provided)
+            SubsetParameters.SubsetParameter timeSubset = subsetParams.get("TIME");
+            if (timeSubset != null) {
+                CalendarDate startTime = CalendarDate.parseISOformat("Gregorian", timeSubset.start);
+                CalendarDate endTime = CalendarDate.parseISOformat("Gregorian", timeSubset.end);
+                timeRange = CalendarDateRange.of(startTime, endTime);
+            }
 
 
+            //  Apply overrides (if provided)
             AggregationOverrides overrides;
 
             if (overridesArg != null) {
@@ -163,8 +157,8 @@ public class AggregationRunner implements CommandLineRunner {
                 overrides = new AggregationOverrides(); // Use default (i.e. no overrides)
             }
 
-            DownloadConfig downloadConfig = new DownloadConfig.ConfigBuilder().build();
 
+            DownloadConfig downloadConfig = new DownloadConfig.ConfigBuilder().build();
             Downloader downloader = new Downloader(60000, 60000);
 
             Path outputFile = Files.createTempFile("agg", ".nc");
