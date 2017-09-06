@@ -125,6 +125,16 @@
                     </execution>
                 </executions>
             </plugin>
+            <!-- Disable mvn default-deploy -->
+            <plugin>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>default-deploy</id>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
+            </plugin>
             <!-- Deploy docker artifact to Amazon ECS -->
             <plugin>
                 <artifactId>exec-maven-plugin</artifactId>
@@ -132,7 +142,7 @@
                 <executions>
                     <execution>
                         <id>docker-deploy</id>
-                        <phase>install</phase>
+                        <phase>deploy</phase>
                         <goals>
                             <goal>exec</goal>
                         </goals>
