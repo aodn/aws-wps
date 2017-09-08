@@ -84,7 +84,7 @@ Resources:
           - Sid: ''
             Effect: Allow
             Principal:
-              Service: ec2.amazonaws.com
+              Service: ecs-tasks.amazonaws.com
             Action: 'sts:AssumeRole'
       Policies:
         -
@@ -95,18 +95,24 @@ Resources:
               -
                 Effect: "Allow"
                 Action: "s3:*"
-                Resource: !Join ["",
-                ["arn:aws:s3:::", !Ref s3OutputBucket]]
+                Resource: [
+                  !Join ["", ["arn:aws:s3:::", !Ref s3OutputBucket]],
+                  !Join ["", ["arn:aws:s3:::", !Ref s3OutputBucket,"/*"]]
+                ]
               -
                 Effect: "Allow"
                 Action: "s3:*"
-                Resource: !Join ["",
-                ["arn:aws:s3:::", !Ref s3OutputBucket]]
+                Resource: [
+                  !Join ["", ["arn:aws:s3:::", !Ref s3StatusBucket]],
+                  !Join ["", ["arn:aws:s3:::", !Ref s3StatusBucket,"/*"]]
+                ]
               -
                 Effect: "Allow"
                 Action: ["s3:Get*", "s3:List*"]
-                Resource: !Join ["",
-                ["arn:aws:s3:::", !Ref s3ConfigBucket]]
+                Resource: [
+                  !Join ["", ["arn:aws:s3:::", !Ref s3ConfigBucket]],
+                  !Join ["", ["arn:aws:s3:::", !Ref s3ConfigBucket,"/*"]]
+                ]
   JobDefinition:
     Type: 'AWS::Batch::JobDefinition'
     Properties:
@@ -135,6 +141,7 @@ Resources:
     Metadata:
       'AWS::CloudFormation::Designer':
         id: f17c8aa4-8ab7-4ee1-b3a6-7a8727b8bff5
+    DependsOn:  JobInstanceRole
   JobQueue:
     Type: 'AWS::Batch::JobQueue'
     Properties:
@@ -177,6 +184,11 @@ Resources:
       Code:
         S3Bucket: !Ref s3LambdaCodeBucket
         S3Key: !Ref s3LambdaCodeKey
+      Environment:
+        Variables:
+          CONFIG_PREFIX: !Ref s3ConfigBucket
+          S3_AWS_REGION: !Ref "AWS::Region"
+          CONFIG_FILENAME: "wps-config.properties"
     Metadata:
       'AWS::CloudFormation::Designer':
         id: 2f9d630f-4908-418a-9455-e9b730d0c673
@@ -195,6 +207,7 @@ Resources:
       Path: /
       ManagedPolicyArns:
         - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+        - 'arn:aws:iam::aws:policy/AWSBatchFullAccess'
       Policies:
         - PolicyName: PublishVersion
           PolicyDocument:
@@ -204,6 +217,16 @@ Resources:
                 Action:
                   - 'lambda:PublishVersion'
                 Resource: '*'
+        - PolicyName: S3Access
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: "Allow"
+                Action: "s3:*"
+                Resource: [
+                  !Join ["", ["arn:aws:s3:::", !Ref s3StatusBucket]],
+                  !Join ["", ["arn:aws:s3:::", !Ref s3StatusBucket,"/*"]]
+                ]
     Metadata:
       'AWS::CloudFormation::Designer':
         id: 5a6cf0c9-ebd3-41f0-8b4c-009af363b85b
