@@ -123,9 +123,9 @@ Resources:
         Memory: !Ref jobMemory
         JobRoleArn: !Ref JobInstanceRole
         Command:
-          - 'Ref::layerName'
+          - 'Ref::layer'
           - 'Ref::subset'
-          - 'Ref::outputFile'
+          - 'Ref::result'
         Environment:
           -
             Name: "CONFIG_PREFIX"
