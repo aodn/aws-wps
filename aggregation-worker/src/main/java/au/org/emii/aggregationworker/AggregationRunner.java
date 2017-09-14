@@ -192,7 +192,7 @@ public class AggregationRunner implements CommandLineRunner {
                 tx.shutdownNow();
 
                 HashMap<String, String> outputMap = new HashMap<>();
-                outputMap.put("result", s3URI.toString());
+                outputMap.put("result", StatusHelper.getS3ExternalURL(s3URI.getBucket(), s3URI.getKey()));
 
                 statusDocument = StatusHelper.getStatusDocument(statusS3Bucket, statusFilename, batchJobId, EnumStatus.SUCCEEDED, null, null, outputMap);
                 statusUpdater.updateStatus(statusDocument, batchJobId);

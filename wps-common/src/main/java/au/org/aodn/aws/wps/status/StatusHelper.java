@@ -25,14 +25,17 @@ public class StatusHelper
 
     public static final String getStatusDocument(String s3Bucket, String statusFilename, String jobId, EnumStatus jobStatus, String message, String messageCode, HashMap<String, String> outputsHrefs)
     {
-        String statusDocument = null;
-
-        String statusLocation = WpsConfig.getS3BaseUrl() + s3Bucket + "/" + jobId + "/" + statusFilename;
+        String statusLocation = getS3ExternalURL(s3Bucket, jobId + "/" + statusFilename);
         ExecuteStatusBuilder statusBuilder = new ExecuteStatusBuilder(statusLocation, jobId);
-        statusDocument = statusBuilder.createResponseDocument(jobStatus, message, messageCode, outputsHrefs);
-
-        return statusDocument;
+        return statusBuilder.createResponseDocument(jobStatus, message, messageCode, outputsHrefs);
     }
+
+
+    public static String getS3ExternalURL(String s3Bucket, String S3Key)
+    {
+        return WpsConfig.getS3BaseUrl() + s3Bucket + "/" + S3Key;
+    }
+
 
     /**
      * Generate an XML string from a response XML type.
