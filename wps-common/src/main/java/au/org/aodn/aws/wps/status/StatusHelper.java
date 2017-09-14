@@ -39,7 +39,7 @@ public class StatusHelper
      * @param response
      * @return
      */
-    public static String createXmlDocument (ResponseBaseType response) {
+    public static String createResponseXmlDocument (ResponseBaseType response) {
         String responseDoc = null;
 
         JAXBContext context;
@@ -58,17 +58,44 @@ public class StatusHelper
     }
 
 
-
     public static ProcessFailedType getProcessFailedType(String message, String code)
     {
         ProcessFailedType failed = new ProcessFailedType();
+        failed.setExceptionReport(getExceptionReport(message, code));
+        return failed;
+    }
+
+
+
+    public static ExceptionReport getExceptionReport(String message, String code)
+    {
         ExceptionReport report = new ExceptionReport();
         ExceptionType type = new ExceptionType();
         type.getExceptionText().add(message);
         type.setExceptionCode(code);
         report.getException().add(type);
-        failed.setExceptionReport(report);
-        return failed;
+        return report;
+    }
+
+
+    public static String getExceptionReportString(String message, String code)
+    {
+        ExceptionReport report = getExceptionReport(message, code);
+        String responseDoc = null;
+
+        JAXBContext context;
+        try {
+            context = JAXBContext.newInstance(ExceptionReport.class);
+            Marshaller m = context.createMarshaller();
+            m.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
+            StringWriter writer = new StringWriter();
+            m.marshal(report, writer);
+            responseDoc = writer.toString();
+
+        } catch (JAXBException e) {
+            e.printStackTrace();
+        }
+        return responseDoc;
     }
 
 
@@ -79,6 +106,7 @@ public class StatusHelper
         started.setPercentCompleted(percentComplete);
         return started;
     }
+
 
     public static final XMLGregorianCalendar getCreationDate()
             throws DatatypeConfigurationException

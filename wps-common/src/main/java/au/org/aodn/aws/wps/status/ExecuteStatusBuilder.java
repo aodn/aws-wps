@@ -88,7 +88,7 @@ public class ExecuteStatusBuilder {
         response.setStatus(status);
 
 
-        return StatusHelper.createXmlDocument(response);
+        return StatusHelper.createResponseXmlDocument(response);
     }
 
 

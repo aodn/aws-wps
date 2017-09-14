@@ -3,6 +3,7 @@ package au.org.aodn.aws.wps.lambda;
 import au.org.aodn.aws.wps.AwsApiRequest;
 import au.org.aodn.aws.wps.AwsApiResponse;
 import au.org.aodn.aws.wps.WpsRequestHandler;
+import au.org.aodn.aws.wps.status.StatusHelper;
 import au.org.aodn.aws.wps.status.WpsConfig;
 import com.amazonaws.services.kms.AWSKMS;
 import com.amazonaws.services.kms.AWSKMSClientBuilder;
@@ -36,7 +37,6 @@ public class WpsLambdaRequestHandler implements RequestHandler<AwsApiRequest, Aw
             Properties config = WpsConfig.getConfigProperties(envName);
 
             //  TODO:  null check and act on null configuration
-
             config.setProperty(ENVIRONMENT_NAME_CONFIG_KEY, envName);
             LOGGER.log("Loaded configuration from S3.");
 
@@ -46,9 +46,14 @@ public class WpsLambdaRequestHandler implements RequestHandler<AwsApiRequest, Aw
         }
         catch(Exception ex)
         {
+            String message  = "Exception running WPS Lambda function: " + ex.getMessage();
             //  Bad stuff happened
-            LOGGER.log("Exception running WPS Lambda function: " + ex.getMessage());
-            //  TODO:  send caller a WPS error response
+            LOGGER.log(message);
+            //  Send caller a WPS error response
+            AwsApiResponse.ResponseBuilder responseBuilder = new AwsApiResponse.ResponseBuilder();
+            responseBuilder.statusCode(500);
+            responseBuilder.body(StatusHelper.getExceptionReportString(message, "WPSError"));
+            response = responseBuilder.build();
         }
 
         return response;
