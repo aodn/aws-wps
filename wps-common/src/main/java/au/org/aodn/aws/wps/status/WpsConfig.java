@@ -26,6 +26,14 @@ public class WpsConfig {
     public static final String OUTPUT_S3_BUCKET_CONFIG_KEY = "OUTPUT_S3_BUCKET";
     public static final String OUTPUT_S3_FILENAME_CONFIG_KEY = "OUTPUT_S3_FILENAME";
 
+
+    public static final String S3_BASE_URL = "https://s3.amazonaws.com/";
+
+    public static String getS3BaseUrl()
+    {
+        return S3_BASE_URL;
+    }
+
     public static Properties getConfigProperties(String envName)
     {
         //  Read environment variables
