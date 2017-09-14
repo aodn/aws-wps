@@ -130,7 +130,10 @@ public class StatusHelper
         CodeType outputIdentifierCode = new CodeType();
         outputIdentifierCode.setValue(outputIdentifier);
         output.setIdentifier(outputIdentifierCode);
-
+        if(response.getProcessOutputs() == null) {
+            ExecuteResponse.ProcessOutputs outputs = objectFactory.createExecuteResponseProcessOutputs();
+            response.setProcessOutputs(outputs);
+        }
         response.getProcessOutputs().getOutput().add(output);
     }
 

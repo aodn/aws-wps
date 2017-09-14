@@ -1,7 +1,9 @@
 package au.org.aodn.aws.wps.status;
 
-import net.opengis.ows._1.CodeType;
 import net.opengis.wps._1_0.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.xml.datatype.DatatypeConfigurationException;
 import java.util.HashMap;
 
@@ -9,6 +11,8 @@ public class ExecuteStatusBuilder {
 
     private String location;
     String jobId;
+    Logger LOGGER  = LoggerFactory.getLogger(ExecuteStatusBuilder.class);
+
 
     public ExecuteStatusBuilder() {}
 
@@ -76,6 +80,7 @@ public class ExecuteStatusBuilder {
                 for(String currentKey : outputs.keySet())
                 {
                     String href = outputs.get(currentKey);
+                    LOGGER.info("OUTPUT [" + currentKey + "]=[" + href + "]");
                     StatusHelper.addExecuteOutputReference(response, currentKey, href);
                 }
             }
