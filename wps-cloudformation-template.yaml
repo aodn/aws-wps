@@ -84,7 +84,7 @@ Resources:
           - Sid: ''
             Effect: Allow
             Principal:
-              Service: ec2.amazonaws.com
+              Service: ecs-tasks.amazonaws.com
             Action: 'sts:AssumeRole'
       Policies:
         -
@@ -95,18 +95,24 @@ Resources:
               -
                 Effect: "Allow"
                 Action: "s3:*"
-                Resource: !Join ["",
-                ["arn:aws:s3:::", !Ref s3OutputBucket]]
+                Resource: [
+                  !Join ["", ["arn:aws:s3:::", !Ref s3OutputBucket]],
+                  !Join ["", ["arn:aws:s3:::", !Ref s3OutputBucket,"/*"]]
+                ]
               -
                 Effect: "Allow"
                 Action: "s3:*"
-                Resource: !Join ["",
-                ["arn:aws:s3:::", !Ref s3OutputBucket]]
+                Resource: [
+                  !Join ["", ["arn:aws:s3:::", !Ref s3StatusBucket]],
+                  !Join ["", ["arn:aws:s3:::", !Ref s3StatusBucket,"/*"]]
+                ]
               -
                 Effect: "Allow"
                 Action: ["s3:Get*", "s3:List*"]
-                Resource: !Join ["",
-                ["arn:aws:s3:::", !Ref s3ConfigBucket]]
+                Resource: [
+                  !Join ["", ["arn:aws:s3:::", !Ref s3ConfigBucket]],
+                  !Join ["", ["arn:aws:s3:::", !Ref s3ConfigBucket,"/*"]]
+                ]
   JobDefinition:
     Type: 'AWS::Batch::JobDefinition'
     Properties:
@@ -117,9 +123,9 @@ Resources:
         Memory: !Ref jobMemory
         JobRoleArn: !Ref JobInstanceRole
         Command:
-          - 'Ref::layerName'
+          - 'Ref::layer'
           - 'Ref::subset'
-          - 'Ref::outputFile'
+          - 'Ref::result'
         Environment:
           -
             Name: "CONFIG_PREFIX"
@@ -135,6 +141,7 @@ Resources:
     Metadata:
       'AWS::CloudFormation::Designer':
         id: f17c8aa4-8ab7-4ee1-b3a6-7a8727b8bff5
+    DependsOn:  JobInstanceRole
   JobQueue:
     Type: 'AWS::Batch::JobQueue'
     Properties:
@@ -164,6 +171,96 @@ Resources:
     Metadata:
       'AWS::CloudFormation::Designer':
         id: 7a2b9b81-942a-4563-8b0a-7ed0cb6c6aad
+  WPSApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: WPS API
+      Description: API used for WPS requests
+      FailOnWarnings: true
+  LambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:invokeFunction
+      FunctionName: !GetAtt LambdaRequestHandler.Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join ["", ["arn:aws:execute-api:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":", !Ref WPSApi, "/*"]]
+  WPSApiStage:
+    DependsOn:
+      - ApiGatewayAccount
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      DeploymentId: !Ref ApiDeployment
+      MethodSettings:
+        -
+          DataTraceEnabled: true
+          HttpMethod: GET
+          LoggingLevel: INFO
+          ResourcePath: /*
+      RestApiId: !Ref WPSApi
+      StageName: LATEST
+  ApiGatewayCloudWatchLogsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - apigateway.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        -
+          PolicyName: ApiGatewayLogsPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              Effect: Allow
+              Action:
+                - 'logs:CreateLogGroup'
+                - 'logs:CreateLogStream'
+                - 'logs:DescribeLogGroups'
+                - 'logs:DescribeLogStreams'
+                - 'logs:PutLogEvents'
+                - 'logs:GetLogEvents'
+                - 'logs:FilterLogEvent'
+              Resource: '*'
+  ApiGatewayAccount:
+    Type: AWS::ApiGateway::Account
+    Properties:
+      CloudWatchRoleArn: !GetAtt ApiGatewayCloudWatchLogsRole.Arn
+  ApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - WPSRequest
+    Properties:
+      RestApiId: !Ref WPSApi
+      StageName: DummyStage
+  WPSResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref WPSApi
+      ParentId: !GetAtt WPSApi.RootResourceId
+      PathPart: wps
+  WPSRequest:
+    DependsOn: LambdaPermission
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: AWS_IAM
+      HttpMethod: ANY
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Join ["",
+          ["arn:aws:apigateway:", !Ref "AWS::Region", ":lambda:path/2015-03-31/functions/", !GetAtt LambdaRequestHandler.Arn, "/invocations"]
+        ]
+        IntegrationResponses:
+          - StatusCode: 200
+      ResourceId: !Ref WPSResource
+      RestApiId: !Ref WPSApi
+      MethodResponses:
+        - StatusCode: 200
   LambdaRequestHandler:
     Type: 'AWS::Lambda::Function'
     Properties:
@@ -177,6 +274,11 @@ Resources:
       Code:
         S3Bucket: !Ref s3LambdaCodeBucket
         S3Key: !Ref s3LambdaCodeKey
+      Environment:
+        Variables:
+          CONFIG_PREFIX: !Ref s3ConfigBucket
+          S3_AWS_REGION: !Ref "AWS::Region"
+          CONFIG_FILENAME: "wps-config.properties"
     Metadata:
       'AWS::CloudFormation::Designer':
         id: 2f9d630f-4908-418a-9455-e9b730d0c673
@@ -195,6 +297,7 @@ Resources:
       Path: /
       ManagedPolicyArns:
         - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+        - 'arn:aws:iam::aws:policy/AWSBatchFullAccess'
       Policies:
         - PolicyName: PublishVersion
           PolicyDocument:
@@ -204,6 +307,16 @@ Resources:
                 Action:
                   - 'lambda:PublishVersion'
                 Resource: '*'
+        - PolicyName: S3Access
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: "Allow"
+                Action: "s3:*"
+                Resource: [
+                  !Join ["", ["arn:aws:s3:::", !Ref s3StatusBucket]],
+                  !Join ["", ["arn:aws:s3:::", !Ref s3StatusBucket,"/*"]]
+                ]
     Metadata:
       'AWS::CloudFormation::Designer':
         id: 5a6cf0c9-ebd3-41f0-8b4c-009af363b85b
