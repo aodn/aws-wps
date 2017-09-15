@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 
 
 import java.io.UnsupportedEncodingException;
+import java.util.HashMap;
 
 /**
  * Created by alexm12 on 24/08/2017.
@@ -48,18 +49,5 @@ public class S3StatusUpdater {
         {
             try { inputStream.close(); } catch(Exception e){}
         }
-    }
-
-
-    public String updateStatus(EnumOperation operation, String jobId, EnumStatus jobStatus, String message, String messageCode) throws UnsupportedEncodingException
-    {
-        String statusDocument = StatusHelper.getStatusDocument(s3bucket, statusFilename, operation, jobId, jobStatus, message, messageCode);
-
-        if(statusDocument != null)
-        {
-            updateStatus(statusDocument, jobId);
-        }
-
-        return statusDocument;
     }
 }

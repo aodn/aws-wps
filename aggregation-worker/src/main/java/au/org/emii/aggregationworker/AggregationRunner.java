@@ -30,6 +30,7 @@ import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.Properties;
 import java.util.Set;
 
@@ -38,9 +39,14 @@ public class AggregationRunner implements CommandLineRunner {
 
     private static final Logger logger = LoggerFactory.getLogger(au.org.emii.aggregationworker.AggregationRunner.class);
 
-    //  TODO:  change parameters to reflect the current GoGoDuck interface - ie: pass a layer name, temporal extents & geographical extents.
-    //         This prototype currently gets a list of files plus the extents.
-    //         This component will need to contact geoserver + get the list of files for the named layer.
+    private String statusS3Bucket = null;
+    private String statusFilename = null;
+
+    /**
+     * Entry point for the aggregation.  Relies on command-line parameters.
+     *
+     * @param args
+     */
     @Override
     public void run(String... args) {
 
@@ -60,12 +66,16 @@ public class AggregationRunner implements CommandLineRunner {
 
             //  TODO:  null check and act on null configuration
 
-            String statusS3Bucket = configuration.getProperty(WpsConfig.STATUS_S3_BUCKET_CONFIG_KEY);
-            String statusFileName = configuration.getProperty(WpsConfig.STATUS_S3_FILENAME_CONFIG_KEY);
+            statusS3Bucket = configuration.getProperty(WpsConfig.STATUS_S3_BUCKET_CONFIG_KEY);
+            statusFilename = configuration.getProperty(WpsConfig.STATUS_S3_FILENAME_CONFIG_KEY);
+
+            //  TODO : validate configuration
+
+            String statusDocument = ExecuteStatusBuilder.getStatusDocument(statusS3Bucket, statusFilename, batchJobId, EnumStatus.STARTED, null, null, null);
 
             //  Update status document to indicate job has started
-            statusUpdater = new S3StatusUpdater(statusS3Bucket, statusFileName);
-            statusUpdater.updateStatus(EnumOperation.EXECUTE, batchJobId, EnumStatus.STARTED, null, null);
+            statusUpdater = new S3StatusUpdater(statusS3Bucket, statusFilename);
+            statusUpdater.updateStatus(statusDocument, batchJobId);
 
             logger.info("AWS BATCH JOB ID     : " + batchJobId);
             logger.info("AWS BATCH CE NAME    : " + awsBatchComputeEnvName);
@@ -95,12 +105,12 @@ public class AggregationRunner implements CommandLineRunner {
             //        - result
             String layer = commandLine.getArgs()[0];
             String subset = commandLine.getArgs()[1];
-            String requestedOutputMimeType = commandLine.getArgs()[2];
+            String resultMime = commandLine.getArgs()[2];
             SubsetParameters subsetParams = new SubsetParameters(subset);
 
-            logger.info("args[0]=" + layer);
-            logger.info("args[1]=" + subset);
-            logger.info("args[2]=" + requestedOutputMimeType);
+            logger.info("Layer name        = " + layer);
+            logger.info("Subset parameters = " + subset);
+            logger.info("Request MIME type = " + resultMime);
 
 
             //  Query geoserver to get a list of files for the aggregation
@@ -181,7 +191,11 @@ public class AggregationRunner implements CommandLineRunner {
                 myUpload.waitForCompletion();
                 tx.shutdownNow();
 
-                statusUpdater.updateStatus(EnumOperation.EXECUTE, batchJobId, EnumStatus.SUCCEEDED, null, null);
+                HashMap<String, String> outputMap = new HashMap<>();
+                outputMap.put("result", StatusHelper.getS3ExternalURL(s3URI.getBucket(), s3URI.getKey()));
+
+                statusDocument = ExecuteStatusBuilder.getStatusDocument(statusS3Bucket, statusFilename, batchJobId, EnumStatus.SUCCEEDED, null, null, outputMap);
+                statusUpdater.updateStatus(statusDocument, batchJobId);
             } finally {
                 Files.deleteIfExists(outputFile);
             }
@@ -191,7 +205,8 @@ public class AggregationRunner implements CommandLineRunner {
                 if(batchJobId != null) {
                     String statusDocument = null;
                     try {
-                        statusDocument = statusUpdater.updateStatus(EnumOperation.EXECUTE, batchJobId, EnumStatus.FAILED, null, null);
+                        statusDocument = ExecuteStatusBuilder.getStatusDocument(statusS3Bucket, statusFilename, batchJobId, EnumStatus.FAILED, "Exception occurred during aggregation :" + e.getMessage(), "AggregationError", null);
+                        statusUpdater.updateStatus(statusDocument, batchJobId);
                     }
                     catch (UnsupportedEncodingException uex)
                     {

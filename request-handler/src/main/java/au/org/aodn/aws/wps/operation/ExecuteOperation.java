@@ -1,16 +1,12 @@
 package au.org.aodn.aws.wps.operation;
 
 import au.org.aodn.aws.wps.exception.ValidationException;
-import au.org.aodn.aws.wps.status.EnumOperation;
 import au.org.aodn.aws.wps.status.EnumStatus;
+import au.org.aodn.aws.wps.status.ExecuteStatusBuilder;
 import au.org.aodn.aws.wps.status.S3StatusUpdater;
-import au.org.aodn.aws.wps.status.StatusHelper;
 import com.amazonaws.services.batch.AWSBatch;
 import com.amazonaws.services.batch.AWSBatchClientBuilder;
-import com.amazonaws.services.batch.model.ContainerOverrides;
-import com.amazonaws.services.batch.model.KeyValuePair;
-import com.amazonaws.services.batch.model.SubmitJobRequest;
-import com.amazonaws.services.batch.model.SubmitJobResult;
+import com.amazonaws.services.batch.model.*;
 import net.opengis.wps._1_0.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +27,6 @@ public class ExecuteOperation implements Operation {
     public ExecuteOperation(Execute executeRequest) {
         this.executeRequest = executeRequest;
     }
-
 
 
     @Override
@@ -70,6 +65,7 @@ public class ExecuteOperation implements Operation {
         ContainerOverrides jobOverrides = new ContainerOverrides();
         Set<KeyValuePair> envVariables = new HashSet<KeyValuePair>();
         KeyValuePair envNameVariable = new KeyValuePair();
+
         //  Pass environment name to batch process using environment variable
         envNameVariable.setName(ENVIRONMENT_NAME_ENV_VARIABLE_NAME);
         envNameVariable.setValue(environmentName);
@@ -92,13 +88,14 @@ public class ExecuteOperation implements Operation {
         S3StatusUpdater statusUpdater = new S3StatusUpdater(statusS3BucketName, statusFileName);
         try
         {
-            statusUpdater.updateStatus(EnumOperation.EXECUTE, jobId, EnumStatus.ACCEPTED, null, null);
+            statusDocument = ExecuteStatusBuilder.getStatusDocument(statusS3BucketName, statusFileName, jobId, EnumStatus.ACCEPTED, null, null, null);
+            statusUpdater.updateStatus(statusDocument, jobId);
         }
         catch (UnsupportedEncodingException e)
         {
             e.printStackTrace();
             //  Form failed status document
-            statusDocument = StatusHelper.getStatusDocument(statusS3BucketName, statusFileName, EnumOperation.EXECUTE, jobId, EnumStatus.FAILED, "Failed to create status file" + e.getMessage(), "StatusFileError");
+            statusDocument = ExecuteStatusBuilder.getStatusDocument(statusS3BucketName, statusFileName, jobId, EnumStatus.FAILED, "Failed to create status file : " + e.getMessage(), "StatusFileError", null);
         }
 
         return statusDocument;
