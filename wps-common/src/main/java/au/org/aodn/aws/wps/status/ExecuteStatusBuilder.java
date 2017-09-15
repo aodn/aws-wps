@@ -123,7 +123,7 @@ public class ExecuteStatusBuilder {
     }
 
 
-    public static ProcessFailedType getProcessFailedType(String message, String code)
+    private ProcessFailedType getProcessFailedType(String message, String code)
     {
         ProcessFailedType failed = new ProcessFailedType();
         failed.setExceptionReport(StatusHelper.getExceptionReport(message, code));
@@ -131,7 +131,7 @@ public class ExecuteStatusBuilder {
     }
 
 
-    public static ProcessStartedType getProcessStartedType(String message, Integer percentComplete)
+    private ProcessStartedType getProcessStartedType(String message, Integer percentComplete)
     {
         ProcessStartedType started = new ProcessStartedType();
         started.setValue(message);
@@ -140,7 +140,7 @@ public class ExecuteStatusBuilder {
     }
 
 
-    public static void addOutputToResponse(ExecuteResponse response, String outputIdentifier, String outputHref)
+    private void addOutputToResponse(ExecuteResponse response, String outputIdentifier, String outputHref)
     {
         OutputDataType output = new OutputDataType();
 
@@ -159,7 +159,7 @@ public class ExecuteStatusBuilder {
     }
 
 
-    public static void addOutputToResponse(ExecuteResponse response, String outputIdentifier, InputStream inStream)
+    private void addOutputToResponse(ExecuteResponse response, String outputIdentifier, InputStream inStream)
     {
         OutputDataType output = new OutputDataType();
 
