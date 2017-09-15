@@ -10,6 +10,8 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 import static au.org.aodn.aws.wps.status.StatusHelper.getS3ExternalURL;
 
@@ -94,11 +96,12 @@ public class ExecuteStatusBuilder {
             //  If outputs were passed - add them to the response
             if(outputs != null)
             {
-                for(String currentKey : outputs.keySet())
+                for(Map.Entry<String, String> currentEntry : outputs.entrySet())
                 {
-                    String href = outputs.get(currentKey);
-                    LOGGER.info("OUTPUT [" + currentKey + "]=[" + href + "]");
-                    addOutputToResponse(response, currentKey, href);
+                    String key = currentEntry.getKey();
+                    String href = currentEntry.getValue();
+                    LOGGER.info("OUTPUT [" + key + "]=[" + href + "]");
+                    addOutputToResponse(response, key, href);
                 }
             }
         }
