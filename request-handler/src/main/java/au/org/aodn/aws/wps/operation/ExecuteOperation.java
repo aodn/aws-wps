@@ -2,8 +2,8 @@ package au.org.aodn.aws.wps.operation;
 
 import au.org.aodn.aws.wps.exception.ValidationException;
 import au.org.aodn.aws.wps.status.EnumStatus;
+import au.org.aodn.aws.wps.status.ExecuteStatusBuilder;
 import au.org.aodn.aws.wps.status.S3StatusUpdater;
-import au.org.aodn.aws.wps.status.StatusHelper;
 import com.amazonaws.services.batch.AWSBatch;
 import com.amazonaws.services.batch.AWSBatchClientBuilder;
 import com.amazonaws.services.batch.model.*;
@@ -27,7 +27,6 @@ public class ExecuteOperation implements Operation {
     public ExecuteOperation(Execute executeRequest) {
         this.executeRequest = executeRequest;
     }
-
 
 
     @Override
@@ -85,21 +84,18 @@ public class ExecuteOperation implements Operation {
 
         LOGGER.info("Job submitted.  Job ID : " + jobId);
 
-        //  Debugging
-        debugListJobs(awsRegion, jobQueueName);
-
         String statusDocument = null;
         S3StatusUpdater statusUpdater = new S3StatusUpdater(statusS3BucketName, statusFileName);
         try
         {
-            statusDocument = StatusHelper.getStatusDocument(statusS3BucketName, statusFileName, jobId, EnumStatus.ACCEPTED, null, null, null);
+            statusDocument = ExecuteStatusBuilder.getStatusDocument(statusS3BucketName, statusFileName, jobId, EnumStatus.ACCEPTED, null, null, null);
             statusUpdater.updateStatus(statusDocument, jobId);
         }
         catch (UnsupportedEncodingException e)
         {
             e.printStackTrace();
             //  Form failed status document
-            statusDocument = StatusHelper.getStatusDocument(statusS3BucketName, statusFileName, jobId, EnumStatus.FAILED, "Failed to create status file : " + e.getMessage(), "StatusFileError", null);
+            statusDocument = ExecuteStatusBuilder.getStatusDocument(statusS3BucketName, statusFileName, jobId, EnumStatus.FAILED, "Failed to create status file : " + e.getMessage(), "StatusFileError", null);
         }
 
         return statusDocument;
@@ -144,72 +140,4 @@ public class ExecuteOperation implements Operation {
         //  Validate execute operation
     }
 
-    private void debugListJobs(String awsRegion, String queueName)
-    {
-
-        List<JobSummary> submittedJobList = listJobsByStatus(awsRegion, queueName, JobStatus.SUBMITTED);
-        List<JobSummary> pendingJobList = listJobsByStatus(awsRegion, queueName, JobStatus.PENDING);
-        List<JobSummary> runnableJobList = listJobsByStatus(awsRegion, queueName, JobStatus.RUNNABLE);
-        List<JobSummary> startingJobList = listJobsByStatus(awsRegion, queueName, JobStatus.STARTING);
-        List<JobSummary> runningJobList = listJobsByStatus(awsRegion, queueName, JobStatus.RUNNING);
-
-        if(submittedJobList != null && submittedJobList.size() > 0) {
-            LOGGER.info("SUBMITTED JOB LIST for QUEUE [" + queueName + "], SIZE [" + submittedJobList.size() + "]");
-            for (JobSummary currentJob : submittedJobList) {
-                LOGGER.info(" - JOBID [" + currentJob.getJobId() + ", JOBNAME [" + currentJob.getJobName() + "]");
-            }
-        }
-
-
-        if(pendingJobList != null && pendingJobList.size() > 0) {
-            LOGGER.info("PENDING JOB LIST for QUEUE [" + queueName + "], SIZE [" + pendingJobList.size() + "]");
-            for (JobSummary currentJob : pendingJobList) {
-                LOGGER.info(" - JOBID [" + currentJob.getJobId() + ", JOBNAME [" + currentJob.getJobName() + "]");
-            }
-        }
-
-
-        if(runnableJobList != null && runnableJobList.size() > 0) {
-            LOGGER.info("RUNNABLE JOB LIST for QUEUE [" + queueName + "], SIZE [" + runnableJobList.size() + "]");
-            for (JobSummary currentJob : runnableJobList) {
-                LOGGER.info(" - JOBID [" + currentJob.getJobId() + ", JOBNAME [" + currentJob.getJobName() + "]");
-            }
-        }
-
-
-        if(startingJobList != null && startingJobList.size() > 0) {
-            LOGGER.info("STARTING JOB LIST for QUEUE [" + queueName + "], SIZE [" + startingJobList.size() + "]");
-            for (JobSummary currentJob : startingJobList) {
-                LOGGER.info(" - JOBID [" + currentJob.getJobId() + ", JOBNAME [" + currentJob.getJobName() + "]");
-            }
-        }
-
-
-
-        if(runningJobList != null && runningJobList.size() > 0) {
-            LOGGER.info("RUNNING JOB LIST for QUEUE [" + queueName + "], SIZE [" + runningJobList.size() + "]");
-            for (JobSummary currentJob : runningJobList) {
-                LOGGER.info(" - JOBID [" + currentJob.getJobId() + ", JOBNAME [" + currentJob.getJobName() + "]");
-            }
-        }
-
-        int totalJobs = submittedJobList.size() + pendingJobList.size() + runnableJobList.size() + startingJobList.size() + runningJobList.size();
-        LOGGER.info("TOTAL ACTIVE JOBS : " + totalJobs);
-    }
-
-    private List<JobSummary> listJobsByStatus(String awsRegion, String queueName, JobStatus status)
-    {
-        AWSBatchClientBuilder builder = AWSBatchClientBuilder.standard();
-        builder.setRegion(awsRegion);
-
-        AWSBatch client = builder.build();
-
-        ListJobsRequest listJobsRequest = new ListJobsRequest();
-        listJobsRequest.setJobQueue(queueName);
-        listJobsRequest.setJobStatus(status);
-
-        ListJobsResult listJobsResult = client.listJobs(listJobsRequest);
-
-        return listJobsResult.getJobSummaryList();
-    }
 }
