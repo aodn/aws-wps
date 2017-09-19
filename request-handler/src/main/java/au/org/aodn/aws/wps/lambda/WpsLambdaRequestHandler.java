@@ -12,20 +12,20 @@ import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.util.Base64;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Properties;
 
 public class WpsLambdaRequestHandler implements RequestHandler<AwsApiRequest, AwsApiResponse> {
 
-    private LambdaLogger LOGGER;
-    private static final String DEFAULT_ENV_NAME = "$LATEST";
-    private static final String ENVIRONMENT_NAME_CONFIG_KEY = "ENVIRONMENT_NAME";
+    private Logger LOGGER = LoggerFactory.getLogger(WpsLambdaRequestHandler.class);
 
 
     @Override
     public AwsApiResponse handleRequest(AwsApiRequest request, Context context) {
-        LOGGER = context.getLogger();
 
         WpsRequestHandler handler = new WpsRequestHandler();
         AwsApiResponse response = null;
@@ -34,11 +34,11 @@ public class WpsLambdaRequestHandler implements RequestHandler<AwsApiRequest, Aw
         try
         {
             String envName = getEnvironmentName(context);
-            Properties config = WpsConfig.getConfigProperties(envName);
+            Properties config = WpsConfig.getConfigProperties();
 
             //  TODO:  null check and act on null configuration
-            config.setProperty(ENVIRONMENT_NAME_CONFIG_KEY, envName);
-            LOGGER.log("Loaded configuration from S3.");
+            config.setProperty(WpsConfig.ENVIRONMENT_NAME_CONFIG_KEY, envName);
+            LOGGER.info("Loaded configuration.");
 
             //  Execute the request
             response = handler.handleRequest(request, config);
@@ -46,14 +46,15 @@ public class WpsLambdaRequestHandler implements RequestHandler<AwsApiRequest, Aw
         }
         catch(Exception ex)
         {
-            String message  = "Exception running WPS Lambda function: " + ex.getMessage();
+
             //  Bad stuff happened
-            LOGGER.log(message);
-            //  Send caller a WPS error response
-            AwsApiResponse.ResponseBuilder responseBuilder = new AwsApiResponse.ResponseBuilder();
-            responseBuilder.statusCode(500);
-            responseBuilder.body(StatusHelper.getExceptionReportString(message, "WPSError"));
-            response = responseBuilder.build();
+            LOGGER.error("Exception running WPS Lambda function: " + ex.getMessage(), ex);
+            //  TODO:  send caller a WPS error response
+            AwsApiResponse.ResponseBuilder builder = new AwsApiResponse.ResponseBuilder();
+            builder.statusCode(500);
+            builder.body(StatusHelper.getExceptionReportString("Exception running WPS Lambda function: " + ex.getMessage(), "WpsError"));
+            return builder.build();
+
         }
 
         return response;
@@ -115,8 +116,8 @@ public class WpsLambdaRequestHandler implements RequestHandler<AwsApiRequest, Aw
         int lastColonPosition = context.getInvokedFunctionArn().lastIndexOf(":");
         String lastStringSegment = context.getInvokedFunctionArn().substring(lastColonPosition + 1);
 
-        LOGGER.log("Function name        : " + context.getFunctionName());
-        LOGGER.log("Invoked function ARN : " + context.getInvokedFunctionArn() );
+        LOGGER.info("Function name        : " + context.getFunctionName());
+        LOGGER.info("Invoked function ARN : " + context.getInvokedFunctionArn() );
         if(!context.getFunctionName().equalsIgnoreCase(lastStringSegment))
         {
             //  There must be an alias
@@ -125,7 +126,7 @@ public class WpsLambdaRequestHandler implements RequestHandler<AwsApiRequest, Aw
         else
         {
             //  No alias passed - use a default
-            envName = DEFAULT_ENV_NAME;
+            envName = WpsConfig.DEFAULT_ENV_NAME;
         }
 
         return envName;
