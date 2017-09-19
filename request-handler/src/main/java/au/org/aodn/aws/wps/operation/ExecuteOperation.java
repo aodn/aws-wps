@@ -1,16 +1,17 @@
 package au.org.aodn.aws.wps.operation;
 
-import au.org.aodn.aws.wps.exception.ValidationException;
 import au.org.aodn.aws.wps.status.EnumStatus;
 import au.org.aodn.aws.wps.status.ExecuteStatusBuilder;
 import au.org.aodn.aws.wps.status.S3StatusUpdater;
 import com.amazonaws.services.batch.AWSBatch;
 import com.amazonaws.services.batch.AWSBatchClientBuilder;
-import com.amazonaws.services.batch.model.*;
+import com.amazonaws.services.batch.model.ContainerOverrides;
+import com.amazonaws.services.batch.model.KeyValuePair;
+import com.amazonaws.services.batch.model.SubmitJobRequest;
+import com.amazonaws.services.batch.model.SubmitJobResult;
 import net.opengis.wps._1_0.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 import java.io.UnsupportedEncodingException;
 import java.util.*;
@@ -30,7 +31,7 @@ public class ExecuteOperation implements Operation {
 
 
     @Override
-    public String execute(Properties config) {
+    public String execute() {
 
         //  Config items:
         //      queue names
@@ -38,14 +39,17 @@ public class ExecuteOperation implements Operation {
         //      AWS region
         //      status filename
         //      status location
-        String statusS3BucketName = config.getProperty(STATUS_S3_BUCKET_CONFIG_KEY);
-        String statusFileName = config.getProperty(STATUS_S3_FILENAME_CONFIG_KEY);
-        String jobName = config.getProperty(AWS_BATCH_JOB_NAME_CONFIG_KEY);
-        String jobQueueName = config.getProperty(AWS_BATCH_JOB_QUEUE_NAME_CONFIG_KEY);
-        String awsRegion = config.getProperty(AWS_REGION_CONFIG_KEY);
-        String environmentName = config.getProperty(ENVIRONMENT_NAME_ENV_VARIABLE_NAME);
+        String statusS3BucketName = System.getenv(STATUS_S3_BUCKET_CONFIG_KEY);
+        String statusFileName = System.getenv(STATUS_S3_FILENAME_CONFIG_KEY);
+        String jobName = System.getenv(AWS_BATCH_JOB_NAME_CONFIG_KEY);
+        String jobQueueName = System.getenv(AWS_BATCH_JOB_QUEUE_NAME_CONFIG_KEY);
+        String awsRegion = System.getenv(AWS_REGION_CONFIG_KEY);
 
-        LOGGER.info("Configuration: " + config.toString());
+        LOGGER.info("statusS3BucketName: " + statusS3BucketName);
+        LOGGER.info("statusFileName: " + statusFileName);
+        LOGGER.info("jobName: " + jobName);
+        LOGGER.info("jobQueueName: " + jobQueueName);
+        LOGGER.info("awsRegion: " + awsRegion);
 
         String processIdentifier = executeRequest.getIdentifier().getValue();  // code spaces not supported for the moment
         Map<String, String> parameterMap = getJobParameters();
@@ -60,20 +64,6 @@ public class ExecuteOperation implements Operation {
         submitJobRequest.setJobDefinition(processIdentifier);  //TODO: either map to correct job def or set vcpus/memory required appropriately
         submitJobRequest.setParameters(parameterMap);
 
-        //  Add environment name to the submit job request as an environment
-        //  variable.
-        ContainerOverrides jobOverrides = new ContainerOverrides();
-        Set<KeyValuePair> envVariables = new HashSet<KeyValuePair>();
-        KeyValuePair envNameVariable = new KeyValuePair();
-
-        //  Pass environment name to batch process using environment variable
-        envNameVariable.setName(ENVIRONMENT_NAME_ENV_VARIABLE_NAME);
-        envNameVariable.setValue(environmentName);
-        envVariables.add(envNameVariable);
-        jobOverrides.setEnvironment(envVariables);
-
-        submitJobRequest.setContainerOverrides(jobOverrides);
-
         AWSBatchClientBuilder builder = AWSBatchClientBuilder.standard();
         builder.setRegion(awsRegion);
 
@@ -84,16 +74,13 @@ public class ExecuteOperation implements Operation {
 
         LOGGER.info("Job submitted.  Job ID : " + jobId);
 
-        String statusDocument = null;
+        String statusDocument;
         S3StatusUpdater statusUpdater = new S3StatusUpdater(statusS3BucketName, statusFileName);
-        try
-        {
+        try {
             statusDocument = ExecuteStatusBuilder.getStatusDocument(statusS3BucketName, statusFileName, jobId, EnumStatus.ACCEPTED, null, null, null);
             statusUpdater.updateStatus(statusDocument, jobId);
-        }
-        catch (UnsupportedEncodingException e)
-        {
-            e.printStackTrace();
+        } catch (UnsupportedEncodingException e) {
+            LOGGER.error(e.getMessage(), e);
             //  Form failed status document
             statusDocument = ExecuteStatusBuilder.getStatusDocument(statusS3BucketName, statusFileName, jobId, EnumStatus.FAILED, "Failed to create status file : " + e.getMessage(), "StatusFileError", null);
         }
@@ -111,7 +98,7 @@ public class ExecuteOperation implements Operation {
             return parameters;
         }
 
-        if(dataInputs != null) {
+        if (dataInputs != null) {
             for (InputType inputType : dataInputs.getInput()) {
                 if (inputType.getReference() != null) {
                     throw new UnsupportedOperationException("Input by reference not supported");
@@ -124,7 +111,7 @@ public class ExecuteOperation implements Operation {
             }
         }
 
-        if(responseForm != null) {
+        if (responseForm != null) {
             //  Pass the requested output format to the AWS batch aggregator
             OutputDefinitionType outputDefinition = responseForm.getRawDataOutput();
             String outputMimeType = outputDefinition.getMimeType();
@@ -133,11 +120,4 @@ public class ExecuteOperation implements Operation {
 
         return parameters;
     }
-
-    @Override
-    public void validate(Properties config) throws ValidationException
-    {
-        //  Validate execute operation
-    }
-
 }

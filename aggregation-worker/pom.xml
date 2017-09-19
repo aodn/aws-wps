@@ -99,6 +99,7 @@
             <plugin>
                 <artifactId>maven-jar-plugin</artifactId>
                 <configuration>
+                    <finalName>aggregation-worker</finalName>
                     <archive>
                         <manifest>
                             <addClasspath>true</addClasspath>

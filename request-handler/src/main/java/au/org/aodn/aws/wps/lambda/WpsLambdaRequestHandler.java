@@ -20,7 +20,6 @@ public class WpsLambdaRequestHandler implements RequestHandler<AwsApiRequest, Aw
 
     private LambdaLogger LOGGER;
     private static final String DEFAULT_ENV_NAME = "$LATEST";
-    private static final String ENVIRONMENT_NAME_CONFIG_KEY = "ENVIRONMENT_NAME";
 
 
     @Override
@@ -34,14 +33,11 @@ public class WpsLambdaRequestHandler implements RequestHandler<AwsApiRequest, Aw
         try
         {
             String envName = getEnvironmentName(context);
-            Properties config = WpsConfig.getConfigProperties(envName);
 
-            //  TODO:  null check and act on null configuration
-            config.setProperty(ENVIRONMENT_NAME_CONFIG_KEY, envName);
             LOGGER.log("Loaded configuration from S3.");
 
             //  Execute the request
-            response = handler.handleRequest(request, config);
+            response = handler.handleRequest(request);
 
         }
         catch(Exception ex)
