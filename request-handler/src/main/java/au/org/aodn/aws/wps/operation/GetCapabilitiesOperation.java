@@ -2,6 +2,7 @@ package au.org.aodn.aws.wps.operation;
 
 import au.org.aodn.aws.wps.Constants;
 import au.org.aodn.aws.wps.exception.ValidationException;
+import au.org.aodn.aws.wps.status.StatusHelper;
 import au.org.aodn.aws.wps.status.WpsConfig;
 import net.opengis.ows._1.CapabilitiesBaseType;
 import net.opengis.wps._1_0.GetCapabilities;
@@ -37,7 +38,15 @@ public class GetCapabilitiesOperation implements Operation {
         parameters.put(WpsConfig.GEOSERVER_WPS_ENDPOINT_TEMPLATE_KEY, geoserverWpsEndpointUrl);
 
         //  Run the template and return the XML document
-        String getCapabilitiesDocument = capabilitiesReader.read(parameters);
+        String getCapabilitiesDocument = null;
+        try {
+            getCapabilitiesDocument = capabilitiesReader.read(parameters);
+        }
+        catch(Exception ex)
+        {
+            LOGGER.error("Unable to retrieve GetCapabilities XML: " + ex.getMessage(), ex);
+            return StatusHelper.getExceptionReportString("Unable to retrieve GetCapabilities document: " + ex.getMessage(), "ProcessingError");
+        }
 
         return getCapabilitiesDocument;
     }

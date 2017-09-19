@@ -57,7 +57,7 @@ public class GetCapabilitiesReader {
         freemarkerConfig.setTemplateExceptionHandler(TemplateExceptionHandler.RETHROW_HANDLER);
     }
 
-    public String read(Map<String, String> parameters) {
+    public String read(Map<String, String> parameters) throws Exception {
         try {
             if (freemarkerConfig == null) {
                 return "GetCapabilities template not loaded";
@@ -69,10 +69,10 @@ public class GetCapabilitiesReader {
             return writer.toString();
         } catch (FileNotFoundException e) {
             logger.error("No template {} found for GetCapabilities", "GetCapabilitiesTemplate");
-            return "GetCapabilities template 'GetCapabilitiesTemplate' not found";
+            throw e;
         } catch (TemplateException|IOException e) {
             logger.error("Error loading GetCapabilities document", e);
-            return "Error loading GetCapabilities template 'GetCapabilities' not found";
+            throw e;
         }
     }
 

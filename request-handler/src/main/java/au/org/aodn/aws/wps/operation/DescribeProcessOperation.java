@@ -62,19 +62,19 @@ public class DescribeProcessOperation implements Operation {
             String documentString = null;
             try {
                 documentString = Utils.inputStreamToString(contentStream);
-                LOGGER.info("Process description file: " + documentString);
                 stringBuilder.append(documentString);
             }
             catch(IOException ioex)
             {
                 //  Bad stuff - blow up!
                 LOGGER.error("Problem loading XML document: ", ioex);
+                return StatusHelper.getExceptionReportString("Error retrieving process description: " + ioex.getMessage(), "ProcessingError");
             }
             catch(AmazonS3Exception s3e)
             {
                 //  Bad stuff - blow up!
                 LOGGER.error("Problem loading XML document: ", s3e);
-                return StatusHelper.getExceptionReportString("Error providing XML output: " + s3e.getMessage(), "ProcessingError");
+                return StatusHelper.getExceptionReportString("Error retrieving process description: " + s3e.getMessage(), "ProcessingError");
             }
         }
 
