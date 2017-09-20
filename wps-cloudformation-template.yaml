@@ -42,6 +42,21 @@ Parameters:
   s3ConfigBucket:
     Type: String
     Default: 'wps-lambda-config'
+  s3GetCapabilitiesTemplateBucket:
+    Type: String
+    Default: imos-binary-frankfurt
+  s3GetCapabilitiesTemplatekey:
+    Type: String
+    Default: '$LATEST/GetCapabilities.ftl'
+  s3DescribeProcessBucket:
+    Type: String
+    Default: imos-binary-frankfurt
+  s3DescribeProcessKey:
+    Type: String
+    Default: '$LATEST/operations/'
+  geoserverWpsEndpoint:
+    Type: String
+    Default: 'http://geoserver-wps.aodn.org.au/geoserver/wps'
 Resources:
   BatchServiceRole:
     Type: 'AWS::IAM::Role'
@@ -308,6 +323,11 @@ Resources:
           AWS_BATCH_JOB_QUEUE_NAME: !Ref JobQueue
           STATUS_S3_BUCKET: !Ref s3ConfigBucket
           STATUS_S3_FILENAME: !Ref s3StatusFilename
+          GET_CAPABILITIES_TEMPLATE_S3_BUCKET: !Ref s3GetCapabilitiesTemplateBucket
+          GET_CAPABILITIES_TEMPLATE_S3_KEY: !Ref s3GetCapabilitiesTemplatekey
+          DESCRIBE_PROCESS_S3_BUCKET: !Ref s3DescribeProcessBucket
+          DESCRIBE_PROCESS_S3_KEY_PREFIX: !Ref s3DescribeProcessKey
+          GEOSERVER_WPS_ENDPOINT_URL: !Ref geoserverWpsEndpoint
     Metadata:
       'AWS::CloudFormation::Designer':
         id: 2f9d630f-4908-418a-9455-e9b730d0c673

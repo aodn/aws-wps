@@ -3,13 +3,12 @@ package au.org.aodn.aws.wps;
 import au.org.aodn.aws.wps.AwsApiResponse.ResponseBuilder;
 import au.org.aodn.aws.wps.exception.ValidationException;
 import au.org.aodn.aws.wps.operation.Operation;
+import au.org.aodn.aws.wps.status.StatusHelper;
 import net.opengis.wps._1_0.ExecuteResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 import javax.xml.bind.JAXBContext;
-import java.util.Properties;
 
 public class WpsRequestHandler implements RequestHandler, RequestValidator {
 
@@ -33,7 +32,8 @@ public class WpsRequestHandler implements RequestHandler, RequestValidator {
             LOGGER.error("Exception : " + e.getMessage(), e);
             //TODO: handle as per wps/ogc exception handling requirements
             responseBuilder.statusCode(500);
-            responseBuilder.body(e.getMessage());
+            String exceptionReportString = StatusHelper.getExceptionReportString(e.getMessage(), "ExecutionError");
+            responseBuilder.body(exceptionReportString);
         }
 
         return responseBuilder.build();
