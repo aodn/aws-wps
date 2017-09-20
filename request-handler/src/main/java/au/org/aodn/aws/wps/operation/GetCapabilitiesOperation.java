@@ -33,13 +33,16 @@ public class GetCapabilitiesOperation implements Operation {
 
         LOGGER.info("CONFIG: " + config.toString());
 
-        GetCapabilitiesReader capabilitiesReader = new GetCapabilitiesReader(templateS3Bucket, templateKey, s3Region);
-        HashMap<String, String> parameters = new HashMap<String, String>();
-        parameters.put(WpsConfig.GEOSERVER_WPS_ENDPOINT_TEMPLATE_KEY, geoserverWpsEndpointUrl);
-
-        //  Run the template and return the XML document
+        GetCapabilitiesReader capabilitiesReader = null;
         String getCapabilitiesDocument = null;
-        try {
+
+        try
+        {
+            capabilitiesReader = new GetCapabilitiesReader(templateS3Bucket, templateKey, s3Region);
+            HashMap<String, String> parameters = new HashMap<String, String>();
+            parameters.put(WpsConfig.GEOSERVER_WPS_ENDPOINT_TEMPLATE_KEY, geoserverWpsEndpointUrl);
+
+            //  Run the template and return the XML document
             getCapabilitiesDocument = capabilitiesReader.read(parameters);
         }
         catch(Exception ex)

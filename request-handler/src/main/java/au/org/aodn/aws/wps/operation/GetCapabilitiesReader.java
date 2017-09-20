@@ -27,7 +27,7 @@ public class GetCapabilitiesReader {
 
     private final Configuration freemarkerConfig;
 
-    public GetCapabilitiesReader(String templateS3Bucket, String templateS3Key, String s3RegionName)
+    public GetCapabilitiesReader(String templateS3Bucket, String templateS3Key, String s3RegionName) throws IOException
     {
         //  Get from S3 bucket location
         AmazonS3Client s3Client = new AmazonS3Client();
@@ -47,6 +47,7 @@ public class GetCapabilitiesReader {
         {
             //  Bad stuff - blow up!
             logger.error("Problem loading tempate: ", ioex);
+            throw ioex;
         }
 
         StringTemplateLoader stringLoader = new StringTemplateLoader();
