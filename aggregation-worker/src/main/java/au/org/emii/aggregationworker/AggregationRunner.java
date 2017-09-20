@@ -1,10 +1,17 @@
 package au.org.emii.aggregationworker;
 
-import au.org.aodn.aws.wps.status.*;
+import au.org.aodn.aws.wps.status.EnumStatus;
+import au.org.aodn.aws.wps.status.ExecuteStatusBuilder;
+import au.org.aodn.aws.wps.status.S3StatusUpdater;
+import au.org.aodn.aws.wps.status.WpsConfig;
 import au.org.emii.aggregator.NetcdfAggregator;
 import au.org.emii.aggregator.overrides.AggregationOverrides;
 import au.org.emii.aggregator.overrides.AggregationOverridesReader;
-import au.org.emii.download.*;
+import au.org.emii.download.Download;
+import au.org.emii.download.DownloadConfig;
+import au.org.emii.download.DownloadRequest;
+import au.org.emii.download.Downloader;
+import au.org.emii.download.ParallelDownloadManager;
 import au.org.emii.geoserver.client.HttpIndexReader;
 import au.org.emii.geoserver.client.SubsetParameters;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
