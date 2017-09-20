@@ -4,17 +4,16 @@ import au.org.aodn.aws.wps.status.*;
 import au.org.emii.aggregator.NetcdfAggregator;
 import au.org.emii.aggregator.overrides.AggregationOverrides;
 import au.org.emii.aggregator.overrides.AggregationOverridesReader;
-import au.org.emii.download.Download;
-import au.org.emii.download.DownloadConfig;
-import au.org.emii.download.DownloadRequest;
-import au.org.emii.download.Downloader;
-import au.org.emii.download.ParallelDownloadManager;
+import au.org.emii.download.*;
 import au.org.emii.geoserver.client.HttpIndexReader;
 import au.org.emii.geoserver.client.SubsetParameters;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.services.s3.transfer.TransferManager;
 import com.amazonaws.services.s3.transfer.Upload;
-import org.apache.commons.cli.*;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.Options;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
@@ -31,8 +30,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
-import java.util.Properties;
 import java.util.Set;
+
+import static au.org.aodn.aws.wps.status.WpsConfig.*;
 
 @Component
 public class AggregationRunner implements CommandLineRunner {
@@ -57,18 +57,15 @@ public class AggregationRunner implements CommandLineRunner {
 
             //  Capture the AWS job specifics - they are passed to the docker runtime as
             //  environment variables.
-            batchJobId = System.getenv("AWS_BATCH_JOB_ID");
-            String awsBatchComputeEnvName = System.getenv("AWS_BATCH_CE_NAME");
-            String awsBatchQueueName = System.getenv("AWS_BATCH_JQ_NAME");
-            String environmentName = System.getenv(WpsConfig.ENVIRONMENT_NAME_ENV_VARIABLE_NAME);
-
-            Properties configuration = WpsConfig.getConfigProperties(environmentName);
+            batchJobId = WpsConfig.getConfig(AWS_BATCH_JOB_ID_CONFIG_KEY);
+            String awsBatchComputeEnvName = WpsConfig.getConfig(AWS_BATCH_CE_NAME_CONFIG_KEY);
+            String awsBatchQueueName = WpsConfig.getConfig(AWS_BATCH_JQ_NAME_CONFIG_KEY);
+            String outputBucketName = WpsConfig.getConfig(OUTPUT_S3_BUCKET_CONFIG_KEY);
+            String outputFilename = WpsConfig.getConfig(OUTPUT_S3_FILENAME_CONFIG_KEY);
+            statusS3Bucket = WpsConfig.getConfig(STATUS_S3_BUCKET_CONFIG_KEY);
+            statusFilename = WpsConfig.getConfig(STATUS_S3_FILENAME_CONFIG_KEY);
 
             //  TODO:  null check and act on null configuration
-
-            statusS3Bucket = configuration.getProperty(WpsConfig.STATUS_S3_BUCKET_CONFIG_KEY);
-            statusFilename = configuration.getProperty(WpsConfig.STATUS_S3_FILENAME_CONFIG_KEY);
-
             //  TODO : validate configuration
 
             String statusDocument = ExecuteStatusBuilder.getStatusDocument(statusS3Bucket, statusFilename, batchJobId, EnumStatus.STARTED, null, null, null);
@@ -80,7 +77,6 @@ public class AggregationRunner implements CommandLineRunner {
             logger.info("AWS BATCH JOB ID     : " + batchJobId);
             logger.info("AWS BATCH CE NAME    : " + awsBatchComputeEnvName);
             logger.info("AWS BATCH QUEUE NAME : " + awsBatchQueueName);
-            logger.info("ENVIRONMENT NAME     : " + environmentName);
             logger.info("-----------------------------------------------------");
 
             Options options = new Options();
@@ -118,8 +114,6 @@ public class AggregationRunner implements CommandLineRunner {
             HttpIndexReader indexReader = new HttpIndexReader("http://geoserver-123.aodn.org.au/geoserver/imos/ows");
 
 
-            String outputBucketName = configuration.getProperty(WpsConfig.OUTPUT_S3_BUCKET_CONFIG_KEY);
-            String outputFilename = configuration.getProperty(WpsConfig.OUTPUT_S3_FILENAME_CONFIG_KEY);
             Set<DownloadRequest> downloads = indexReader.getDownloadRequestList(layer, "time", "file_url", subsetParams);
 
             //  Form output file location
@@ -177,7 +171,7 @@ public class AggregationRunner implements CommandLineRunner {
             try (
                     ParallelDownloadManager downloadManager = new ParallelDownloadManager(downloadConfig, downloader);
                     NetcdfAggregator netcdfAggregator = new NetcdfAggregator(outputFile, overrides, bbox, null, timeRange)
-            ){
+            ) {
                 for (Download download : downloadManager.download(downloads)) {
                     netcdfAggregator.add(download.getPath());
                     downloadManager.remove();
@@ -192,7 +186,7 @@ public class AggregationRunner implements CommandLineRunner {
                 tx.shutdownNow();
 
                 HashMap<String, String> outputMap = new HashMap<>();
-                outputMap.put("result", StatusHelper.getS3ExternalURL(s3URI.getBucket(), s3URI.getKey()));
+                outputMap.put("result", WpsConfig.getS3ExternalURL(s3URI.getBucket(), s3URI.getKey()));
 
                 statusDocument = ExecuteStatusBuilder.getStatusDocument(statusS3Bucket, statusFilename, batchJobId, EnumStatus.SUCCEEDED, null, null, outputMap);
                 statusUpdater.updateStatus(statusDocument, batchJobId);
@@ -201,15 +195,13 @@ public class AggregationRunner implements CommandLineRunner {
             }
         } catch (Throwable e) {
             e.printStackTrace();
-            if(statusUpdater != null) {
-                if(batchJobId != null) {
+            if (statusUpdater != null) {
+                if (batchJobId != null) {
                     String statusDocument = null;
                     try {
                         statusDocument = ExecuteStatusBuilder.getStatusDocument(statusS3Bucket, statusFilename, batchJobId, EnumStatus.FAILED, "Exception occurred during aggregation :" + e.getMessage(), "AggregationError", null);
                         statusUpdater.updateStatus(statusDocument, batchJobId);
-                    }
-                    catch (UnsupportedEncodingException uex)
-                    {
+                    } catch (UnsupportedEncodingException uex) {
                         logger.error("Unable to update status. Status: " + statusDocument);
                         uex.printStackTrace();
                     }

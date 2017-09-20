@@ -11,20 +11,18 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
-
-import static au.org.aodn.aws.wps.status.StatusHelper.getS3ExternalURL;
 
 public class ExecuteStatusBuilder {
 
-    static int CHUNK_SIZE = 512;
+    private static int CHUNK_SIZE = 512;
 
     private String location;
     String jobId;
-    Logger LOGGER  = LoggerFactory.getLogger(ExecuteStatusBuilder.class);
+    Logger LOGGER = LoggerFactory.getLogger(ExecuteStatusBuilder.class);
 
 
-    public ExecuteStatusBuilder() {}
+    public ExecuteStatusBuilder() {
+    }
 
     public ExecuteStatusBuilder(String location, String jobId) {
         this.location = location;
@@ -37,17 +35,15 @@ public class ExecuteStatusBuilder {
     }
 
 
-    public static final String getStatusDocument(String s3Bucket, String statusFilename, String jobId, EnumStatus jobStatus, String message, String messageCode, HashMap<String, String> outputsHrefs)
-    {
-        String statusLocation = getS3ExternalURL(s3Bucket, jobId + "/" + statusFilename);
+    public static final String getStatusDocument(String s3Bucket, String statusFilename, String jobId, EnumStatus jobStatus, String message, String messageCode, HashMap<String, String> outputsHrefs) {
+        String statusLocation = WpsConfig.getS3ExternalURL(s3Bucket, jobId + "/" + statusFilename);
         ExecuteStatusBuilder statusBuilder = new ExecuteStatusBuilder(statusLocation, jobId);
         return statusBuilder.createResponseDocument(jobStatus, message, messageCode, outputsHrefs);
     }
 
 
-    public String createResponseDocument(EnumStatus jobStatus)
-    {
-        return createResponseDocument(jobStatus,  "", "", null);
+    public String createResponseDocument(EnumStatus jobStatus) {
+        return createResponseDocument(jobStatus, "", "", null);
     }
 
 
@@ -69,44 +65,30 @@ public class ExecuteStatusBuilder {
 
         StatusType status = new StatusType();
 
-        try
-        {
+        try {
             status.setCreationTime(StatusHelper.getCreationDate());
-        }
-        catch (DatatypeConfigurationException e)
-        {
+        } catch (DatatypeConfigurationException e) {
             throw new RuntimeException(e);
         }
 
-        if (jobStatus==EnumStatus.ACCEPTED)
-        {
+        if (jobStatus == EnumStatus.ACCEPTED) {
             status.setProcessAccepted("Accepted job " + jobId + " for processing");
-        }
-        else if (jobStatus==EnumStatus.STARTED)
-        {
+        } else if (jobStatus == EnumStatus.STARTED) {
             status.setProcessStarted(getProcessStartedType("Job " + jobId + " is currently running", new Integer(0)));
-        }
-        else if (jobStatus==EnumStatus.PAUSED)
-        {
+        } else if (jobStatus == EnumStatus.PAUSED) {
             status.setProcessPaused(getProcessStartedType("Job " + jobId + " is currently paused", new Integer(0)));
-        }
-        else if (jobStatus==EnumStatus.SUCCEEDED)
-        {
+        } else if (jobStatus == EnumStatus.SUCCEEDED) {
             status.setProcessSucceeded("Job " + jobId + " has completed");
             //  If outputs were passed - add them to the response
-            if(outputs != null)
-            {
-                for(Map.Entry<String, String> currentEntry : outputs.entrySet())
-                {
+            if (outputs != null) {
+                for (Map.Entry<String, String> currentEntry : outputs.entrySet()) {
                     String key = currentEntry.getKey();
                     String href = currentEntry.getValue();
                     LOGGER.info("OUTPUT [" + key + "]=[" + href + "]");
                     addOutputToResponse(response, key, href);
                 }
             }
-        }
-        else if (jobStatus==EnumStatus.FAILED)
-        {
+        } else if (jobStatus == EnumStatus.FAILED) {
             status.setProcessFailed(getProcessFailedType(failedMessage, failedCode));
         }
 
@@ -123,16 +105,14 @@ public class ExecuteStatusBuilder {
     }
 
 
-    private ProcessFailedType getProcessFailedType(String message, String code)
-    {
+    private ProcessFailedType getProcessFailedType(String message, String code) {
         ProcessFailedType failed = new ProcessFailedType();
         failed.setExceptionReport(StatusHelper.getExceptionReport(message, code));
         return failed;
     }
 
 
-    private ProcessStartedType getProcessStartedType(String message, Integer percentComplete)
-    {
+    private ProcessStartedType getProcessStartedType(String message, Integer percentComplete) {
         ProcessStartedType started = new ProcessStartedType();
         started.setValue(message);
         started.setPercentCompleted(percentComplete);
@@ -140,8 +120,7 @@ public class ExecuteStatusBuilder {
     }
 
 
-    private void addOutputToResponse(ExecuteResponse response, String outputIdentifier, String outputHref)
-    {
+    private void addOutputToResponse(ExecuteResponse response, String outputIdentifier, String outputHref) {
         OutputDataType output = new OutputDataType();
 
         OutputReferenceType outputReference = new OutputReferenceType();
@@ -151,7 +130,7 @@ public class ExecuteStatusBuilder {
         CodeType outputIdentifierCode = new CodeType();
         outputIdentifierCode.setValue(outputIdentifier);
         output.setIdentifier(outputIdentifierCode);
-        if(response.getProcessOutputs() == null) {
+        if (response.getProcessOutputs() == null) {
             ExecuteResponse.ProcessOutputs outputs = new ExecuteResponse.ProcessOutputs();
             response.setProcessOutputs(outputs);
         }
@@ -159,15 +138,13 @@ public class ExecuteStatusBuilder {
     }
 
 
-    private void addOutputToResponse(ExecuteResponse response, String outputIdentifier, InputStream inStream)
-    {
+    private void addOutputToResponse(ExecuteResponse response, String outputIdentifier, InputStream inStream) {
         OutputDataType output = new OutputDataType();
 
         LiteralDataType literalData = new LiteralDataType();
         literalData.setDataType("??");
         literalData.setUom("??");
-        if(inStream != null)
-        {
+        if (inStream != null) {
             StringBuilder strBuilder = new StringBuilder();
             byte[] chunk = new byte[CHUNK_SIZE];
             BufferedInputStream bufferedStream = new BufferedInputStream(inStream);
@@ -176,9 +153,7 @@ public class ExecuteStatusBuilder {
                 while (bytesRead != -1) {
                     strBuilder.append(new String(chunk, 0, bytesRead));
                 }
-            }
-            catch(IOException ioex)
-            {
+            } catch (IOException ioex) {
                 //  Error out
                 throw new RuntimeException("Unable to add literal output to response : " + ioex.getMessage(), ioex);
             }

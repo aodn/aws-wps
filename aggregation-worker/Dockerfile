@@ -20,6 +20,6 @@ RUN \
 ADD target/lib /opt/aggregator/lib
 ADD target/*.jar /opt/aggregator/
 
-ENTRYPOINT ["/usr/bin/java", "-jar", "/opt/aggregator/aggregation-worker-1.0-SNAPSHOT.jar"]
+ENTRYPOINT ["/usr/bin/java", "-jar", "/opt/aggregator/aggregation-worker.jar"]
 
 

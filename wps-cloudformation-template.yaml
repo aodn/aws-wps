@@ -11,7 +11,9 @@ Parameters:
     Default: imos-binary-frankfurt
   s3LambdaCodeKey:
     Type: String
-    Default: 'lambda/request-handler-1.0-SNAPSHOT-lambda-package.zip'
+  jobName:
+    Type: String
+    Default: 'javaduck'
   jobVCPUs:
     Type: String
     Default: '1'
@@ -20,7 +22,7 @@ Parameters:
     Default: '2000'
   maxVCPUs:
     Type: String
-    Default: '256'
+    Default: '4'
   geoserver:
     Type: String
   dockerImage:
@@ -31,6 +33,12 @@ Parameters:
   s3StatusBucket:
     Type: String
     Default: 'imos-test-data.aodn.org.au'
+  s3OutputFilename:
+    Type: String
+    Default: 'output.nc'
+  s3StatusFilename:
+    Type: String
+    Default: 'status.xml'
   s3ConfigBucket:
     Type: String
     Default: 'wps-lambda-config'
@@ -50,6 +58,18 @@ Resources:
     Metadata:
       'AWS::CloudFormation::Designer':
         id: 119037ec-2cef-4c76-bbea-9e62091e725d
+  SpotIamFleetRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: spotfleet.amazonaws.com
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AmazonEC2SpotFleetRole'
   IamInstanceProfile:
     Type: 'AWS::IAM::InstanceProfile'
     Properties:
@@ -117,6 +137,7 @@ Resources:
     Type: 'AWS::Batch::JobDefinition'
     Properties:
       Type: container
+      JobDefinitionName: !Sub 'JavaDuckSmall1-${AWS::StackName}'
       ContainerProperties:
         Image: !Ref dockerImage
         Vcpus: !Ref jobVCPUs
@@ -128,16 +149,19 @@ Resources:
           - 'Ref::result'
         Environment:
           -
-            Name: "CONFIG_PREFIX"
+            Name: "OUTPUT_S3_FILENAME"
+            Value: !Ref s3OutputFilename
+          -
+            Name: "OUTPUT_S3_BUCKET"
             Value: !Ref s3ConfigBucket
           -
-            Name: "S3_AWS_REGION"
-            Value: !Ref "AWS::Region"
+            Name: "STATUS_S3_BUCKET"
+            Value: !Ref s3ConfigBucket
           -
-            Name: "CONFIG_FILENAME"
-            Value: "wps-config.properties"
+            Name: "STATUS_S3_FILENAME"
+            Value: !Ref s3StatusFilename
       RetryStrategy:
-        Attempts: 3
+        Attempts: 2
     Metadata:
       'AWS::CloudFormation::Designer':
         id: f17c8aa4-8ab7-4ee1-b3a6-7a8727b8bff5
@@ -145,7 +169,8 @@ Resources:
   JobQueue:
     Type: 'AWS::Batch::JobQueue'
     Properties:
-      Priority: 1
+      JobQueueName: !Sub 'JavaDuckQueue1-${AWS::StackName}'
+      Priority: 2
       ComputeEnvironmentOrder:
         - Order: 1
           ComputeEnvironment: !Ref ComputeEnvironment
@@ -156,8 +181,9 @@ Resources:
     Type: 'AWS::Batch::ComputeEnvironment'
     Properties:
       Type: MANAGED
+      ComputeEnvironmentName: !Sub 'JavaDuckSpotComputeEnvironment1-${AWS::StackName}'
       ComputeResources:
-        Type: EC2
+        Type: SPOT
         MinvCpus: 0
         DesiredvCpus: 0
         MaxvCpus: !Ref maxVCPUs
@@ -167,6 +193,8 @@ Resources:
         SecurityGroupIds:
           - !Ref securityGroup
         InstanceRole: !Ref IamInstanceProfile
+        SpotIamFleetRole: !Ref SpotIamFleetRole
+        BidPercentage: 20
       ServiceRole: !Ref BatchServiceRole
     Metadata:
       'AWS::CloudFormation::Designer':
@@ -276,9 +304,10 @@ Resources:
         S3Key: !Ref s3LambdaCodeKey
       Environment:
         Variables:
-          CONFIG_PREFIX: !Ref s3ConfigBucket
-          S3_AWS_REGION: !Ref "AWS::Region"
-          CONFIG_FILENAME: "wps-config.properties"
+          AWS_BATCH_JOB_NAME: !Ref jobName
+          AWS_BATCH_JOB_QUEUE_NAME: !Ref JobQueue
+          STATUS_S3_BUCKET: !Ref s3ConfigBucket
+          STATUS_S3_FILENAME: !Ref s3StatusFilename
     Metadata:
       'AWS::CloudFormation::Designer':
         id: 2f9d630f-4908-418a-9455-e9b730d0c673
