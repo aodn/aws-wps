@@ -32,6 +32,8 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Set;
 
+import static au.org.aodn.aws.wps.status.WpsConfig.*;
+
 @Component
 public class AggregationRunner implements CommandLineRunner {
 
@@ -55,13 +57,13 @@ public class AggregationRunner implements CommandLineRunner {
 
             //  Capture the AWS job specifics - they are passed to the docker runtime as
             //  environment variables.
-            batchJobId = System.getenv("AWS_BATCH_JOB_ID");
-            String awsBatchComputeEnvName = System.getenv("AWS_BATCH_CE_NAME");
-            String awsBatchQueueName = System.getenv("AWS_BATCH_JQ_NAME");
-            String outputBucketName = System.getenv(WpsConfig.OUTPUT_S3_BUCKET_CONFIG_KEY);
-            String outputFilename = System.getenv(WpsConfig.OUTPUT_S3_FILENAME_CONFIG_KEY);
-            statusS3Bucket = System.getenv(WpsConfig.STATUS_S3_BUCKET_CONFIG_KEY);
-            statusFilename = System.getenv(WpsConfig.STATUS_S3_FILENAME_CONFIG_KEY);
+            batchJobId = WpsConfig.getConfig(AWS_BATCH_JOB_ID_CONFIG_KEY);
+            String awsBatchComputeEnvName = WpsConfig.getConfig(AWS_BATCH_CE_NAME_CONFIG_KEY);
+            String awsBatchQueueName = WpsConfig.getConfig(AWS_BATCH_JQ_NAME_CONFIG_KEY);
+            String outputBucketName = WpsConfig.getConfig(OUTPUT_S3_BUCKET_CONFIG_KEY);
+            String outputFilename = WpsConfig.getConfig(OUTPUT_S3_FILENAME_CONFIG_KEY);
+            statusS3Bucket = WpsConfig.getConfig(STATUS_S3_BUCKET_CONFIG_KEY);
+            statusFilename = WpsConfig.getConfig(STATUS_S3_FILENAME_CONFIG_KEY);
 
             //  TODO:  null check and act on null configuration
             //  TODO : validate configuration

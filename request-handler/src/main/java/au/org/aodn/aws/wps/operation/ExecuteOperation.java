@@ -3,10 +3,9 @@ package au.org.aodn.aws.wps.operation;
 import au.org.aodn.aws.wps.status.EnumStatus;
 import au.org.aodn.aws.wps.status.ExecuteStatusBuilder;
 import au.org.aodn.aws.wps.status.S3StatusUpdater;
+import au.org.aodn.aws.wps.status.WpsConfig;
 import com.amazonaws.services.batch.AWSBatch;
 import com.amazonaws.services.batch.AWSBatchClientBuilder;
-import com.amazonaws.services.batch.model.ContainerOverrides;
-import com.amazonaws.services.batch.model.KeyValuePair;
 import com.amazonaws.services.batch.model.SubmitJobRequest;
 import com.amazonaws.services.batch.model.SubmitJobResult;
 import net.opengis.wps._1_0.*;
@@ -39,11 +38,11 @@ public class ExecuteOperation implements Operation {
         //      AWS region
         //      status filename
         //      status location
-        String statusS3BucketName = System.getenv(STATUS_S3_BUCKET_CONFIG_KEY);
-        String statusFileName = System.getenv(STATUS_S3_FILENAME_CONFIG_KEY);
-        String jobName = System.getenv(AWS_BATCH_JOB_NAME_CONFIG_KEY);
-        String jobQueueName = System.getenv(AWS_BATCH_JOB_QUEUE_NAME_CONFIG_KEY);
-        String awsRegion = System.getenv(AWS_REGION_CONFIG_KEY);
+        String statusS3BucketName = WpsConfig.getConfig(STATUS_S3_BUCKET_CONFIG_KEY);
+        String statusFileName = WpsConfig.getConfig(STATUS_S3_FILENAME_CONFIG_KEY);
+        String jobName = WpsConfig.getConfig(AWS_BATCH_JOB_NAME_CONFIG_KEY);
+        String jobQueueName = WpsConfig.getConfig(AWS_BATCH_JOB_QUEUE_NAME_CONFIG_KEY);
+        String awsRegion = WpsConfig.getConfig(AWS_REGION_CONFIG_KEY);
 
         LOGGER.info("statusS3BucketName: " + statusS3BucketName);
         LOGGER.info("statusFileName: " + statusFileName);
