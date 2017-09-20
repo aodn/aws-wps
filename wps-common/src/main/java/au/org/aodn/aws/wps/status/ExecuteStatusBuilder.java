@@ -78,6 +78,7 @@ public class ExecuteStatusBuilder {
             throw new RuntimeException(e);
         }
 
+        //  TODO: can we update percentage complete to a rough value at various stages?
         if (jobStatus==EnumStatus.ACCEPTED)
         {
             status.setProcessAccepted("Accepted job " + jobId + " for processing");

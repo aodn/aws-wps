@@ -150,6 +150,16 @@
                             <executable>${basedir}/scripts/docker-build.sh</executable>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>docker-deploy</id>
+                        <phase>deploy</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>${basedir}/scripts/docker-deploy.sh</executable>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
         </plugins>

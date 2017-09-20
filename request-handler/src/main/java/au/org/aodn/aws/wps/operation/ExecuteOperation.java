@@ -43,7 +43,7 @@ public class ExecuteOperation implements Operation {
         String jobName = config.getProperty(AWS_BATCH_JOB_NAME_CONFIG_KEY);
         String jobQueueName = config.getProperty(AWS_BATCH_JOB_QUEUE_NAME_CONFIG_KEY);
         String awsRegion = config.getProperty(AWS_REGION_CONFIG_KEY);
-        String environmentName = config.getProperty(ENVIRONMENT_NAME_ENV_VARIABLE_NAME);
+        String environmentName = config.getProperty(ENVIRONMENT_NAME_CONFIG_KEY);
 
         LOGGER.info("Configuration: " + config.toString());
 
@@ -67,7 +67,7 @@ public class ExecuteOperation implements Operation {
         KeyValuePair envNameVariable = new KeyValuePair();
 
         //  Pass environment name to batch process using environment variable
-        envNameVariable.setName(ENVIRONMENT_NAME_ENV_VARIABLE_NAME);
+        envNameVariable.setName(ENVIRONMENT_NAME_CONFIG_KEY);
         envNameVariable.setValue(environmentName);
         envVariables.add(envNameVariable);
         jobOverrides.setEnvironment(envVariables);

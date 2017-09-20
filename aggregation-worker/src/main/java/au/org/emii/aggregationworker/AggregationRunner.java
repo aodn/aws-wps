@@ -60,12 +60,12 @@ public class AggregationRunner implements CommandLineRunner {
             batchJobId = System.getenv("AWS_BATCH_JOB_ID");
             String awsBatchComputeEnvName = System.getenv("AWS_BATCH_CE_NAME");
             String awsBatchQueueName = System.getenv("AWS_BATCH_JQ_NAME");
-            String environmentName = System.getenv(WpsConfig.ENVIRONMENT_NAME_ENV_VARIABLE_NAME);
 
-            Properties configuration = WpsConfig.getConfigProperties(environmentName);
+
+            Properties configuration = WpsConfig.getConfigProperties();
 
             //  TODO:  null check and act on null configuration
-
+            String environmentName = configuration.getProperty(WpsConfig.ENVIRONMENT_NAME_CONFIG_KEY);
             statusS3Bucket = configuration.getProperty(WpsConfig.STATUS_S3_BUCKET_CONFIG_KEY);
             statusFilename = configuration.getProperty(WpsConfig.STATUS_S3_FILENAME_CONFIG_KEY);
 
