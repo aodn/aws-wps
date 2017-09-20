@@ -29,22 +29,27 @@ public class WpsConfig {
             properties = new Properties();
 
             // Load properties from environment variables
-            properties.setProperty(AWS_BATCH_JOB_NAME_CONFIG_KEY, System.getenv(AWS_BATCH_JOB_NAME_CONFIG_KEY));
-            properties.setProperty(AWS_BATCH_JOB_QUEUE_NAME_CONFIG_KEY, System.getenv(AWS_BATCH_JOB_QUEUE_NAME_CONFIG_KEY));
-            properties.setProperty(AWS_REGION_CONFIG_KEY, System.getenv(AWS_REGION_CONFIG_KEY));
-            properties.setProperty(STATUS_S3_BUCKET_CONFIG_KEY, System.getenv(STATUS_S3_BUCKET_CONFIG_KEY));
-            properties.setProperty(STATUS_S3_FILENAME_CONFIG_KEY, System.getenv(STATUS_S3_FILENAME_CONFIG_KEY));
-            properties.setProperty(OUTPUT_S3_BUCKET_CONFIG_KEY, System.getenv(OUTPUT_S3_BUCKET_CONFIG_KEY));
-            properties.setProperty(OUTPUT_S3_FILENAME_CONFIG_KEY, System.getenv(OUTPUT_S3_FILENAME_CONFIG_KEY));
-
-            properties.setProperty(AWS_BATCH_JOB_ID_CONFIG_KEY, System.getenv(AWS_BATCH_JOB_ID_CONFIG_KEY));
-            properties.setProperty(AWS_BATCH_CE_NAME_CONFIG_KEY, System.getenv(AWS_BATCH_CE_NAME_CONFIG_KEY));
-            properties.setProperty(AWS_BATCH_JQ_NAME_CONFIG_KEY, System.getenv(AWS_BATCH_JQ_NAME_CONFIG_KEY));
+            setProperty(properties, AWS_BATCH_JOB_NAME_CONFIG_KEY);
+            setProperty(properties, AWS_BATCH_JOB_QUEUE_NAME_CONFIG_KEY);
+            setProperty(properties, AWS_REGION_CONFIG_KEY);
+            setProperty(properties, STATUS_S3_BUCKET_CONFIG_KEY);
+            setProperty(properties, STATUS_S3_FILENAME_CONFIG_KEY);
+            setProperty(properties, OUTPUT_S3_BUCKET_CONFIG_KEY);
+            setProperty(properties, OUTPUT_S3_FILENAME_CONFIG_KEY);
+            setProperty(properties, AWS_BATCH_JOB_ID_CONFIG_KEY);
+            setProperty(properties, AWS_BATCH_CE_NAME_CONFIG_KEY);
+            setProperty(properties, AWS_BATCH_JQ_NAME_CONFIG_KEY);
         }
 
         return properties;
     }
 
+    private static void setProperty(Properties properties, String property) {
+        String propertyValue = System.getenv(property);
+        if(propertyValue != null) {
+            properties.put(property, propertyValue);
+        }
+    }
     public static String getConfig(String configName) {
         return getProperties().getProperty(configName);
     }
