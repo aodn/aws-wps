@@ -1,81 +1,110 @@
 package au.org.aodn.aws.wps.status;
 
-import com.amazonaws.regions.Region;
-import com.amazonaws.regions.Regions;
-import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.S3Object;
-import com.amazonaws.services.s3.model.S3ObjectInputStream;
+import com.amazonaws.services.kms.AWSKMS;
+import com.amazonaws.services.kms.AWSKMSClientBuilder;
+import com.amazonaws.services.kms.model.DecryptRequest;
+import com.amazonaws.util.Base64;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.util.Properties;
 
 public class WpsConfig {
-
-    public static final String REGION_NAME_ENV_VARIABLE_NAME = "S3_AWS_REGION";
-    public static final String S3_BUCKET_ENV_VARIABLE_NAME = "CONFIG_PREFIX";
-    public static final String CONFIG_FILENAME_ENV_VARIABLE_NAME = "CONFIG_FILENAME";
 
     //  Configuration key names
     public static final String AWS_BATCH_JOB_NAME_CONFIG_KEY = "AWS_BATCH_JOB_NAME";
     public static final String AWS_BATCH_JOB_QUEUE_NAME_CONFIG_KEY = "AWS_BATCH_JOB_QUEUE_NAME";
     public static final String AWS_REGION_CONFIG_KEY = "AWS_REGION";
-    public static final String ENVIRONMENT_NAME_ENV_VARIABLE_NAME = "ENVIRONMENT_NAME";
-
     public static final String STATUS_S3_BUCKET_CONFIG_KEY = "STATUS_S3_BUCKET";
     public static final String STATUS_S3_FILENAME_CONFIG_KEY = "STATUS_S3_FILENAME";
-
     public static final String OUTPUT_S3_BUCKET_CONFIG_KEY = "OUTPUT_S3_BUCKET";
     public static final String OUTPUT_S3_FILENAME_CONFIG_KEY = "OUTPUT_S3_FILENAME";
 
+    public static final String AWS_BATCH_JOB_ID_CONFIG_KEY = "AWS_BATCH_JOB_ID";
+    public static final String AWS_BATCH_CE_NAME_CONFIG_KEY = "AWS_BATCH_CE_NAME";
+    public static final String AWS_BATCH_JQ_NAME_CONFIG_KEY = "AWS_BATCH_JQ_NAME";
+
+    public static final String GET_CAPABILITIES_TEMPLATE_S3_BUCKET_CONFIG_KEY = "GET_CAPABILITIES_TEMPLATE_S3_BUCKET";
+    public static final String GET_CAPABILITIES_TEMPLATE_S3_KEY_CONFIG_KEY = "GET_CAPABILITIES_TEMPLATE_S3_KEY";
+    public static final String DESCRIBE_PROCESS_S3_BUCKET_CONFIG_KEY = "DESCRIBE_PROCESS_S3_BUCKET";
+    public static final String DESCRIBE_PROCESS_S3_KEY_PREFIX_CONFIG_KEY = "DESCRIBE_PROCESS_S3_KEY_PREFIX";
+    public static final String GEOSERVER_WPS_ENDPOINT_URL_CONFIG_KEY = "GEOSERVER_WPS_ENDPOINT_URL";
+    public static final String GEOSERVER_WPS_ENDPOINT_TEMPLATE_KEY = "geoserverWPSEndpointURL";
+
+    public static final String CONFIG_LOCATION_KEY = "CONFIG_LOCATION";
 
     public static final String S3_BASE_URL = "https://s3.amazonaws.com/";
+    private static Properties properties = null;
 
-    public static String getS3BaseUrl()
-    {
-        return S3_BASE_URL;
+    private static Properties getProperties() {
+        if (properties == null) {
+            // Load properties from config
+            // TODO: Read properties from location CONFIG_LOCATION_CONFIG_KEY (S3 or local) and load it
+            properties = new Properties();
+
+            // Load properties from environment variables
+            setProperty(properties, AWS_BATCH_JOB_NAME_CONFIG_KEY);
+            setProperty(properties, AWS_BATCH_JOB_QUEUE_NAME_CONFIG_KEY);
+            setProperty(properties, AWS_REGION_CONFIG_KEY);
+            setProperty(properties, STATUS_S3_BUCKET_CONFIG_KEY);
+            setProperty(properties, STATUS_S3_FILENAME_CONFIG_KEY);
+            setProperty(properties, OUTPUT_S3_BUCKET_CONFIG_KEY);
+            setProperty(properties, OUTPUT_S3_FILENAME_CONFIG_KEY);
+            setProperty(properties, AWS_BATCH_JOB_ID_CONFIG_KEY);
+            setProperty(properties, AWS_BATCH_CE_NAME_CONFIG_KEY);
+            setProperty(properties, AWS_BATCH_JQ_NAME_CONFIG_KEY);
+
+            setProperty(properties, GET_CAPABILITIES_TEMPLATE_S3_BUCKET_CONFIG_KEY);
+            setProperty(properties, GET_CAPABILITIES_TEMPLATE_S3_KEY_CONFIG_KEY);
+            setProperty(properties, DESCRIBE_PROCESS_S3_BUCKET_CONFIG_KEY);
+            setProperty(properties, DESCRIBE_PROCESS_S3_KEY_PREFIX_CONFIG_KEY);
+            setProperty(properties, GEOSERVER_WPS_ENDPOINT_URL_CONFIG_KEY);
+        }
+
+        return properties;
     }
 
-    public static Properties getConfigProperties(String envName)
-    {
-        //  Read environment variables
-        //  Identify the location of the configuration file to use
-        String s3RegionName = getEnvironmentVariable(REGION_NAME_ENV_VARIABLE_NAME);
-        String bucketName = getEnvironmentVariable(S3_BUCKET_ENV_VARIABLE_NAME);
-        String configFilename = getEnvironmentVariable(CONFIG_FILENAME_ENV_VARIABLE_NAME);
-
-
-
-        AmazonS3Client s3Client = new AmazonS3Client();
-        Region region = Region.getRegion(Regions.fromName(s3RegionName));
-        s3Client.setRegion(region);
-
-        //  Append an environment name to the front of the config filename
-        if(envName != null)
-        {
-            configFilename  = envName + "/" + configFilename;
+    private static void setProperty(Properties properties, String property) {
+        String propertyValue = System.getenv(property);
+        if(propertyValue != null) {
+            properties.put(property, propertyValue);
         }
-
-        System.out.println("S3 Config location: " + bucketName + "/" + configFilename);
-
-        //  Note:  the Lambda function needs access to read from S3 bucket location
-        //  that contains the configuration file.
-        S3Object configFile = s3Client.getObject(bucketName, configFilename);
-        S3ObjectInputStream contentStream = configFile.getObjectContent();
-        Properties config = new Properties();
-        try {
-            //  Load configuration from S3 file
-            config.load(contentStream);
-        }
-        catch(Exception ex)
-        {
-            ex.printStackTrace();
-            System.out.println("Unable to load configuration : " + ex.getMessage());
-        }
-
-        return config;
     }
 
-    private static String getEnvironmentVariable(String keyName)
-    {
-        return System.getenv(keyName);
+    public static String getConfig(String configName) {
+        return getProperties().getProperty(configName);
+    }
+
+    public static String getS3ExternalURL(String s3Bucket, String s3Key) {
+        return String.format("%s%s/%s", S3_BASE_URL, s3Bucket, s3Key);
+    }
+
+    /**
+     * Decrypt the value of a named environment variable.
+     *
+     * @param keyName
+     * @return Decrypted value of the named environment variable.
+     */
+    private String getEncryptedEnvironmentVariable(String keyName) {
+        return decryptKey(System.getenv(keyName));
+    }
+
+
+    /**
+     * Decrypt an encrypted environment variable value.
+     *
+     * @param keyValue
+     * @return Decrypted key value.
+     */
+    private String decryptKey(String keyValue) {
+        if (keyValue != null) {
+            byte[] encryptedKey = Base64.decode(keyValue);
+            AWSKMS client = AWSKMSClientBuilder.defaultClient();
+            DecryptRequest request = new DecryptRequest()
+                    .withCiphertextBlob(ByteBuffer.wrap(encryptedKey));
+            ByteBuffer plainTextKey = client.decrypt(request).getPlaintext();
+            return new String(plainTextKey.array(), Charset.forName("UTF-8"));
+        }
+        return null;
     }
 }

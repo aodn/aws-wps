@@ -11,7 +11,7 @@ import java.util.Properties;
  */
 public class WpsRequestHandlerTest {
 
-    @Test
+/*    @Test
     public void handleRequest() throws IOException, InterruptedException {
         System.out.println(new Date());
         AwsApiRequest input = new AwsApiRequest();
@@ -42,17 +42,8 @@ public class WpsRequestHandlerTest {
 
         WpsRequestHandler dispatcher = new WpsRequestHandler();
 
-        Properties config = new Properties();
-        config.setProperty("STATUS_S3_BUCKET", "wps-lambda-status");
-        config.setProperty("STATUS_S3_FILENAME", "status.xml");
-        config.setProperty("OUTPUT_S3_BUCKET", "wps-lambda-status");
-        config.setProperty("OUTPUT_S3_FILENAME", "output.nc");
-        config.setProperty("AWS_BATCH_JOB_NAME", "javaduck");
-        config.setProperty("AWS_BATCH_JOB_QUEUE_NAME", "javaduck-small-in");
-        config.setProperty("AWS_REGION", "us-east-1");
-
         input.setHttpMethod("POST");
-        dispatcher.handleRequest(input, config);
+        dispatcher.handleRequest(input);
         System.out.println(new Date());
-    }
+    }*/
 }
