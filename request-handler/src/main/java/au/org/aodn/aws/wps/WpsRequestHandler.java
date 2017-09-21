@@ -22,15 +22,32 @@ public class WpsRequestHandler implements RequestHandler, RequestValidator {
             JAXBContext context = JAXBContext.newInstance(ExecuteResponse.class);
             RequestParserFactory requestParserFactory = new RequestParserFactory(context);
             RequestParser requestParser = requestParserFactory.getRequestParser(request);
-            Operation operation = requestParser.getOperation();
-            LOGGER.info("Operation : " + operation.getClass());
-            String result = operation.execute();
-            LOGGER.info("Executed");
-            responseBuilder.body(result);
+
+            if(requestParser != null) {
+                Operation operation = requestParser.getOperation();
+                if(operation != null) {
+                    LOGGER.info("Operation : " + operation.getClass());
+                    String result = operation.execute();
+                    LOGGER.info("Executed");
+                    responseBuilder.body(result);
+                }
+                else
+                {
+                    LOGGER.error("Operation : NULL.");
+                    responseBuilder.statusCode(500);
+                    String exceptionReportString = StatusHelper.getExceptionReportString("No operation found.", "ExecutionError");
+                    responseBuilder.body(exceptionReportString);
+                }
+            }
+            else
+            {
+                LOGGER.error("Request parser is NULL.");
+                responseBuilder.statusCode(500);
+                String exceptionReportString = StatusHelper.getExceptionReportString("Unable to build request parser.", "ExecutionError");
+                responseBuilder.body(exceptionReportString);
+            }
         } catch (Exception e) {
-            e.printStackTrace();
             LOGGER.error("Exception : " + e.getMessage(), e);
-            //TODO: handle as per wps/ogc exception handling requirements
             responseBuilder.statusCode(500);
             String exceptionReportString = StatusHelper.getExceptionReportString(e.getMessage(), "ExecutionError");
             responseBuilder.body(exceptionReportString);

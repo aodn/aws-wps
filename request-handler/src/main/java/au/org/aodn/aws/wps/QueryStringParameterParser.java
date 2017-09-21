@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.StringTokenizer;
 
 public class QueryStringParameterParser implements RequestParser {
@@ -34,9 +35,9 @@ public class QueryStringParameterParser implements RequestParser {
 
     @Override
     public Operation getOperation() {
-        if(getMapValueIgnoreCase(REQUEST_NAME_PARAMETER_NAME,queryParameters) != null)
-        {
 
+        if(getMapValueIgnoreCase(REQUEST_NAME_PARAMETER_NAME, queryParameters) != null)
+        {
             String request = getMapValueIgnoreCase(REQUEST_NAME_PARAMETER_NAME,queryParameters);
 
             LOGGER.info("Request name: " + request);
@@ -74,7 +75,6 @@ public class QueryStringParameterParser implements RequestParser {
                             CodeType identifier = new CodeType();
 
                             if (identifierValue != null) {
-                                LOGGER.info("Identifier: " + identifierValue);
                                 identifier.setValue(identifierValue);
                             }
 
@@ -95,21 +95,25 @@ public class QueryStringParameterParser implements RequestParser {
 
             return operation;
         }
-
-        //  TODO: exception?
-        return null;
+        else
+        {
+            LOGGER.error("No Operation found.  Request parameter value: " + getMapValueIgnoreCase(REQUEST_NAME_PARAMETER_NAME, queryParameters));
+            return null;
+        }
     }
 
 
-    private String getMapValueIgnoreCase(String key, Map<String, String> map)
+    private String getMapValueIgnoreCase(String searchKey, Map<String, String> map)
     {
-        if(key != null && map != null) {
-            if (map.get(key.toLowerCase()) != null) {
-                return map.get(key.toLowerCase());
-            }
-
-            if (map.get(key.toUpperCase()) != null) {
-                return map.get(key.toUpperCase());
+        //  Look for uppercase or lowercase or mixed case matches
+        if(searchKey != null && map != null) {
+            Set<String> keys = map.keySet();
+            for(String key : keys)
+            {
+                if(key.toLowerCase().equalsIgnoreCase(searchKey.toLowerCase()))
+                {
+                    return map.get(key);
+                }
             }
         }
         return null;
