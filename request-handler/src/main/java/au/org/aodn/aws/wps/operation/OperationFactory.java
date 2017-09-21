@@ -16,4 +16,18 @@ public class OperationFactory {
             throw new IllegalArgumentException("Unknown request type " + request.getClass().getName());
         }
     }
+
+    public static Operation getInstance(String operationName) {
+        if (operationName.equalsIgnoreCase("GetCapabilities")) {
+            GetCapabilities request = new GetCapabilities();
+            return new GetCapabilitiesOperation(request);
+        } else if (operationName.equalsIgnoreCase("DescribeProcess")) {
+            DescribeProcess request = new DescribeProcess();
+            return new DescribeProcessOperation(request);
+        } else if (operationName.equalsIgnoreCase("Execute")) {
+            throw new IllegalArgumentException("HTTP GET not supported for Execute operation.");
+        } else {
+            throw new IllegalArgumentException("Unknown request type " + operationName);
+        }
+    }
 }

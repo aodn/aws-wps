@@ -18,6 +18,11 @@ public class GetCapabilitiesOperation implements Operation {
         this.request = request;
     }
 
+    public GetCapabilities getRequest()
+    {
+        return this.request;
+    }
+
     @Override
     public String execute() {
 

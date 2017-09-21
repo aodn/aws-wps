@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wps:ProcessDescriptions xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:wps="http://www.opengis.net/wps/1.0.0"
+                         xmlns:ows="http://www.opengis.net/ows/1.1" xmlns:xlink="http://www.w3.org/1999/xlink"
+                         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xml:lang="en" service="WPS"
+                         version="1.0.0"
+                         xsi:schemaLocation="http://www.opengis.net/wps/1.0.0 http://schemas.opengis.net/wps/1.0.0/wpsAll.xsd">
+    <ProcessDescription wps:processVersion="1.0.0" statusSupported="true" storeSupported="true">
+        <ows:Identifier>gs:GoGoDuck</ows:Identifier>
+        <ows:Title>GoGoDuck</ows:Title>
+        <ows:Abstract>Subset and download gridded collection as NetCDF files</ows:Abstract>
+        <DataInputs>
+            <Input maxOccurs="1" minOccurs="1">
+                <ows:Identifier>layer</ows:Identifier>
+                <ows:Title>layer</ows:Title>
+                <ows:Abstract>WFS layer to query</ows:Abstract>
+                <LiteralData>
+                    <ows:AnyValue/>
+                </LiteralData>
+            </Input>
+            <Input maxOccurs="1" minOccurs="1">
+                <ows:Identifier>subset</ows:Identifier>
+                <ows:Title>subset</ows:Title>
+                <ows:Abstract>Subset, semi-colon separated. Example:
+                    TIME,2009-01-01T00:00:00.000Z,2009-12-25T23:04:00.000Z;LATITUDE,-33.433849,-32.150743;LONGITUDE,114.15197,115.741219
+                </ows:Abstract>
+                <LiteralData>
+                    <ows:AnyValue/>
+                </LiteralData>
+            </Input>
+            <Input maxOccurs="1" minOccurs="0">
+                <ows:Identifier>callbackUrl</ows:Identifier>
+                <ows:Title>callbackUrl</ows:Title>
+                <ows:Abstract>Callback URL</ows:Abstract>
+                <LiteralData>
+                    <ows:AnyValue/>
+                </LiteralData>
+            </Input>
+            <Input maxOccurs="1" minOccurs="0">
+                <ows:Identifier>callbackParams</ows:Identifier>
+                <ows:Title>callbackParams</ows:Title>
+                <ows:Abstract>Parameters to append to the callback</ows:Abstract>
+                <LiteralData>
+                    <ows:AnyValue/>
+                </LiteralData>
+            </Input>
+        </DataInputs>
+        <ProcessOutputs>
+            <Output>
+                <ows:Identifier>result</ows:Identifier>
+                <ows:Title>result</ows:Title>
+                <ComplexOutput>
+                    <Default>
+                        <Format>
+                            <MimeType>application/x-netcdf</MimeType>
+                        </Format>
+                    </Default>
+                    <Supported>
+                        <Format>
+                            <MimeType>application/x-netcdf</MimeType>
+                        </Format>
+                        <Format>
+                            <MimeType>text/csv</MimeType>
+                        </Format>
+                    </Supported>
+                </ComplexOutput>
+            </Output>
+        </ProcessOutputs>
+    </ProcessDescription>
+</wps:ProcessDescriptions>
