@@ -34,7 +34,6 @@
         <ows:Operation name="Execute">
             <ows:DCP>
                 <ows:HTTP>
-                    <ows:Get xlink:href="${geoserverWPSEndpointURL}"/>
                     <ows:Post xlink:href="${geoserverWPSEndpointURL}"/>
                 </ows:HTTP>
             </ows:DCP>
@@ -42,41 +41,14 @@
     </ows:OperationsMetadata>
     <wps:ProcessOfferings>
         <wps:Process wps:processVersion="1.0.0">
-            <ows:Identifier>gs:GeorectifyCoverage</ows:Identifier>
-            <ows:Title>Georectify Coverage</ows:Title>
-            <ows:Abstract>Georectifies a raster via Ground Control Points using gdal_warp</ows:Abstract>
-        </wps:Process>
-        <wps:Process wps:processVersion="1.0.0">
-            <ows:Identifier>gs:GetFullCoverage</ows:Identifier>
-            <ows:Title>GetFullCoverage</ows:Title>
-            <ows:Abstract>Returns a raster from the catalog, with optional filtering</ows:Abstract>
-        </wps:Process>
-        <wps:Process wps:processVersion="1.0.0">
             <ows:Identifier>gs:GoGoDuck</ows:Identifier>
             <ows:Title>GoGoDuck</ows:Title>
             <ows:Abstract>Subset and download gridded collection as NetCDF files</ows:Abstract>
         </wps:Process>
         <wps:Process wps:processVersion="1.0.0">
-            <ows:Identifier>gs:Import</ows:Identifier>
-            <ows:Title>Import to Catalog</ows:Title>
-            <ows:Abstract>Imports a feature collection into the catalog</ows:Abstract>
-        </wps:Process>
-        <wps:Process wps:processVersion="1.0.0">
             <ows:Identifier>gs:NetcdfOutput</ows:Identifier>
             <ows:Title>NetCDF download</ows:Title>
             <ows:Abstract>Subset and download collection as NetCDF files</ows:Abstract>
-        </wps:Process>
-        <wps:Process wps:processVersion="1.0.0">
-            <ows:Identifier>gs:PagedUnique</ows:Identifier>
-            <ows:Title>PagedUnique</ows:Title>
-            <ows:Abstract>Gets the list of unique values for the given featurecollection on a specified field, allows
-                optional paging
-            </ows:Abstract>
-        </wps:Process>
-        <wps:Process wps:processVersion="1.0.0">
-            <ows:Identifier>gs:StoreCoverage</ows:Identifier>
-            <ows:Title>Store Coverage</ows:Title>
-            <ows:Abstract>Stores a raster on the server.</ows:Abstract>
         </wps:Process>
     </wps:ProcessOfferings>
     <wps:Languages>

@@ -1,14 +1,10 @@
 package au.org.aodn.aws.wps.operation;
 
-import au.org.aodn.aws.wps.Constants;
-import au.org.aodn.aws.wps.exception.InvalidRequestException;
-import au.org.aodn.aws.wps.exception.ValidationException;
 import au.org.aodn.aws.wps.status.StatusHelper;
 import au.org.aodn.aws.wps.status.WpsConfig;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import com.amazonaws.util.StringInputStream;

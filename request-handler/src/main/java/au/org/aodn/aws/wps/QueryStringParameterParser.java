@@ -25,6 +25,8 @@ public class QueryStringParameterParser implements RequestParser {
     private final String VERSION_REQUEST_PARAMETER_NAME = "version";
     private final String IDENTIFIER_REQUEST_PARAMETER_NAME = "identifier";
 
+    public static final String DEFAULT_LANGUAGE = "en-US";
+
 
     public QueryStringParameterParser(AwsApiRequest request) {
         this.queryParameters = request.getQueryStringParameters();
@@ -32,10 +34,10 @@ public class QueryStringParameterParser implements RequestParser {
 
     @Override
     public Operation getOperation() {
-        if(queryParameters.get(REQUEST_NAME_PARAMETER_NAME) != null)
+        if(getMapValueIgnoreCase(REQUEST_NAME_PARAMETER_NAME,queryParameters) != null)
         {
 
-            String request = queryParameters.get(REQUEST_NAME_PARAMETER_NAME);
+            String request = getMapValueIgnoreCase(REQUEST_NAME_PARAMETER_NAME,queryParameters);
 
             LOGGER.info("Request name: " + request);
 
@@ -49,9 +51,9 @@ public class QueryStringParameterParser implements RequestParser {
                 DescribeProcessOperation describeOperation = (DescribeProcessOperation) operation;
 
                 DescribeProcess describeRequest = describeOperation.getRequest();
-                describeRequest.setVersion(queryParameters.get(VERSION_REQUEST_PARAMETER_NAME));
-                describeRequest.setService(queryParameters.get(SERVICE_REQUEST_PARAMETER_NAME));
-                describeRequest.setLanguage("en");
+                describeRequest.setVersion(getMapValueIgnoreCase(VERSION_REQUEST_PARAMETER_NAME,queryParameters));
+                describeRequest.setService(getMapValueIgnoreCase(SERVICE_REQUEST_PARAMETER_NAME,queryParameters));
+                describeRequest.setLanguage(DEFAULT_LANGUAGE);
 
                 LOGGER.info("Identifier param: " + queryParameters.get(IDENTIFIER_REQUEST_PARAMETER_NAME));
                 String identifierParamValue = queryParameters.get(IDENTIFIER_REQUEST_PARAMETER_NAME);
@@ -85,9 +87,9 @@ public class QueryStringParameterParser implements RequestParser {
             {
                 GetCapabilitiesOperation capabilitiesOperation = (GetCapabilitiesOperation) operation;
                 GetCapabilities capabilitiesRequest = capabilitiesOperation.getRequest();
-                capabilitiesRequest.setLanguage("en");
+                capabilitiesRequest.setLanguage(DEFAULT_LANGUAGE);
                 AcceptVersionsType acceptedVersions = new AcceptVersionsType();
-                acceptedVersions.getVersion().add(queryParameters.get(VERSION_REQUEST_PARAMETER_NAME));
+                acceptedVersions.getVersion().add(getMapValueIgnoreCase(VERSION_REQUEST_PARAMETER_NAME,queryParameters));
                 capabilitiesRequest.setAcceptVersions(acceptedVersions);
             }
 
@@ -95,6 +97,21 @@ public class QueryStringParameterParser implements RequestParser {
         }
 
         //  TODO: exception?
+        return null;
+    }
+
+
+    private String getMapValueIgnoreCase(String key, Map<String, String> map)
+    {
+        if(key != null && map != null) {
+            if (map.get(key.toLowerCase()) != null) {
+                return map.get(key.toLowerCase());
+            }
+
+            if (map.get(key.toUpperCase()) != null) {
+                return map.get(key.toUpperCase());
+            }
+        }
         return null;
     }
 }
