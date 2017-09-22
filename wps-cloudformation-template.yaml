@@ -217,7 +217,7 @@ Resources:
   WPSApi:
     Type: AWS::ApiGateway::RestApi
     Properties:
-      Name: WPS API
+      Name: !Join ["",["WPS API-",!Ref  "AWS::StackName" ]]
       Description: API used for WPS requests
       FailOnWarnings: true
   LambdaPermission:
