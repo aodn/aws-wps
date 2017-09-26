@@ -57,7 +57,44 @@ Parameters:
   geoserverWpsEndpoint:
     Type: String
     Default: 'http://geoserver-wps.aodn.org.au/geoserver/wps'
+  environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - production
+      - systest
+      - sandbox
+      - dev
+  createProdSystestBucket:
+    Type: String
+    Default: false
+    AllowedValues:
+      - true
+      - false
+Mappings:
+  EnvironmentMap:
+    production:
+      BucketName: "aws-wps-production"
+    systest:
+      BucketName: "aws-wps-systest"
+Conditions:
+  CreateProdSystestBucket: !And
+    - !Equals [!Ref createProdSystestBucket, true]
+    - !Not [!Condition CreateSandboxDevBucket]
+  CreateSandboxDevBucket: !Not [!Or [!Equals [ !Ref environment, production ], !Equals [ !Ref environment, systest ]]]
 Resources:
+  S3BucketProdSystest:
+    Type: "AWS::S3::Bucket"
+    Condition: CreateProdSystestBucket
+    DeletionPolicy: "Retain"
+    Properties:
+      BucketName: !FindInMap [EnvironmentMap, !Ref environment, BucketName]
+  S3BucketSandboxDev:
+    Type: "AWS::S3::Bucket"
+    Condition: CreateSandboxDevBucket
+    DeletionPolicy: "Delete"
+    Properties:
+      BucketName: !Sub 'aws-wps-${AWS::StackName}'
   BatchServiceRole:
     Type: 'AWS::IAM::Role'
     Properties:
@@ -194,6 +231,7 @@ Resources:
         id: 376a0983-1cf3-4145-bafe-96b0750be936
   ComputeEnvironment:
     Type: 'AWS::Batch::ComputeEnvironment'
+    DeletionPolicy: Delete
     Properties:
       Type: MANAGED
       ComputeEnvironmentName: !Sub 'JavaDuckSpotComputeEnvironment1-${AWS::StackName}'
