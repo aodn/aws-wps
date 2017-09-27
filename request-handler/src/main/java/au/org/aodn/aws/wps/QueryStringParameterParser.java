@@ -56,8 +56,8 @@ public class QueryStringParameterParser implements RequestParser {
                 describeRequest.setService(getMapValueIgnoreCase(SERVICE_REQUEST_PARAMETER_NAME,queryParameters));
                 describeRequest.setLanguage(DEFAULT_LANGUAGE);
 
-                LOGGER.info("Identifier param: " + queryParameters.get(IDENTIFIER_REQUEST_PARAMETER_NAME));
-                String identifierParamValue = queryParameters.get(IDENTIFIER_REQUEST_PARAMETER_NAME);
+                String identifierParamValue = getMapValueIgnoreCase(IDENTIFIER_REQUEST_PARAMETER_NAME, queryParameters);
+                LOGGER.info("New Identifier param: " + identifierParamValue);
 
                 if(identifierParamValue != null && !identifierParamValue.trim().isEmpty()) {
 
