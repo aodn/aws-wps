@@ -75,9 +75,19 @@
             <version>1.6.3</version>
         </dependency>
         <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk</artifactId>
+            <version>1.11.203</version>
+        </dependency>
+        <dependency>
             <groupId>au.org.emii</groupId>
             <artifactId>wps-common</artifactId>
             <version>1.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>velocity</groupId>
+            <artifactId>velocity</artifactId>
+            <version>1.4</version>
         </dependency>
     </dependencies>
 
