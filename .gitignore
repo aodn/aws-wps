@@ -1,5 +1,5 @@
 # Created by .ignore support plugin (hsz.mobi)
-/aggregation-worker/target/
+target/
 .idea/
 *.iml
-/request-handler/target/
+
