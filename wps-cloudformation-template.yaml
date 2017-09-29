@@ -65,7 +65,7 @@ Parameters:
       - systest
       - sandbox
       - dev
-  createProdSystestBucket:
+  createPersistentBucket:
     Type: String
     Default: false
     AllowedValues:
@@ -77,21 +77,23 @@ Mappings:
       BucketName: "aws-wps-production"
     systest:
       BucketName: "aws-wps-systest"
+    sandbox:
+      BucketName: "aws-wps-sandbox"
 Conditions:
-  CreateProdSystestBucket: !And
-    - !Equals [!Ref createProdSystestBucket, true]
-    - !Not [!Condition CreateSandboxDevBucket]
-  CreateSandboxDevBucket: !Not [!Or [!Equals [ !Ref environment, production ], !Equals [ !Ref environment, systest ]]]
+  CreateEphemeralBucket: !Equals [ !Ref environment, dev ]
+  CreatePersistentBucket: !And
+    - !Equals [!Ref createPersistentBucket, true]
+    - !Not [!Condition CreateEphemeralBucket]
 Resources:
   S3BucketProdSystest:
     Type: "AWS::S3::Bucket"
-    Condition: CreateProdSystestBucket
+    Condition: CreatePersistentBucket
     DeletionPolicy: "Retain"
     Properties:
       BucketName: !FindInMap [EnvironmentMap, !Ref environment, BucketName]
   S3BucketSandboxDev:
     Type: "AWS::S3::Bucket"
-    Condition: CreateSandboxDevBucket
+    Condition: CreateEphemeralBucket
     DeletionPolicy: "Delete"
     Properties:
       BucketName: !Sub 'aws-wps-${AWS::StackName}'
