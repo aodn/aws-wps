@@ -4,12 +4,18 @@ import com.amazonaws.services.kms.AWSKMS;
 import com.amazonaws.services.kms.AWSKMSClientBuilder;
 import com.amazonaws.services.kms.model.DecryptRequest;
 import com.amazonaws.util.Base64;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Properties;
 
 public class WpsConfig {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(WpsConfig.class);
 
     //  Configuration key names
     public static final String AWS_BATCH_JOB_NAME_CONFIG_KEY = "AWS_BATCH_JOB_NAME";
@@ -31,16 +37,34 @@ public class WpsConfig {
     public static final String GEOSERVER_WPS_ENDPOINT_URL_CONFIG_KEY = "GEOSERVER_WPS_ENDPOINT_URL";
     public static final String GEOSERVER_WPS_ENDPOINT_TEMPLATE_KEY = "geoserverWPSEndpointURL";
 
+    public static final String SITE_ACRONYM = "siteAcronym";
+    public static final String EMAIL_SIGNATURE = "emailSignature";
+    public static final String CONTACT_EMAIL = "contactEmail";
+    public static final String FROM_EMAIL = "fromEmail";
+    public static final String EMAIL_FOOTER = "emailFooter";
+    private static final String EMAIL_TEMPLATES_LOCATION_KEY = "emailTemplatesLocation";
+    private static final String COMPLETED_JOB_EMAIL_SUBJECT_KEY = "jobCompleteEmailSubject";
+    private static final String COMPLETED_JOB_EMAIL_KEY = "jobCompleteEmail";
+    private static final String FAILED_JOB_EMAIL_SUBJECT_KEY = "jobFailedEmailSubject";
+    private static final String FAILED_JOB_EMAIL_KEY = "jobFailedEmail";
+
     public static final String CONFIG_LOCATION_KEY = "CONFIG_LOCATION";
 
     public static final String S3_BASE_URL = "https://s3.amazonaws.com/";
+    public static final String APPLICATION_PROPERTIES = "application.properties";
     private static Properties properties = null;
 
     private static Properties getProperties() {
         if (properties == null) {
             // Load properties from config
-            // TODO: Read properties from location CONFIG_LOCATION_CONFIG_KEY (S3 or local) and load it
             properties = new Properties();
+            ClassLoader loader = Thread.currentThread().getContextClassLoader();
+            InputStream resourceStream = loader.getResourceAsStream(APPLICATION_PROPERTIES);
+            try {
+                properties.load(resourceStream);
+            } catch (IOException e) {
+                LOGGER.error("Unable to load application properties. Error:", e);
+            }
 
             // Load properties from environment variables
             setProperty(properties, AWS_BATCH_JOB_NAME_CONFIG_KEY);
@@ -66,13 +90,29 @@ public class WpsConfig {
 
     private static void setProperty(Properties properties, String property) {
         String propertyValue = System.getenv(property);
-        if(propertyValue != null) {
+        if (propertyValue != null) {
             properties.put(property, propertyValue);
         }
     }
 
     public static String getConfig(String configName) {
         return getProperties().getProperty(configName);
+    }
+
+    public static String getCompletedJobEmailSubjectTemplate() {
+        return String.format("%s/%s", getConfig(EMAIL_TEMPLATES_LOCATION_KEY), getConfig(COMPLETED_JOB_EMAIL_SUBJECT_KEY));
+    }
+
+    public static String getCompletedJobEmailTemplate() {
+        return String.format("%s/%s", getConfig(EMAIL_TEMPLATES_LOCATION_KEY), getConfig(COMPLETED_JOB_EMAIL_KEY));
+    }
+
+    public static String getFailedJobEmailSubjectTemplate() {
+        return String.format("%s/%s", getConfig(EMAIL_TEMPLATES_LOCATION_KEY), getConfig(FAILED_JOB_EMAIL_SUBJECT_KEY));
+    }
+
+    public static String getFailedJobEmailTemplate() {
+        return String.format("%s/%s", getConfig(EMAIL_TEMPLATES_LOCATION_KEY), getConfig(FAILED_JOB_EMAIL_KEY));
     }
 
     public static String getS3ExternalURL(String s3Bucket, String s3Key) {

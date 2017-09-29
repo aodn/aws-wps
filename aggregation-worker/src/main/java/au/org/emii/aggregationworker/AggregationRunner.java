@@ -14,6 +14,7 @@ import au.org.emii.download.Downloader;
 import au.org.emii.download.ParallelDownloadManager;
 import au.org.emii.geoserver.client.HttpIndexReader;
 import au.org.emii.geoserver.client.SubsetParameters;
+import au.org.emii.util.EmailService;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.services.s3.transfer.TransferManager;
 import com.amazonaws.services.s3.transfer.Upload;
@@ -58,9 +59,15 @@ public class AggregationRunner implements CommandLineRunner {
     public void run(String... args) {
 
         S3StatusUpdater statusUpdater = null;
-        String batchJobId = null;
+        String batchJobId = null, email = null;
+        EmailService emailService = null;
+
+        String jobReportUrl = "jobReportUrl"; // Needed to be replaced
+        String expirationPeriod = "expirationPeriod"; // Needed to be replaced
 
         try {
+
+            emailService = new EmailService();
 
             //  Capture the AWS job specifics - they are passed to the docker runtime as
             //  environment variables.
@@ -109,6 +116,8 @@ public class AggregationRunner implements CommandLineRunner {
             String layer = commandLine.getArgs()[0];
             String subset = commandLine.getArgs()[1];
             String resultMime = commandLine.getArgs()[2];
+            email = commandLine.getArgs()[3];
+
             SubsetParameters subsetParams = new SubsetParameters(subset);
 
             logger.info("Layer name        = " + layer);
@@ -200,6 +209,8 @@ public class AggregationRunner implements CommandLineRunner {
             } finally {
                 Files.deleteIfExists(outputFile);
             }
+
+            emailService.sendCompletedJobEmail(email, batchJobId, jobReportUrl, expirationPeriod);
         } catch (Throwable e) {
             e.printStackTrace();
             if (statusUpdater != null) {
@@ -213,6 +224,11 @@ public class AggregationRunner implements CommandLineRunner {
                         uex.printStackTrace();
                     }
                 }
+            }
+            try {
+                emailService.sendFailedJobEmail(email, batchJobId, jobReportUrl);
+            } catch (Exception ex) {
+                logger.error("Unable to send failed job email. Error Message:", ex);
             }
             System.exit(1);
         }

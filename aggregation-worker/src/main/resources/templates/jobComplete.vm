@@ -1,0 +1,13 @@
+Hi,
+
+Your $siteAcronym subset has been created. You can download it by clicking here: $jobReportUrl
+
+The download will be available $expirationPeriod.
+
+$emailSignature
+
+
+--
+If you require assistance with this service please contact us at $contactEmail. The job reference is $uuid.
+
+$emailFooter
