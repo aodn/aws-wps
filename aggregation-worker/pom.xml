@@ -123,17 +123,7 @@
                     </execution>
                 </executions>
             </plugin>
-            <!-- Disable mvn default-deploy -->
-            <plugin>
-                <artifactId>maven-deploy-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>default-deploy</id>
-                        <phase>none</phase>
-                    </execution>
-                </executions>
-            </plugin>
-            <!-- Deploy docker artifact to Amazon ECS -->
+            <!-- Create docker image locally -->
             <plugin>
                 <artifactId>exec-maven-plugin</artifactId>
                 <groupId>org.codehaus.mojo</groupId>

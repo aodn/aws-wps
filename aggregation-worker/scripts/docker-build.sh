@@ -1,3 +1,3 @@
 #!/bin/bash
 set -ex
-docker build -t javaduck .
+sudo docker build -t javaduck .
