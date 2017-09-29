@@ -1,4 +1,4 @@
-package au.org.aodn.aws.wps.operation;
+package au.org.aodn.aws.util;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

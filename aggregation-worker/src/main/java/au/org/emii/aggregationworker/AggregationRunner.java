@@ -1,12 +1,19 @@
 package au.org.emii.aggregationworker;
 
+import au.org.aodn.aggregator.configuration.Attribute;
+import au.org.aodn.aggregator.configuration.Template;
+import au.org.aodn.aggregator.configuration.Templates;
+import au.org.aodn.aggregator.configuration.Variable;
+import au.org.aodn.aws.util.S3Utils;
 import au.org.aodn.aws.wps.status.EnumStatus;
 import au.org.aodn.aws.wps.status.ExecuteStatusBuilder;
 import au.org.aodn.aws.wps.status.S3StatusUpdater;
 import au.org.aodn.aws.wps.status.WpsConfig;
 import au.org.emii.aggregator.NetcdfAggregator;
 import au.org.emii.aggregator.overrides.AggregationOverrides;
-import au.org.emii.aggregator.overrides.AggregationOverridesReader;
+import au.org.emii.aggregator.overrides.GlobalAttributeOverride;
+import au.org.emii.aggregator.overrides.VariableAttributeOverride;
+import au.org.emii.aggregator.overrides.VariableOverrides;
 import au.org.emii.download.Download;
 import au.org.emii.download.DownloadConfig;
 import au.org.emii.download.DownloadRequest;
@@ -14,9 +21,11 @@ import au.org.emii.download.Downloader;
 import au.org.emii.download.ParallelDownloadManager;
 import au.org.emii.geoserver.client.HttpIndexReader;
 import au.org.emii.geoserver.client.SubsetParameters;
+import au.org.emii.util.IntegerHelper;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.services.s3.transfer.TransferManager;
 import com.amazonaws.services.s3.transfer.Upload;
+import com.amazonaws.util.StringInputStream;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -26,23 +35,34 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import thredds.crawlabledataset.s3.S3URI;
+import ucar.ma2.DataType;
 import ucar.nc2.time.CalendarDate;
 import ucar.nc2.time.CalendarDateRange;
 import ucar.unidata.geoloc.LatLonPoint;
 import ucar.unidata.geoloc.LatLonPointImmutable;
 import ucar.unidata.geoloc.LatLonRect;
 
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Unmarshaller;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Set;
+import java.util.StringTokenizer;
+import java.util.regex.Pattern;
 
 import static au.org.aodn.aws.wps.status.WpsConfig.*;
 
 @Component
 public class AggregationRunner implements CommandLineRunner {
+
+    public static final int DEFAULT_CONNECT_TIMEOUT_MS = 60000;
+    public static final int DEFAULT_READ_TIMEOUT_MS = 60000;
 
     private static final Logger logger = LoggerFactory.getLogger(au.org.emii.aggregationworker.AggregationRunner.class);
 
@@ -71,6 +91,35 @@ public class AggregationRunner implements CommandLineRunner {
             String outputFilename = WpsConfig.getConfig(OUTPUT_S3_FILENAME_CONFIG_KEY);
             statusS3Bucket = WpsConfig.getConfig(STATUS_S3_BUCKET_CONFIG_KEY);
             statusFilename = WpsConfig.getConfig(STATUS_S3_FILENAME_CONFIG_KEY);
+
+            String aggregatorConfigS3Bucket = WpsConfig.getConfig(AGGREGATOR_CONFIG_S3_BUCKET_CONFIG_KEY);
+            String aggregatorTemplateFileS3Key = WpsConfig.getConfig(AGGREGATOR_TEMPLATE_FILE_S3_KEY_CONFIG_KEY);
+            String downloadConfigS3Key = WpsConfig.getConfig(DOWNLOAD_CONFIG_S3_KEY_CONFIG_KEY);
+
+            //  Parse connect timeout
+            String downloadConnectTimeoutString = WpsConfig.getConfig(DOWNLOAD_CONNECT_TIMEOUT_CONFIG_KEY);
+            int downloadConnectTimeout;
+            if(downloadConnectTimeoutString != null && IntegerHelper.isInteger(downloadConnectTimeoutString))
+            {
+                downloadConnectTimeout = Integer.parseInt(downloadConnectTimeoutString);
+            }
+            else
+            {
+                downloadConnectTimeout = DEFAULT_CONNECT_TIMEOUT_MS;
+            }
+
+            // Parse read timeout
+            String downloadReadTimeoutString = WpsConfig.getConfig(DOWNLOAD_READ_TIMEOUT_CONFIG_KEY);
+            int downloadReadTimeout;
+            if(downloadReadTimeoutString != null && IntegerHelper.isInteger(downloadReadTimeoutString))
+            {
+                downloadReadTimeout = Integer.parseInt(downloadConnectTimeoutString);
+            }
+            else
+            {
+                downloadReadTimeout = DEFAULT_READ_TIMEOUT_MS;
+            }
+
 
             //  TODO:  null check and act on null configuration
             //  TODO : validate configuration
@@ -160,18 +209,15 @@ public class AggregationRunner implements CommandLineRunner {
             }
 
 
+            //  TODO: source s3Region name - if required?
             //  Apply overrides (if provided)
-            AggregationOverrides overrides;
+            AggregationOverrides overrides = getAggregationOverrides(aggregatorConfigS3Bucket, aggregatorTemplateFileS3Key, null, layer);
 
-            if (overridesArg != null) {
-                overrides = AggregationOverridesReader.load(Paths.get(overridesArg));
-            } else {
-                overrides = new AggregationOverrides(); // Use default (i.e. no overrides)
-            }
+            //  Apply download configuration
+            DownloadConfig downloadConfig = getDownloadConfig(aggregatorConfigS3Bucket, downloadConfigS3Key);
 
-
-            DownloadConfig downloadConfig = new DownloadConfig.ConfigBuilder().build();
-            Downloader downloader = new Downloader(60000, 60000);
+            //  Apply connect/read timeouts
+            Downloader downloader = new Downloader(downloadConnectTimeout, downloadReadTimeout);
 
             Path outputFile = Files.createTempFile("agg", ".nc");
 
@@ -217,4 +263,136 @@ public class AggregationRunner implements CommandLineRunner {
             System.exit(1);
         }
     }
+
+    private DownloadConfig getDownloadConfig(String s3Bucket, String s3Key)
+    {
+        DownloadConfig.ConfigBuilder builder = new DownloadConfig.ConfigBuilder();
+
+        //  Read config file from S3
+
+        //  Populate builder with values from config file
+
+        DownloadConfig config = new DownloadConfig(builder);
+        return config;
+    }
+
+
+
+    private AggregationOverrides getAggregationOverrides(String s3Bucket, String s3Key, String s3Region, String layer)
+    {
+        AggregationOverrides overrides = new AggregationOverrides();
+
+        logger.info("Loading aggregation templates file from S3.  Bucket [" + s3Bucket + "], Key [" + s3Key + "], Region [" + s3Region + "]");
+
+        //  Read config file from S3
+        String overrideTemplateDocument = null;
+        try
+        {
+            overrideTemplateDocument = S3Utils.readS3ObjectAsString(s3Bucket, s3Key, s3Region);
+
+            //  Unmarshall from XML
+            JAXBContext context = JAXBContext.newInstance(Templates.class);
+            Unmarshaller u = context.createUnmarshaller();
+
+            //  Try and match the template to the layer - apply the specified template if a match found
+            Templates templates = (Templates) u.unmarshal(new StringInputStream(overrideTemplateDocument));
+            List<Template> templateList = templates.getTemplate();
+
+            //  Config file has 'template' elements which contain 'attributes' and 'variables'
+            for(Template currentTemplate : templateList)
+            {
+                //  The 'match' attribute on the template can contain a comma-separated list
+                //  of match expressions for the template.
+                StringTokenizer tokenizer = new StringTokenizer(currentTemplate.getMatch(), ",");
+                boolean match = false;
+                while(tokenizer.hasMoreTokens()) {
+                    //  Apply the first template that matches the layer name
+                    if (Pattern.matches(tokenizer.nextToken(), layer)) {
+                        match = true;
+                        break;
+                    }
+                }
+
+                logger.info("Template match [" + match + "]: Layer [" + layer + "], Template Name [" + currentTemplate.getName() + "], Match [" + currentTemplate.getMatch() + "]");
+
+                //  Next template
+                if(!match)
+                {
+                    continue;
+                }
+
+                //  Convert the 'attribute' elements into GlobalAttributeOverride objects
+                Template.Attributes srcAttributes = currentTemplate.getAttributes();
+                if(srcAttributes != null) {
+                    List<Attribute> srcAttributeList = srcAttributes.getAttribute();
+                    for (Attribute currentSrcAttr : srcAttributeList) {
+
+                        String attributeValue = null;
+                        if (currentSrcAttr.getValue() != null)
+                        {
+                            if(currentSrcAttr.getValue().isEmpty() == false) {
+                                //  Use the first value
+                                attributeValue = currentSrcAttr.getValue().get(0);
+                            }
+                            else
+                            {
+                                logger.info("Attribute values empty.");
+                            }
+                        }
+                        else
+                        {
+                            logger.info("Attribute value null.");
+                        }
+
+                        logger.info("Applying Attribute Override: Name [" + currentSrcAttr.getName() + "], Type [" + currentSrcAttr.getType() + "], Value [" + attributeValue + "]");
+
+                        GlobalAttributeOverride newOverride = new GlobalAttributeOverride(currentSrcAttr.getName(), DataType.getType(currentSrcAttr.getType()), currentSrcAttr.getMatch(), attributeValue);
+                        overrides.getAttributes().add(newOverride);
+                    }
+                }
+
+
+                //  Convert the 'variable' elements into VariableOverrides objects
+                Template.Variables srcVariables = currentTemplate.getVariables();
+
+                if(srcVariables != null)
+                {
+                    List<Variable> srcVariableList = srcVariables.getVariable();
+                    for (Variable currentSrcVariable : srcVariableList) {
+                        //  Variables can have attributes
+                        List<VariableAttributeOverride> variableAttributeOverrides = null;
+                        List<Attribute> variableAttributes = currentSrcVariable.getAttribute();
+                        if (variableAttributes != null && variableAttributes.size() > 0) {
+                            variableAttributeOverrides = new ArrayList<>();
+                            //  Attributes can have multiple values
+                            for (Attribute currentVariableAttr : variableAttributes) {
+                                VariableAttributeOverride newVariableAttributeOverride = new VariableAttributeOverride(currentVariableAttr.getName(), DataType.getType(currentVariableAttr.getType()), currentVariableAttr.getValue());
+                                variableAttributeOverrides.add(newVariableAttributeOverride);
+                            }
+                        }
+
+                        logger.info("Applying Variable Override: Name [" + currentSrcVariable.getName() + "], Type [" + currentSrcVariable.getType() + "]");
+                        for(VariableAttributeOverride var : variableAttributeOverrides)
+                        {
+                            logger.info("    - Attribute override: Name [" + var.getName() + "], Type [" + var.getType() + "], Values [" + var.getValues() + "]");
+                        }
+
+                        VariableOverrides newOverride = new VariableOverrides(currentSrcVariable.getName(), DataType.getType(currentSrcVariable.getType()), variableAttributeOverrides);
+                        overrides.getVariableOverridesList().add(newOverride);
+                    }
+                }
+            }
+        }
+        catch(IOException ex)
+        {
+            logger.error("Unable to load aggregations override file from S3.", ex);
+        }
+        catch(JAXBException ex)
+        {
+            logger.error("Unable to unmarshall XML from aggregations override file.", ex);
+        }
+
+        return overrides;
+    }
+
 }

@@ -3,7 +3,7 @@ package au.org.emii.aggregator.exception;
 /**
  * Created by craigj on 12/01/17.
  */
-public class AggregationException extends Exception {
+public class AggregationException extends RuntimeException {
 
     public AggregationException(Throwable t) {
         super(t);

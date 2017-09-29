@@ -51,6 +51,7 @@
                 <configuration>
                     <sources>
                         <source>src/main/xsd/wps/1.0.0/wpsAll.xsd</source>
+                        <source>src/main/xsd/aggregator/template_config.xsd</source>
                     </sources>
                 </configuration>
             </plugin>

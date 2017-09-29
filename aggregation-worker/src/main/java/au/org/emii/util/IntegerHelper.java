@@ -19,4 +19,17 @@ public class IntegerHelper {
         return "th";
     }
 
+    public static boolean isInteger(String str)
+    {
+        if(str != null) {
+            try {
+                Integer.parseInt(str);
+            } catch (NumberFormatException e) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
 }
