@@ -17,7 +17,7 @@ public class EmailService {
     private EmailTemplateManager templateManager;
 
     public EmailService() throws Exception {
-        Regions region = Regions.fromName(WpsConfig.getConfig(WpsConfig.AWS_REGION_CONFIG_KEY));
+        Regions region = Regions.fromName(WpsConfig.getConfig(WpsConfig.AWS_REGION_SES_CONFIG_KEY));
         this.client = AmazonSimpleEmailServiceClientBuilder.standard()
                 .withRegion(region).build();
         templateManager = new EmailTemplateManager();
