@@ -235,7 +235,11 @@ public class AggregationRunner implements CommandLineRunner {
             }
 
             if(emailService != null) {
-                emailService.sendCompletedJobEmail(email, batchJobId, jobReportUrl, expirationPeriod);
+                try {
+                    emailService.sendCompletedJobEmail(email, batchJobId, jobReportUrl, expirationPeriod);
+                } catch (Exception ex) {
+                    logger.error("Unable to send completed job email. Error Message:", ex);
+                }
             }
         } catch (Throwable e) {
             e.printStackTrace();
