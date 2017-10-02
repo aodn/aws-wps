@@ -381,6 +381,7 @@ Resources:
         Variables:
           AWS_BATCH_JOB_NAME: !Ref jobName
           AWS_BATCH_JOB_QUEUE_NAME: !Ref JobQueue
+          AWS_BATCH_JOB_DEFINITION_NAME: !Select [1, !Split ["/", !Ref JobDefinition]]
           STATUS_S3_BUCKET: !Ref s3ConfigBucket
           STATUS_S3_FILENAME: !Ref s3StatusFilename
           GET_CAPABILITIES_TEMPLATE_S3_BUCKET: !Ref s3GetCapabilitiesTemplateBucket

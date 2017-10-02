@@ -20,6 +20,8 @@ public class WpsConfig {
     //  Configuration key names
     public static final String AWS_BATCH_JOB_NAME_CONFIG_KEY = "AWS_BATCH_JOB_NAME";
     public static final String AWS_BATCH_JOB_QUEUE_NAME_CONFIG_KEY = "AWS_BATCH_JOB_QUEUE_NAME";
+    public static final String AWS_BATCH_JOB_DEFINITION_NAME_CONFIG_KEY = "AWS_BATCH_JOB_DEFINITION_NAME";
+
     public static final String AWS_REGION_CONFIG_KEY = "AWS_REGION";
     public static final String AWS_REGION_SES_CONFIG_KEY = "AWS_REGION_SES";
     public static final String STATUS_S3_BUCKET_CONFIG_KEY = "STATUS_S3_BUCKET";
@@ -75,6 +77,7 @@ public class WpsConfig {
             // Load properties from environment variables
             setProperty(properties, AWS_BATCH_JOB_NAME_CONFIG_KEY);
             setProperty(properties, AWS_BATCH_JOB_QUEUE_NAME_CONFIG_KEY);
+            setProperty(properties, AWS_BATCH_JOB_DEFINITION_NAME_CONFIG_KEY);
             setProperty(properties, AWS_REGION_CONFIG_KEY);
             setProperty(properties, AWS_REGION_SES_CONFIG_KEY);
             setProperty(properties, STATUS_S3_BUCKET_CONFIG_KEY);
