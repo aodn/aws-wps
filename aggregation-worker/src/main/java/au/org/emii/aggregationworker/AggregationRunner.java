@@ -115,8 +115,14 @@ public class AggregationRunner implements CommandLineRunner {
             //        - result
             String layer = commandLine.getArgs()[0];
             String subset = commandLine.getArgs()[1];
-            String resultMime = commandLine.getArgs()[2];
-            email = commandLine.getArgs()[3];
+            String resultMime = commandLine.getArgs()[3];
+            email = commandLine.getArgs()[2];
+
+            if (email != null && email.startsWith("email.to=")) {
+                email = email.substring(9); // To support current request format
+            }
+
+            logger.info("email:" + email);
 
             SubsetParameters subsetParams = new SubsetParameters(subset);
 
