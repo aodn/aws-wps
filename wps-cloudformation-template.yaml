@@ -53,6 +53,13 @@ Parameters:
     AllowedValues:
       - true
       - false
+  awsRegionSes:
+    Type: String
+    Default: us-east-1
+    AllowedValues:
+      - us-east-1
+      - us-west-2
+      - eu-west-1
 Mappings:
   EnvironmentMap:
     production:
@@ -155,6 +162,14 @@ Resources:
                   !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]]],
                   !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]],"/*"]]
                 ]
+              -
+                Effect: "Allow"
+                Action: ["ses:SendEmail"]
+                Resource: ["*"]
+              -
+                Effect: "Allow"
+                Action: ["ses:SendRawEmail"]
+                Resource: ["*"]
   JobDefinition:
     Type: 'AWS::Batch::JobDefinition'
     Properties:
@@ -168,6 +183,7 @@ Resources:
         Command:
           - 'Ref::layer'
           - 'Ref::subset'
+          - 'Ref::callbackParams'
           - 'Ref::result'
         Environment:
           -
@@ -182,6 +198,12 @@ Resources:
           -
             Name: "STATUS_S3_FILENAME"
             Value: !Ref s3StatusFilename
+          -
+            Name: "AWS_REGION"
+            Value: !Ref "AWS::Region"
+          -
+            Name: "AWS_REGION_SES"
+            Value: !Ref awsRegionSes
       RetryStrategy:
         Attempts: 2
     Metadata:
@@ -329,6 +351,7 @@ Resources:
         Variables:
           AWS_BATCH_JOB_NAME: !Ref jobName
           AWS_BATCH_JOB_QUEUE_NAME: !Ref JobQueue
+          AWS_BATCH_JOB_DEFINITION_NAME: !Select [1, !Split ["/", !Ref JobDefinition]]
           STATUS_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
           STATUS_S3_FILENAME: !Ref s3StatusFilename
           GET_CAPABILITIES_TEMPLATE_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]

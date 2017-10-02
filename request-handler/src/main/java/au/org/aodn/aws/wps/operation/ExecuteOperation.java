@@ -51,6 +51,9 @@ public class ExecuteOperation implements Operation {
         LOGGER.info("awsRegion: " + awsRegion);
 
         String processIdentifier = executeRequest.getIdentifier().getValue();  // code spaces not supported for the moment
+        JobMapper jobMapper = new JobMapper(processIdentifier);
+        String jobDefinitionName = jobMapper.getJobDefinitionName();
+
         Map<String, String> parameterMap = getJobParameters();
 
         LOGGER.info("Submitting job request...");
@@ -60,7 +63,7 @@ public class ExecuteOperation implements Operation {
         //  This will probably involve selecting the appropriate queue, jobName (mainly for display in AWS console) & job definition based on the processIdentifier.
         submitJobRequest.setJobQueue(jobQueueName);  //TODO: config/jobqueue selection
         submitJobRequest.setJobName(jobName);
-        submitJobRequest.setJobDefinition(processIdentifier);  //TODO: either map to correct job def or set vcpus/memory required appropriately
+        submitJobRequest.setJobDefinition(jobDefinitionName);  //TODO: either map to correct job def or set vcpus/memory required appropriately
         submitJobRequest.setParameters(parameterMap);
 
         AWSBatchClientBuilder builder = AWSBatchClientBuilder.standard();
