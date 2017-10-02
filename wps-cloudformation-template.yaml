@@ -6,9 +6,6 @@ Parameters:
     Type: String
   subnets:
     Type: CommaDelimitedList
-  s3LambdaCodeBucket:
-    Type: String
-    Default: imos-binary-frankfurt
   s3LambdaCodeKey:
     Type: String
   jobName:
@@ -27,30 +24,15 @@ Parameters:
     Type: String
   dockerImage:
     Type: String
-  s3OutputBucket:
-    Type: String
-    Default: 'imos-test-data.aodn.org.au'
-  s3StatusBucket:
-    Type: String
-    Default: 'imos-test-data.aodn.org.au'
   s3OutputFilename:
     Type: String
     Default: 'output.nc'
   s3StatusFilename:
     Type: String
     Default: 'status.xml'
-  s3ConfigBucket:
-    Type: String
-    Default: 'wps-lambda-config'
-  s3GetCapabilitiesTemplateBucket:
-    Type: String
-    Default: imos-binary-frankfurt
   s3GetCapabilitiesTemplatekey:
     Type: String
     Default: '$LATEST/GetCapabilities.ftl'
-  s3DescribeProcessBucket:
-    Type: String
-    Default: imos-binary-frankfurt
   s3DescribeProcessKey:
     Type: String
     Default: '$LATEST/operations/'
@@ -65,7 +47,7 @@ Parameters:
       - systest
       - sandbox
       - dev
-  createProdSystestBucket:
+  createPersistentBucket:
     Type: String
     Default: false
     AllowedValues:
@@ -84,21 +66,23 @@ Mappings:
       BucketName: "aws-wps-production"
     systest:
       BucketName: "aws-wps-systest"
+    sandbox:
+      BucketName: "aws-wps-sandbox"
 Conditions:
-  CreateProdSystestBucket: !And
-    - !Equals [!Ref createProdSystestBucket, true]
-    - !Not [!Condition CreateSandboxDevBucket]
-  CreateSandboxDevBucket: !Not [!Or [!Equals [ !Ref environment, production ], !Equals [ !Ref environment, systest ]]]
+  CreateEphemeralBucket: !Equals [ !Ref environment, dev ]
+  CreatePersistentBucket: !And
+    - !Equals [!Ref createPersistentBucket, true]
+    - !Not [!Condition CreateEphemeralBucket]
 Resources:
-  S3BucketProdSystest:
+  PersistentS3Bucket:
     Type: "AWS::S3::Bucket"
-    Condition: CreateProdSystestBucket
+    Condition: CreatePersistentBucket
     DeletionPolicy: "Retain"
     Properties:
       BucketName: !FindInMap [EnvironmentMap, !Ref environment, BucketName]
-  S3BucketSandboxDev:
+  EphemeralS3Bucket:
     Type: "AWS::S3::Bucket"
-    Condition: CreateSandboxDevBucket
+    Condition: CreateEphemeralBucket
     DeletionPolicy: "Delete"
     Properties:
       BucketName: !Sub 'aws-wps-${AWS::StackName}'
@@ -175,22 +159,8 @@ Resources:
                 Effect: "Allow"
                 Action: "s3:*"
                 Resource: [
-                  !Join ["", ["arn:aws:s3:::", !Ref s3OutputBucket]],
-                  !Join ["", ["arn:aws:s3:::", !Ref s3OutputBucket,"/*"]]
-                ]
-              -
-                Effect: "Allow"
-                Action: "s3:*"
-                Resource: [
-                  !Join ["", ["arn:aws:s3:::", !Ref s3StatusBucket]],
-                  !Join ["", ["arn:aws:s3:::", !Ref s3StatusBucket,"/*"]]
-                ]
-              -
-                Effect: "Allow"
-                Action: ["s3:Get*", "s3:List*"]
-                Resource: [
-                  !Join ["", ["arn:aws:s3:::", !Ref s3ConfigBucket]],
-                  !Join ["", ["arn:aws:s3:::", !Ref s3ConfigBucket,"/*"]]
+                  !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]]],
+                  !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]],"/*"]]
                 ]
               -
                 Effect: "Allow"
@@ -221,10 +191,10 @@ Resources:
             Value: !Ref s3OutputFilename
           -
             Name: "OUTPUT_S3_BUCKET"
-            Value: !Ref s3ConfigBucket
+            Value: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
           -
             Name: "STATUS_S3_BUCKET"
-            Value: !Ref s3ConfigBucket
+            Value: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
           -
             Name: "STATUS_S3_FILENAME"
             Value: !Ref s3StatusFilename
@@ -375,18 +345,18 @@ Resources:
       Runtime: java8
       Timeout: 60
       Code:
-        S3Bucket: !Ref s3LambdaCodeBucket
+        S3Bucket: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
         S3Key: !Ref s3LambdaCodeKey
       Environment:
         Variables:
           AWS_BATCH_JOB_NAME: !Ref jobName
           AWS_BATCH_JOB_QUEUE_NAME: !Ref JobQueue
           AWS_BATCH_JOB_DEFINITION_NAME: !Select [1, !Split ["/", !Ref JobDefinition]]
-          STATUS_S3_BUCKET: !Ref s3ConfigBucket
+          STATUS_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
           STATUS_S3_FILENAME: !Ref s3StatusFilename
-          GET_CAPABILITIES_TEMPLATE_S3_BUCKET: !Ref s3GetCapabilitiesTemplateBucket
+          GET_CAPABILITIES_TEMPLATE_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
           GET_CAPABILITIES_TEMPLATE_S3_KEY: !Ref s3GetCapabilitiesTemplatekey
-          DESCRIBE_PROCESS_S3_BUCKET: !Ref s3DescribeProcessBucket
+          DESCRIBE_PROCESS_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
           DESCRIBE_PROCESS_S3_KEY_PREFIX: !Ref s3DescribeProcessKey
           GEOSERVER_WPS_ENDPOINT_URL: !Ref geoserverWpsEndpoint
     Metadata:
@@ -424,8 +394,8 @@ Resources:
               - Effect: "Allow"
                 Action: "s3:*"
                 Resource: [
-                  !Join ["", ["arn:aws:s3:::", !Ref s3StatusBucket]],
-                  !Join ["", ["arn:aws:s3:::", !Ref s3StatusBucket,"/*"]]
+                  !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]]],
+                  !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]],"/*"]]
                 ]
     Metadata:
       'AWS::CloudFormation::Designer':
