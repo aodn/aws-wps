@@ -71,6 +71,13 @@ Parameters:
     AllowedValues:
       - true
       - false
+  awsRegionSes:
+    Type: String
+    Default: us-east-1
+    AllowedValues:
+      - us-east-1
+      - us-west-2
+      - eu-west-1
 Mappings:
   EnvironmentMap:
     production:
@@ -188,11 +195,11 @@ Resources:
               -
                 Effect: "Allow"
                 Action: ["ses:SendEmail"]
-                Resource: [*]
+                Resource: ["*"]
               -
                 Effect: "Allow"
                 Action: ["ses:SendRawEmail"]
-                Resource: [*]
+                Resource: ["*"]
   JobDefinition:
     Type: 'AWS::Batch::JobDefinition'
     Properties:
@@ -221,6 +228,12 @@ Resources:
           -
             Name: "STATUS_S3_FILENAME"
             Value: !Ref s3StatusFilename
+          -
+            Name: "AWS_REGION"
+            Value: !Ref "AWS::Region"
+          -
+            Name: "AWS_REGION_SES"
+            Value: !Ref awsRegionSes
       RetryStrategy:
         Attempts: 2
     Metadata:
