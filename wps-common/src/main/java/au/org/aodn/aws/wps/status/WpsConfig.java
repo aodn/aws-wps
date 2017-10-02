@@ -21,6 +21,7 @@ public class WpsConfig {
     public static final String AWS_BATCH_JOB_NAME_CONFIG_KEY = "AWS_BATCH_JOB_NAME";
     public static final String AWS_BATCH_JOB_QUEUE_NAME_CONFIG_KEY = "AWS_BATCH_JOB_QUEUE_NAME";
     public static final String AWS_REGION_CONFIG_KEY = "AWS_REGION";
+    public static final String AWS_REGION_SES_CONFIG_KEY = "AWS_REGION_SES";
     public static final String STATUS_S3_BUCKET_CONFIG_KEY = "STATUS_S3_BUCKET";
     public static final String STATUS_S3_FILENAME_CONFIG_KEY = "STATUS_S3_FILENAME";
     public static final String OUTPUT_S3_BUCKET_CONFIG_KEY = "OUTPUT_S3_BUCKET";
@@ -66,10 +67,16 @@ public class WpsConfig {
                 LOGGER.error("Unable to load application properties. Error:", e);
             }
 
+            LOGGER.info("Environment Variables");
+            for (String key : System.getenv().keySet()) {
+                LOGGER.info(String.format("%s = %s", key, System.getenv(key)));
+            }
+
             // Load properties from environment variables
             setProperty(properties, AWS_BATCH_JOB_NAME_CONFIG_KEY);
             setProperty(properties, AWS_BATCH_JOB_QUEUE_NAME_CONFIG_KEY);
             setProperty(properties, AWS_REGION_CONFIG_KEY);
+            setProperty(properties, AWS_REGION_SES_CONFIG_KEY);
             setProperty(properties, STATUS_S3_BUCKET_CONFIG_KEY);
             setProperty(properties, STATUS_S3_FILENAME_CONFIG_KEY);
             setProperty(properties, OUTPUT_S3_BUCKET_CONFIG_KEY);
