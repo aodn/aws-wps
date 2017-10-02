@@ -17,16 +17,7 @@ public class S3Utils {
     public static String readS3ObjectAsString(String s3Bucket, String s3Key, String s3Region) throws IOException
     {
         String objectString = null;
-
-        //  Get from S3 bucket location
-        AmazonS3Client s3Client = new AmazonS3Client();
-        if(s3Region != null) {
-            Region region = Region.getRegion(Regions.fromName(s3Region));
-            s3Client.setRegion(region);
-        }
-
-        S3Object templateObject = s3Client.getObject(s3Bucket, s3Key);
-        S3ObjectInputStream contentStream = templateObject.getObjectContent();
+        S3ObjectInputStream contentStream = getS3ObjectStream(s3Bucket, s3Key, s3Region);
 
         //  read file to String
         try {
@@ -39,5 +30,20 @@ public class S3Utils {
             throw ioex;
         }
         return objectString;
+    }
+
+
+    public static S3ObjectInputStream getS3ObjectStream(String s3Bucket, String s3Key, String s3Region) throws IOException
+    {
+        //  Get from S3 bucket location
+        AmazonS3Client s3Client = new AmazonS3Client();
+        if(s3Region != null) {
+            Region region = Region.getRegion(Regions.fromName(s3Region));
+            s3Client.setRegion(region);
+        }
+
+        S3Object templateObject = s3Client.getObject(s3Bucket, s3Key);
+        return templateObject.getObjectContent();
+
     }
 }
