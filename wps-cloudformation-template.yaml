@@ -204,10 +204,10 @@ Resources:
         Memory: !Ref jobMemory
         JobRoleArn: !Ref JobInstanceRole
         Command:
-          - 'Ref::layer'
-          - 'Ref::subset'
-          - 'Ref::email'
-          - 'Ref::result'
+          - '-l','Ref::layer'
+          - '-s','Ref::subset'
+          - '-e','Ref::callbackParams'
+          - '-m','Ref::result'
         Environment:
           -
             Name: "OUTPUT_S3_FILENAME"
