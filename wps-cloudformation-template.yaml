@@ -185,6 +185,14 @@ Resources:
                   !Join ["", ["arn:aws:s3:::", !Ref s3ConfigBucket]],
                   !Join ["", ["arn:aws:s3:::", !Ref s3ConfigBucket,"/*"]]
                 ]
+              -
+                Effect: "Allow"
+                Action: ["ses:SendEmail"]
+                Resource: [*]
+              -
+                Effect: "Allow"
+                Action: ["ses:SendRawEmail"]
+                Resource: [*]
   JobDefinition:
     Type: 'AWS::Batch::JobDefinition'
     Properties:
@@ -198,6 +206,7 @@ Resources:
         Command:
           - 'Ref::layer'
           - 'Ref::subset'
+          - 'Ref::email'
           - 'Ref::result'
         Environment:
           -
