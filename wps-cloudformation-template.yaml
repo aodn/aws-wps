@@ -48,6 +48,12 @@ Parameters:
   s3GetCapabilitiesTemplatekey:
     Type: String
     Default: '$LATEST/GetCapabilities.ftl'
+  s3AggregatorTemplateKey:
+    Type: String
+    Default: "$LATEST/config/aggregator/templates.xml"
+  s3DownloadConfigKey:
+    Type: String
+    Default: "$LATEST/config/aggregator/downloadConfig.properties"
   s3DescribeProcessBucket:
     Type: String
     Default: imos-binary-frankfurt
@@ -211,9 +217,13 @@ Resources:
         Memory: !Ref jobMemory
         JobRoleArn: !Ref JobInstanceRole
         Command:
+          - '-l'
           - 'Ref::layer'
+          - '-s'
           - 'Ref::subset'
+          - '-e'
           - 'Ref::callbackParams'
+          - '-m'
           - 'Ref::result'
         Environment:
           -
@@ -234,6 +244,15 @@ Resources:
           -
             Name: "AWS_REGION_SES"
             Value: !Ref awsRegionSes
+          -
+            Name: "AGGREGATOR_TEMPLATE_FILE_S3_KEY"
+            Value: !Ref s3AggregatorTemplateKey
+          -
+            Name: "DOWNLOAD_CONFIG_S3_KEY"
+            Value: !Ref s3DownloadConfigKey
+          -
+            Name: "AGGREGATOR_CONFIG_S3_BUCKET"
+            Value: !Ref s3ConfigBucket
       RetryStrategy:
         Attempts: 2
     Metadata:

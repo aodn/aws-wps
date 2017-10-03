@@ -36,14 +36,14 @@ public class S3StatusUpdater {
         LOGGER.info("-  jobId    = " + jobId);
         StringInputStream inputStream = new StringInputStream(statusDocument);
         try {
-            AmazonS3 cl = AmazonS3ClientBuilder.defaultClient();
+            AmazonS3 client = AmazonS3ClientBuilder.defaultClient();
             PutObjectRequest putRequest = new PutObjectRequest(s3bucket, jobId + "/" + statusFilename, inputStream, new ObjectMetadata());
             putRequest.setCannedAcl(CannedAccessControlList.PublicRead);
-            PutObjectResult result = cl.putObject(putRequest);
-            ObjectMetadata fileMetadata = result.getMetadata();
-            //  TODO: do we want to log any metadata about the file?  The getInstanceLength below returns 0 for some reason...
-            LOGGER.info("File size : " + fileMetadata.getInstanceLength());
-            LOGGER.info("Wrote status file.");
+            client.putObject(putRequest);
+        }
+        catch(Exception ex)
+        {
+            LOGGER.error("Unable to write status file: S3Bucket [" + s3bucket + "], Key [" + jobId + "/" + statusFilename + "]", ex);
         }
         finally
         {

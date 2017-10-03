@@ -1,6 +1,7 @@
 package au.org.aodn.aws.wps.operation;
 
 
+import au.org.aodn.aws.util.Utils;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3Client;
@@ -16,9 +17,7 @@ import freemarker.template.TemplateException;
 import freemarker.template.TemplateExceptionHandler;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 
 public class GetCapabilitiesReader {

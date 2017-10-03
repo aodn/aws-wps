@@ -1,5 +1,6 @@
 package au.org.aodn.aws.wps.operation;
 
+import au.org.aodn.aws.util.Utils;
 import au.org.aodn.aws.wps.status.StatusHelper;
 import au.org.aodn.aws.wps.status.WpsConfig;
 import com.amazonaws.regions.Region;
@@ -50,6 +51,9 @@ public class DescribeProcessOperation implements Operation {
 
         if(identifiers != null) {
             ProcessDescriptions outputProcessDescriptions = new ProcessDescriptions();
+            outputProcessDescriptions.setVersion("1.0.0");
+            outputProcessDescriptions.setLang("en-US");
+            outputProcessDescriptions.setService("wps");
 
             for (CodeType identifier : identifiers) {
                 //  The identifier passed will be prefixed with 'gs:' - ie: gs:GoGoDuck
