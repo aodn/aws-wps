@@ -40,6 +40,13 @@ public class WpsConfig {
     public static final String GEOSERVER_WPS_ENDPOINT_URL_CONFIG_KEY = "GEOSERVER_WPS_ENDPOINT_URL";
     public static final String GEOSERVER_WPS_ENDPOINT_TEMPLATE_KEY = "geoserverWPSEndpointURL";
 
+    public static final String AGGREGATOR_CONFIG_S3_BUCKET_CONFIG_KEY = "AGGREGATOR_CONFIG_S3_BUCKET";
+    public static final String AGGREGATOR_TEMPLATE_FILE_S3_KEY_CONFIG_KEY = "AGGREGATOR_TEMPLATE_FILE_S3_KEY";
+    public static final String DOWNLOAD_CONFIG_S3_KEY_CONFIG_KEY = "DOWNLOAD_CONFIG_S3_KEY";
+
+    public static final String DOWNLOAD_CONNECT_TIMEOUT_CONFIG_KEY = "DOWNLOAD_CONNECT_TIMEOUT";
+    public static final String DOWNLOAD_READ_TIMEOUT_CONFIG_KEY = "DOWNLOAD_READ_TIMEOUT";
+
     public static final String SITE_ACRONYM = "siteAcronym";
     public static final String EMAIL_SIGNATURE = "emailSignature";
     public static final String CONTACT_EMAIL = "contactEmail";
@@ -93,6 +100,9 @@ public class WpsConfig {
             setProperty(properties, DESCRIBE_PROCESS_S3_BUCKET_CONFIG_KEY);
             setProperty(properties, DESCRIBE_PROCESS_S3_KEY_PREFIX_CONFIG_KEY);
             setProperty(properties, GEOSERVER_WPS_ENDPOINT_URL_CONFIG_KEY);
+            setProperty(properties, AGGREGATOR_CONFIG_S3_BUCKET_CONFIG_KEY);
+            setProperty(properties, AGGREGATOR_TEMPLATE_FILE_S3_KEY_CONFIG_KEY);
+            setProperty(properties, DOWNLOAD_CONFIG_S3_KEY_CONFIG_KEY);
         }
 
         return properties;

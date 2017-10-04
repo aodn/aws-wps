@@ -1,12 +1,12 @@
 package au.org.emii.aggregationworker;
 
+
 import au.org.aodn.aws.wps.status.EnumStatus;
 import au.org.aodn.aws.wps.status.ExecuteStatusBuilder;
 import au.org.aodn.aws.wps.status.S3StatusUpdater;
 import au.org.aodn.aws.wps.status.WpsConfig;
 import au.org.emii.aggregator.NetcdfAggregator;
 import au.org.emii.aggregator.overrides.AggregationOverrides;
-import au.org.emii.aggregator.overrides.xstream.AggregationOverridesReader;
 import au.org.emii.download.Download;
 import au.org.emii.download.DownloadConfig;
 import au.org.emii.download.DownloadRequest;
@@ -15,6 +15,7 @@ import au.org.emii.download.ParallelDownloadManager;
 import au.org.emii.geoserver.client.HttpIndexReader;
 import au.org.emii.geoserver.client.SubsetParameters;
 import au.org.emii.util.EmailService;
+import au.org.emii.util.IntegerHelper;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.services.s3.transfer.TransferManager;
 import com.amazonaws.services.s3.transfer.Upload;
@@ -32,18 +33,22 @@ import ucar.nc2.time.CalendarDateRange;
 import ucar.unidata.geoloc.LatLonPoint;
 import ucar.unidata.geoloc.LatLonPointImmutable;
 import ucar.unidata.geoloc.LatLonRect;
-
 import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Set;
 
+
 import static au.org.aodn.aws.wps.status.WpsConfig.*;
+import static au.org.emii.aggregator.au.org.emii.aggregator.config.AggregationOverridesReader.getAggregationOverrides;
+import static au.org.emii.aggregator.au.org.emii.aggregator.config.DownloadConfigReader.getDownloadConfig;
 
 @Component
 public class AggregationRunner implements CommandLineRunner {
+
+    public static final int DEFAULT_CONNECT_TIMEOUT_MS = 60000;
+    public static final int DEFAULT_READ_TIMEOUT_MS = 60000;
 
     private static final Logger logger = LoggerFactory.getLogger(au.org.emii.aggregationworker.AggregationRunner.class);
 
@@ -67,7 +72,6 @@ public class AggregationRunner implements CommandLineRunner {
 
         try {
 
-            emailService = new EmailService();
 
             //  Capture the AWS job specifics - they are passed to the docker runtime as
             //  environment variables.
@@ -79,9 +83,37 @@ public class AggregationRunner implements CommandLineRunner {
             statusS3Bucket = WpsConfig.getConfig(STATUS_S3_BUCKET_CONFIG_KEY);
             statusFilename = WpsConfig.getConfig(STATUS_S3_FILENAME_CONFIG_KEY);
 
+            String aggregatorConfigS3Bucket = WpsConfig.getConfig(AGGREGATOR_CONFIG_S3_BUCKET_CONFIG_KEY);
+            String aggregatorTemplateFileS3Key = WpsConfig.getConfig(AGGREGATOR_TEMPLATE_FILE_S3_KEY_CONFIG_KEY);
+            String downloadConfigS3Key = WpsConfig.getConfig(DOWNLOAD_CONFIG_S3_KEY_CONFIG_KEY);
+
+            //  Parse connect timeout
+            String downloadConnectTimeoutString = WpsConfig.getConfig(DOWNLOAD_CONNECT_TIMEOUT_CONFIG_KEY);
+            int downloadConnectTimeout;
+            if(downloadConnectTimeoutString != null && IntegerHelper.isInteger(downloadConnectTimeoutString))
+            {
+                downloadConnectTimeout = Integer.parseInt(downloadConnectTimeoutString);
+            }
+            else
+            {
+                downloadConnectTimeout = DEFAULT_CONNECT_TIMEOUT_MS;
+            }
+
+            // Parse read timeout
+            String downloadReadTimeoutString = WpsConfig.getConfig(DOWNLOAD_READ_TIMEOUT_CONFIG_KEY);
+            int downloadReadTimeout;
+            if(downloadReadTimeoutString != null && IntegerHelper.isInteger(downloadReadTimeoutString))
+            {
+                downloadReadTimeout = Integer.parseInt(downloadConnectTimeoutString);
+            }
+            else
+            {
+                downloadReadTimeout = DEFAULT_READ_TIMEOUT_MS;
+            }
+
+
             //  TODO:  null check and act on null configuration
             //  TODO : validate configuration
-
             String statusDocument = ExecuteStatusBuilder.getStatusDocument(statusS3Bucket, statusFilename, batchJobId, EnumStatus.STARTED, null, null, null);
 
             //  Update status document to indicate job has started
@@ -95,40 +127,31 @@ public class AggregationRunner implements CommandLineRunner {
 
             Options options = new Options();
 
-            options.addOption("b", true, "restrict to bounding box specified by left lower/right upper coordinates e.g. -b 120,-32,130,-29");
-            options.addOption("z", true, "restrict data to specified z index range e.g. -z 2,4");
-            options.addOption("t", true, "restrict data to specified date/time range in ISO 8601 format e.g. -t 2017-01-12T21:58:02Z,2017-01-12T22:58:02Z");
-            // reexamine how config would be passed to program - as an argument perhaps?
-            options.addOption("c", true, "aggregation overrides to be applied - xml");
+            options.addOption("l", true, "The layer name");
+            options.addOption("s", true, "Subset parameters");
+            options.addOption("m", true, "The requested output mime type");
+            options.addOption("e", true, "Callback email address");
 
             CommandLineParser parser = new DefaultParser();
             CommandLine commandLine = parser.parse(options, args);
 
-            //  TODO:  Parameters are currently passed as command line arguments & are positional.
-            //  TODO:  need to revisit to accept named parameters passed in any order.
-            //  TODO:  Some scheme like passive them as a <name>=<value> pair for each one might be workable
-            //  TODO:  (as long as the value doesn't include spaces)
-            //
-            //  Currently expects the following params (IN THIS ORDER) -
-            //        - layer
-            //        - subset
-            //        - result
-            String layer = commandLine.getArgs()[0];
-            String subset = commandLine.getArgs()[1];
-            String resultMime = commandLine.getArgs()[3];
-            email = commandLine.getArgs()[2];
-
-            if (email != null && email.startsWith("email.to=")) {
-                email = email.substring(9); // To support current request format
-            }
-
-            logger.info("email:" + email);
+            String layer = commandLine.getOptionValue('l');
+            String subset = commandLine.getOptionValue('s');
+            String resultMime = commandLine.getOptionValue('m');
+            email = commandLine.getOptionValue('e');
 
             SubsetParameters subsetParams = new SubsetParameters(subset);
 
-            logger.info("Layer name        = " + layer);
-            logger.info("Subset parameters = " + subset);
-            logger.info("Request MIME type = " + resultMime);
+            if(email != null) {
+                email = email.substring(email.indexOf("=") + 1);
+                emailService = new EmailService();
+            }
+
+            logger.info("Command line parameters passed:");
+            logger.info("Layer name             = " + layer);
+            logger.info("Subset parameters      = " + subset);
+            logger.info("Request MIME type      = " + resultMime);
+            logger.info("Callback email address = " + email);
 
 
             //  Query geoserver to get a list of files for the aggregation
@@ -140,9 +163,6 @@ public class AggregationRunner implements CommandLineRunner {
 
             //  Form output file location
             S3URI s3URI = new S3URI(outputBucketName, batchJobId + "/" + outputFilename);
-
-            //  TODO : remove if not required
-            String overridesArg = commandLine.getOptionValue("c");
 
 
             LatLonRect bbox = null;
@@ -176,23 +196,21 @@ public class AggregationRunner implements CommandLineRunner {
 
 
             //  Apply overrides (if provided)
-            AggregationOverrides overrides;
+            AggregationOverrides overrides = getAggregationOverrides(aggregatorConfigS3Bucket, aggregatorTemplateFileS3Key, null, layer);
 
-            if (overridesArg != null) {
-                overrides = AggregationOverridesReader.load(Paths.get(overridesArg));
-            } else {
-                overrides = new AggregationOverrides(); // Use default (i.e. no overrides)
-            }
+            //  Apply download configuration
+            DownloadConfig downloadConfig = getDownloadConfig(aggregatorConfigS3Bucket, downloadConfigS3Key);
 
-
-            DownloadConfig downloadConfig = new DownloadConfig.ConfigBuilder().build();
-            Downloader downloader = new Downloader(60000, 60000);
+            //  Apply connect/read timeouts
+            Downloader downloader = new Downloader(downloadConnectTimeout, downloadReadTimeout);
 
             Path outputFile = Files.createTempFile("agg", ".nc");
 
+            long chunkSize = 1024;
+            //  TODO:  chunk size
             try (
                     ParallelDownloadManager downloadManager = new ParallelDownloadManager(downloadConfig, downloader);
-                    NetcdfAggregator netcdfAggregator = new NetcdfAggregator(outputFile, overrides, null, bbox, null, timeRange)
+                    NetcdfAggregator netcdfAggregator = new NetcdfAggregator(outputFile, overrides, chunkSize, bbox, null, timeRange)
             ) {
                 for (Download download : downloadManager.download(downloads)) {
                     netcdfAggregator.add(download.getPath());
@@ -216,7 +234,13 @@ public class AggregationRunner implements CommandLineRunner {
                 Files.deleteIfExists(outputFile);
             }
 
-            emailService.sendCompletedJobEmail(email, batchJobId, jobReportUrl, expirationPeriod);
+            if(emailService != null) {
+                try {
+                    emailService.sendCompletedJobEmail(email, batchJobId, jobReportUrl, expirationPeriod);
+                } catch (Exception ex) {
+                    logger.error("Unable to send completed job email. Error Message:", ex);
+                }
+            }
         } catch (Throwable e) {
             e.printStackTrace();
             if (statusUpdater != null) {
@@ -231,12 +255,16 @@ public class AggregationRunner implements CommandLineRunner {
                     }
                 }
             }
-            try {
-                emailService.sendFailedJobEmail(email, batchJobId, jobReportUrl);
-            } catch (Exception ex) {
-                logger.error("Unable to send failed job email. Error Message:", ex);
+
+            if(emailService != null) {
+                try {
+                    emailService.sendFailedJobEmail(email, batchJobId, jobReportUrl);
+                } catch (Exception ex) {
+                    logger.error("Unable to send failed job email. Error Message:", ex);
+                }
             }
             System.exit(1);
         }
     }
+
 }

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema targetNamespace="http://aodn.org.au/aggregator/configuration" elementFormDefault="qualified" xmlns="http://aodn.org.au/aggregator/configuration"  xmlns:xs="http://www.w3.org/2001/XMLSchema"  xmlns:bpmo="http://xmlns.oracle.com/bpm/bpmobject/" >
+    <xs:element name="templates">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="template" maxOccurs="unbounded"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="template">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="attributes" minOccurs="0">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element ref="attribute" maxOccurs="unbounded" />
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="variables" minOccurs="0">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element ref="variable" maxOccurs="unbounded" />
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+            </xs:sequence>
+            <xs:attribute name="match" type="xs:string" use="required" />
+            <xs:attribute name="name" type="xs:string" use="required" />
+        </xs:complexType>
+    </xs:element>
+
+    <xs:complexType name="attribute">
+        <xs:sequence>
+            <xs:element name="name" type="xs:string" />
+            <xs:element name="type" type="xs:string" />
+            <xs:element name="match" type="xs:string" minOccurs="0" />
+            <xs:element name="value" type="xs:string" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="variable">
+        <xs:sequence>
+            <xs:element name="name" type="xs:string" />
+            <xs:element name="type" type="xs:string" minOccurs="0" />
+            <xs:element ref="attribute" minOccurs="0" maxOccurs="unbounded" />
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:element name="attribute" type="attribute" />
+    <xs:element name="variable" type="variable" />
+</xs:schema>

@@ -54,6 +54,8 @@ public class StatusHelper {
     public static ExceptionReport getExceptionReport(String message, String code) {
         ExceptionReport report = new ExceptionReport();
         ExceptionType type = new ExceptionType();
+        //  TODO: externalise?
+        report.setVersion("1.0.0");
         type.getExceptionText().add(message);
         type.setExceptionCode(code);
         report.getException().add(type);

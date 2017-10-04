@@ -8,12 +8,12 @@
         <groupId>au.org.emii</groupId>
         <artifactId>aws-wps</artifactId>
         <relativePath>../pom.xml</relativePath>
-        <version>1.0.0</version>
+        <version>0.01</version>
     </parent>
 
     <groupId>au.org.emii</groupId>
     <artifactId>aggregation-worker</artifactId>
-    <version>1.0.0</version>
+    <version>0.01</version>
 
     <properties>
         <java.version>1.8</java.version>
@@ -54,7 +54,7 @@
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-s3</artifactId>
-            <version>1.11.181</version>
+            <version>1.11.179</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -69,12 +69,28 @@
         <dependency>
             <groupId>au.org.emii</groupId>
             <artifactId>wps-common</artifactId>
-            <version>1.0.0</version>
+            <version>0.01</version>
         </dependency>
         <dependency>
             <groupId>velocity</groupId>
             <artifactId>velocity</artifactId>
             <version>1.4</version>
+        </dependency>
+        <dependency>
+            <groupId>dom4j</groupId>
+            <artifactId>dom4j</artifactId>
+            <version>1.6.1</version>
+        </dependency>
+        <dependency>
+            <groupId>edu.ucar</groupId>
+            <artifactId>cdm</artifactId>
+            <version>4.6.6</version>
+        </dependency>
+        <dependency>
+            <groupId>edu.ucar</groupId>
+            <artifactId>netcdf4</artifactId>
+            <scope>runtime</scope>
+            <version>4.6.6</version>
         </dependency>
     </dependencies>
 
