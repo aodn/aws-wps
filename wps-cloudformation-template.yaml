@@ -20,7 +20,7 @@ Parameters:
     Description: "Lambda code file name ex: request-handler-0.01-lambda-package.zip"
   s3LambdaCodeURL:
     Type: String
-    Description: "Public url ex: https://imos-binary.s3-ap-southeast-2.amazonaws.com/jobs/aws_wps_systest/6/request-handler-0.01-lambda-package.zip"
+    Default: "http://imos-binary.s3-website-ap-southeast-2.amazonaws.com/jobs/aws_wps_prod/aws_wps_prod-latest.zip"
   s3GetCapabilitiesFilename:
     Type: String
     Default: 'GetCapabilities.ftl'
@@ -600,7 +600,7 @@ Resources:
     Type: "AWS::S3::Bucket"
     DeletionPolicy: "Delete"
     Properties:
-      BucketName: !Sub 'lambda-example-${AWS::StackName}'
+      BucketName: !Sub 'imos-aws-wps-${AWS::StackName}'
   S3PutConfigurationFiles:
     Type: "Custom::S3PutObject"
     Properties:
