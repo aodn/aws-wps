@@ -6,8 +6,35 @@ Parameters:
     Type: String
   subnets:
     Type: CommaDelimitedList
-  s3LambdaCodeKey:
+  s3configKey:
     Type: String
+    Default: 'config/'
+  s3LambdaCodeFile:
+    Type: String
+    Description: "Lambda code file name ex: request-handler-0.01-lambda-package.zip"
+  s3LambdaCodeURL:
+    Type: String
+    Description: "Public url ex: https://imos-binary.s3-ap-southeast-2.amazonaws.com/jobs/aws_wps_systest/6/request-handler-0.01-lambda-package.zip"
+  getCapabilitiesURL:
+    Type: String
+    Default: 'https://raw.githubusercontent.com/aodn/aws-wps/master/wps-common/src/main/resources/xml/GetCapabilities/GetCapabilities.ftl'
+  gogduckURL:
+    Type: String
+    Default: 'https://raw.githubusercontent.com/aodn/aws-wps/master/wps-common/src/main/resources/xml/DescribeProcess/GoGoDuck.xml'
+  netcdfOutputURL:
+    Type: String
+    Default: 'https://raw.githubusercontent.com/aodn/aws-wps/master/wps-common/src/main/resources/xml/DescribeProcess/NetcdfOutput.xml'
+  templatesURL:
+    Type: String
+    Default: 'https://raw.githubusercontent.com/aodn/aws-wps/master/wps-common/src/main/resources/config/templates.xml'
+  githubToken:
+      Type: String
+  githubFilePrefix:
+    Type: String
+    Default: 'GITHUB_FILE'
+  httpFilePrefix:
+    Type: String
+    Default: 'HTTP_FILE'
   jobName:
     Type: String
     Default: 'javaduck'
@@ -30,12 +57,9 @@ Parameters:
   s3StatusFilename:
     Type: String
     Default: 'status.xml'
-  s3GetCapabilitiesTemplatekey:
+  s3GetCapabilitiesFilename:
     Type: String
-    Default: '$LATEST/GetCapabilities.ftl'
-  s3DescribeProcessKey:
-    Type: String
-    Default: '$LATEST/operations/'
+    Default: 'GetCapabilities.ftl'
   geoserverWpsEndpoint:
     Type: String
     Default: 'http://geoserver-wps.aodn.org.au/geoserver/wps'
@@ -68,6 +92,8 @@ Mappings:
       BucketName: "aws-wps-systest"
     sandbox:
       BucketName: "aws-wps-sandbox"
+    dev:
+      BucketName: "aws-wps-dev"
 Conditions:
   CreateEphemeralBucket: !Equals [ !Ref environment, dev ]
   CreatePersistentBucket: !And
@@ -346,7 +372,7 @@ Resources:
       Timeout: 60
       Code:
         S3Bucket: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
-        S3Key: !Ref s3LambdaCodeKey
+        S3Key: !Join [ "", [ !Ref s3configKey,  !Ref s3LambdaCodeFile] ]
       Environment:
         Variables:
           AWS_BATCH_JOB_NAME: !Ref jobName
@@ -355,10 +381,11 @@ Resources:
           STATUS_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
           STATUS_S3_FILENAME: !Ref s3StatusFilename
           GET_CAPABILITIES_TEMPLATE_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
-          GET_CAPABILITIES_TEMPLATE_S3_KEY: !Ref s3GetCapabilitiesTemplatekey
+          GET_CAPABILITIES_TEMPLATE_S3_KEY: !Join [ "", [ !Ref s3configKey, !Ref s3GetCapabilitiesFilename ] ]
           DESCRIBE_PROCESS_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
-          DESCRIBE_PROCESS_S3_KEY_PREFIX: !Ref s3DescribeProcessKey
+          DESCRIBE_PROCESS_S3_KEY_PREFIX: !Ref s3configKey
           GEOSERVER_WPS_ENDPOINT_URL: !Ref geoserverWpsEndpoint
+    DependsOn: S3PutConfigurationFiles
     Metadata:
       'AWS::CloudFormation::Designer':
         id: 2f9d630f-4908-418a-9455-e9b730d0c673
@@ -400,6 +427,155 @@ Resources:
     Metadata:
       'AWS::CloudFormation::Designer':
         id: 5a6cf0c9-ebd3-41f0-8b4c-009af363b85b
+  S3PutObjectFunctionRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+      Policies:
+        - PolicyName: PublishVersion
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'lambda:PublishVersion'
+                Resource: '*'
+        - PolicyName: S3Access
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: "Allow"
+                Action: "s3:*"
+                Resource: [
+                  !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]]],
+                  !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]], "/*"]]
+                ]
+  S3PutObjectFunction:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      Code:
+        ZipFile: !Join ["\n", [
+        "from __future__ import print_function",
+        "import json",
+        "import os",
+        "import boto3",
+        "from urllib2 import urlopen, Request",
+        "from cStringIO import StringIO",
+        "from botocore.vendored import requests",
+        "",
+        "SUCCESS = 'SUCCESS'",
+        "FAILED = 'FAILED'",
+        "responseData = {'Data': 'OK'}",
+        "",
+        "s3c = boto3.client('s3')",
+        "target_bucket = os.getenv('BUCKET')",
+        "token = os.getenv('GITHUB_TOKEN') ",
+        "config_location = os.getenv('CONFIG_LOCATION')",
+        "",
+        "",
+        "def handler(event, context):",
+        "    try:",
+        "        github_prefix = os.getenv('GITHUB_FILE_PREFIX') ",
+        "        http_prefix = os.getenv('HTTP_FILE_PREFIX') ",
+        "        for env_var in os.environ:",
+        "            env_var_value = os.getenv(env_var)",
+        "            print('Environment Variable {} : {}'.format(env_var, env_var_value))",
+        "",
+        "        for env_var in os.environ:",
+        "            env_var_value = os.getenv(env_var)",
+        "            if env_var.startswith(github_prefix) and env_var_value != github_prefix:",
+        "                put(env_var_value, True)",
+        "            else:",
+        "                if env_var.startswith(http_prefix) and env_var_value != http_prefix:",
+        "                    put(env_var_value)",
+        "",
+        "        return send(event, context, SUCCESS, responseData, 'CustomResourcePhysicalID')",
+        "    except Exception as e:",
+        "        print(e)",
+        "        return send(event, context, FAILED, responseData, 'CustomResourcePhysicalID')",
+        "",
+        "",
+        "def put(url, add_token=False):",
+        "    print('Downloading url : {}'.format(url))",
+        "    request = Request(url)",
+        "    if add_token:",
+        "        print('Adding GitHub Token to request')",
+        "        request.add_header('Authorization', 'token %s' % token)",
+        "    response = urlopen(request)",
+        "",
+        "    file_contents = response.read()",
+        "    s3c.put_object(Bucket=target_bucket, Key='{}{}'.format(config_location, url.rsplit('/', 1)[-1]), Body=file_contents)",
+        "    print('Downloaded url : {}'.format(url))",
+        "",
+        "",
+        "def send(event, context, responseStatus, responseData, physicalResourceId):",
+        "    responseUrl = event['ResponseURL']",
+        "",
+        "    responseBody = {}",
+        "    responseBody['Status'] = responseStatus",
+        "    responseBody['Reason'] = 'See the details in CloudWatch Log Stream: ' + context.log_stream_name",
+        "    responseBody['PhysicalResourceId'] = physicalResourceId",
+        "    responseBody['StackId'] = event['StackId']",
+        "    responseBody['RequestId'] = event['RequestId']",
+        "    responseBody['LogicalResourceId'] = event['LogicalResourceId']",
+        "    responseBody['Data'] = responseData",
+        "",
+        "    json_responseBody = json.dumps(responseBody)",
+        "",
+        "    print('Response body:' + json_responseBody)",
+        "",
+        "    headers = {",
+        "        'content-type' : '',",
+        "        'content-length' : str(len(json_responseBody))",
+        "    }",
+        "",
+        "    try:",
+        "        response = requests.put(responseUrl,",
+        "                                data=json_responseBody,",
+        "                                headers=headers)",
+        "        print('Status code: ' + response.reason)",
+        "    except Exception as e:",
+        "        print('send(..) failed executing requests.put(..): ' + str(e))",
+        ""
+        ]]
+      Description: "Used to put objects into S3."
+      FunctionName: !Sub 'S3PutObject-${AWS::StackName}'
+      Handler: 'index.handler'
+      Role: !GetAtt S3PutObjectFunctionRole.Arn
+      Runtime: python2.7
+      Timeout: 60
+      Environment:
+        Variables:
+          BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
+          GITHUB_TOKEN: !Ref githubToken
+          CONFIG_LOCATION: !Ref s3configKey
+          GITHUB_FILE_PREFIX: !Ref githubFilePrefix
+          GITHUB_FILE_GET_CAPABILITIES: !Ref getCapabilitiesURL
+          GITHUB_FILE_GOGODUCK: !Ref gogduckURL
+          GITHUB_FILE_NETCDF_OUTPUT: !Ref netcdfOutputURL
+          GITHUB_FILE_TEMPLATES: !Ref templatesURL
+          HTTP_FILE_PREFIX: !Ref httpFilePrefix
+          HTTP_FILE_WPS_REQUEST_HANDLER: !Ref s3LambdaCodeURL
+  EphemeralS3Bucket:
+    Type: "AWS::S3::Bucket"
+    DeletionPolicy: "Delete"
+    Properties:
+      BucketName: !Sub 'lambda-example-${AWS::StackName}'
+  S3PutConfigurationFiles:
+    Type: "Custom::S3PutObject"
+    Properties:
+      ServiceToken: !GetAtt S3PutObjectFunction.Arn
 Outputs:
   ComputeEnvironmentArn:
     Value: !Ref ComputeEnvironment
