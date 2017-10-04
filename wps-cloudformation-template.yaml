@@ -15,7 +15,7 @@ Parameters:
   s3StatusFilename:
     Type: String
     Default: 'status.xml'
-  s3LambdaCodeFileName:
+  s3LambdaCodeFilename:
     Type: String
     Description: "Lambda code file name ex: request-handler-0.01-lambda-package.zip"
   s3LambdaCodeURL:
@@ -400,7 +400,7 @@ Resources:
       Timeout: 60
       Code:
         S3Bucket: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
-        S3Key: !Join [ "", [ !Ref s3configKey,  !Ref s3LambdaCodeFileName] ]
+        S3Key: !Join [ "", [ !Ref s3configKey,  !Ref s3LambdaCodeFilename] ]
       Environment:
         Variables:
           AWS_BATCH_JOB_NAME: !Ref jobName
