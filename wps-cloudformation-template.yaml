@@ -9,21 +9,12 @@ Parameters:
   s3configKey:
     Type: String
     Default: 'config/'
-  s3OutputFilename:
-    Type: String
-    Default: 'output.nc'
-  s3StatusFilename:
-    Type: String
-    Default: 'status.xml'
   s3LambdaCodeFilename:
     Type: String
     Description: "Lambda code file name ex: request-handler-0.01-lambda-package.zip"
   s3LambdaCodeURL:
     Type: String
     Default: "http://imos-binary.s3-website-ap-southeast-2.amazonaws.com/jobs/aws_wps_prod/aws_wps_prod-latest.zip"
-  s3GetCapabilitiesFilename:
-    Type: String
-    Default: 'GetCapabilities.ftl'
   getCapabilitiesURL:
     Type: String
     Default: 'https://raw.githubusercontent.com/aodn/aws-wps/master/wps-common/src/main/resources/xml/GetCapabilities/GetCapabilities.ftl'
@@ -33,26 +24,14 @@ Parameters:
   netcdfOutputURL:
     Type: String
     Default: 'https://raw.githubusercontent.com/aodn/aws-wps/master/wps-common/src/main/resources/xml/DescribeProcess/NetcdfOutput.xml'
-  templatesFilename:
-    Type: String
-    Default: 'templates.xml'
   templatesURL:
     Type: String
     Default: 'https://raw.githubusercontent.com/aodn/aws-wps/master/wps-common/src/main/resources/config/templates.xml'
-  downloadConfigFilename:
-    Type: String
-    Default: 'downloadConfig.properties'
   downloadConfigURL:
     Type: String
     Default: 'https://raw.githubusercontent.com/aodn/aws-wps/master/wps-common/src/main/resources/config/downloadConfig.properties'
   githubToken:
       Type: String
-  githubFilePrefix:
-    Type: String
-    Default: 'GITHUB_FILE'
-  httpFilePrefix:
-    Type: String
-    Default: 'HTTP_FILE'
   jobName:
     Type: String
     Default: 'javaduck'
@@ -69,12 +48,6 @@ Parameters:
     Type: String
   dockerImage:
     Type: String
-  s3AggregatorTemplateKey:
-    Type: String
-    Default: "$LATEST/config/aggregator/templates.xml"
-  s3DownloadConfigKey:
-    Type: String
-    Default: "$LATEST/config/aggregator/downloadConfig.properties"
   geoserverWpsEndpoint:
     Type: String
     Default: 'http://geoserver-wps.aodn.org.au/geoserver/wps'
@@ -109,6 +82,15 @@ Mappings:
       BucketName: "aws-wps-sandbox"
     dev:
       BucketName: "aws-wps-dev"
+  ConfigurationFileMap:
+    Filename:
+      output: "output.nc"
+      status: "status.xml"
+      downloadConfig: "downloadConfig.properties"
+      templates: "templates.xml"
+      getCapabilities: "GetCapabilities.ftl"
+      gogoduck: "GoGoDuck.xml"
+      netcdf: "NetcdfOutput.xml"
 Conditions:
   CreateEphemeralBucket: !Equals [ !Ref environment, dev ]
   CreatePersistentBucket: !And
@@ -233,7 +215,7 @@ Resources:
         Environment:
           -
             Name: "OUTPUT_S3_FILENAME"
-            Value: !Ref s3OutputFilename
+            Value: !FindInMap [ConfigurationFileMap, "Filename", "output"]
           -
             Name: "OUTPUT_S3_BUCKET"
             Value: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
@@ -242,7 +224,7 @@ Resources:
             Value: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
           -
             Name: "STATUS_S3_FILENAME"
-            Value: !Ref s3StatusFilename
+            Value: !FindInMap [ConfigurationFileMap, "Filename", "status"]
           -
             Name: "AWS_REGION"
             Value: !Ref "AWS::Region"
@@ -251,10 +233,10 @@ Resources:
             Value: !Ref awsRegionSes
           -
             Name: "AGGREGATOR_TEMPLATE_FILE_S3_KEY"
-            Value: !Join [ "", [ !Ref s3configKey,  !Ref templatesFilename] ]
+            Value: !Join [ "", [ !Ref s3configKey,  !FindInMap [ConfigurationFileMap, "Filename", "templates"]] ]
           -
             Name: "DOWNLOAD_CONFIG_S3_KEY"
-            Value: !Join [ "", [ !Ref s3configKey,  !Ref downloadConfigFilename] ]
+            Value: !Join [ "", [ !Ref s3configKey,  !FindInMap [ConfigurationFileMap, "Filename", "downloadConfig"]] ]
           -
             Name: "AGGREGATOR_CONFIG_S3_BUCKET"
             Value: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
@@ -407,9 +389,9 @@ Resources:
           AWS_BATCH_JOB_QUEUE_NAME: !Ref JobQueue
           AWS_BATCH_JOB_DEFINITION_NAME: !Select [1, !Split ["/", !Ref JobDefinition]]
           STATUS_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
-          STATUS_S3_FILENAME: !Ref s3StatusFilename
+          STATUS_S3_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "status"]
           GET_CAPABILITIES_TEMPLATE_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
-          GET_CAPABILITIES_TEMPLATE_S3_KEY: !Join [ "", [ !Ref s3configKey, !Ref s3GetCapabilitiesFilename ] ]
+          GET_CAPABILITIES_TEMPLATE_S3_KEY: !Join [ "", [ !Ref s3configKey, !FindInMap [ConfigurationFileMap, "Filename", "getCapabilities"] ] ]
           DESCRIBE_PROCESS_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
           DESCRIBE_PROCESS_S3_KEY_PREFIX: !Ref s3configKey
           GEOSERVER_WPS_ENDPOINT_URL: !Ref geoserverWpsEndpoint
@@ -510,6 +492,7 @@ Resources:
         "target_bucket = os.getenv('BUCKET')",
         "token = os.getenv('GITHUB_TOKEN') ",
         "config_location = os.getenv('CONFIG_LOCATION')",
+        "filename_suffix = os.getenv('FILENAME_SUFFIX')",
         "",
         "",
         "def handler(event, context):",
@@ -522,11 +505,12 @@ Resources:
         "",
         "        for env_var in os.environ:",
         "            env_var_value = os.getenv(env_var)",
-        "            if env_var.startswith(github_prefix) and env_var_value != github_prefix:",
-        "                put(env_var_value, True)",
+        "            filename = os.getenv('{}_{}'.format(env_var, filename_suffix))",
+        "            if env_var.startswith(github_prefix) and not env_var.endswith(filename_suffix) and env_var_value != github_prefix:",
+        "                put(filename, env_var_value, True)",
         "            else:",
-        "                if env_var.startswith(http_prefix) and env_var_value != http_prefix:",
-        "                    put(env_var_value)",
+        "                if env_var.startswith(http_prefix) and not env_var.endswith(filename_suffix) and env_var_value != http_prefix:",
+        "                    put(filename, env_var_value)",
         "",
         "        return send(event, context, SUCCESS, responseData, 'CustomResourcePhysicalID')",
         "    except Exception as e:",
@@ -534,7 +518,7 @@ Resources:
         "        return send(event, context, FAILED, responseData, 'CustomResourcePhysicalID')",
         "",
         "",
-        "def put(url, add_token=False):",
+        "def put(filename, url, add_token=False):",
         "    print('Downloading url : {}'.format(url))",
         "    request = Request(url)",
         "    if add_token:",
@@ -543,7 +527,7 @@ Resources:
         "    response = urlopen(request)",
         "",
         "    file_contents = response.read()",
-        "    s3c.put_object(Bucket=target_bucket, Key='{}{}'.format(config_location, url.rsplit('/', 1)[-1]), Body=file_contents)",
+        "    s3c.put_object(Bucket=target_bucket, Key='{}{}'.format(config_location, filename), Body=file_contents)",
         "    print('Downloaded url : {}'.format(url))",
         "",
         "",
@@ -588,14 +572,21 @@ Resources:
           BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
           GITHUB_TOKEN: !Ref githubToken
           CONFIG_LOCATION: !Ref s3configKey
-          GITHUB_FILE_PREFIX: !Ref githubFilePrefix
+          FILENAME_SUFFIX: 'FILENAME'
+          HTTP_FILE_PREFIX: 'HTTP_FILE'
+          GITHUB_FILE_PREFIX: 'GITHUB_FILE'
           GITHUB_FILE_GET_CAPABILITIES: !Ref getCapabilitiesURL
+          GITHUB_FILE_GET_CAPABILITIES_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "getCapabilities"]
           GITHUB_FILE_GOGODUCK: !Ref gogduckURL
+          GITHUB_FILE_GOGODUCK_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "gogoduck"]
           GITHUB_FILE_NETCDF_OUTPUT: !Ref netcdfOutputURL
+          GITHUB_FILE_NETCDF_OUTPUT_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "netcdf"]
           GITHUB_FILE_TEMPLATES: !Ref templatesURL
+          GITHUB_FILE_TEMPLATES_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "templates"]
           GITHUB_FILE_DOWNLOAD_CONFIG: !Ref downloadConfigURL
-          HTTP_FILE_PREFIX: !Ref httpFilePrefix
+          GITHUB_FILE_DOWNLOAD_CONFIG_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "downloadConfig"]
           HTTP_FILE_WPS_REQUEST_HANDLER: !Ref s3LambdaCodeURL
+          HTTP_FILE_WPS_REQUEST_HANDLER_FILENAME: !Ref s3LambdaCodeFilename
   EphemeralS3Bucket:
     Type: "AWS::S3::Bucket"
     DeletionPolicy: "Delete"
