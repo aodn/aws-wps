@@ -7,6 +7,7 @@ import au.org.aodn.aws.wps.status.S3StatusUpdater;
 import au.org.aodn.aws.wps.status.WpsConfig;
 import au.org.emii.aggregator.NetcdfAggregator;
 import au.org.emii.aggregator.overrides.AggregationOverrides;
+import au.org.emii.aggregator.converter.Converter;
 import au.org.emii.download.Download;
 import au.org.emii.download.DownloadConfig;
 import au.org.emii.download.DownloadRequest;
@@ -36,6 +37,7 @@ import ucar.unidata.geoloc.LatLonRect;
 import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Set;
 
@@ -161,9 +163,6 @@ public class AggregationRunner implements CommandLineRunner {
 
             Set<DownloadRequest> downloads = indexReader.getDownloadRequestList(layer, "time", "file_url", subsetParams);
 
-            //  Form output file location
-            S3URI s3URI = new S3URI(outputBucketName, batchJobId + "/" + outputFilename);
-
 
             LatLonRect bbox = null;
             SubsetParameters.SubsetParameter latSubset = subsetParams.get("LATITUDE");
@@ -217,11 +216,27 @@ public class AggregationRunner implements CommandLineRunner {
                     downloadManager.remove();
                 }
 
+
+                //  Convert to required output
+                //  TODO: working dir?  Right spot?
+                Path workingDir = downloadConfig.getDownloadDirectory();
+
+                // TODO: right value for mime?
+                Converter converter = Converter.newInstance(resultMime);
+                Path convertedFile = workingDir.resolve("converted" + converter.getExtension());
+                converter.convert(outputFile, convertedFile);
+                String mimeType = converter.getMimeType();
+                String extension = converter.getExtension();
+
+                //  Form output file location
+                //  TODO: get filename right
+                S3URI s3URI = new S3URI(outputBucketName, batchJobId + "/" + outputFilename + "." + extension);
+
                 logger.info("Copying output file to : " + s3URI.toString());
 
                 DefaultAWSCredentialsProviderChain credentialProviderChain = new DefaultAWSCredentialsProviderChain();
                 TransferManager tx = new TransferManager(credentialProviderChain.getCredentials());
-                Upload myUpload = tx.upload(s3URI.getBucket(), s3URI.getKey(), outputFile.toFile());
+                Upload myUpload = tx.upload(s3URI.getBucket(), s3URI.getKey(), convertedFile.toFile());
                 myUpload.waitForCompletion();
                 tx.shutdownNow();
 
