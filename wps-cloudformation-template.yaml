@@ -108,7 +108,7 @@ Resources:
     Condition: CreateEphemeralBucket
     DeletionPolicy: "Delete"
     Properties:
-      BucketName: !Sub 'aws-wps-${AWS::StackName}'
+      BucketName: !Join ["-", [!FindInMap [EnvironmentMap, !Ref environment, BucketName], !Ref AWS::StackName, !Ref AWS::StackId]]
   BatchServiceRole:
     Type: 'AWS::IAM::Role'
     Properties:
@@ -587,11 +587,6 @@ Resources:
           GITHUB_FILE_DOWNLOAD_CONFIG_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "downloadConfig"]
           HTTP_FILE_WPS_REQUEST_HANDLER: !Ref s3LambdaCodeURL
           HTTP_FILE_WPS_REQUEST_HANDLER_FILENAME: !Ref s3LambdaCodeFilename
-  EphemeralS3Bucket:
-    Type: "AWS::S3::Bucket"
-    DeletionPolicy: "Delete"
-    Properties:
-      BucketName: !Sub 'imos-aws-wps-${AWS::StackName}'
   S3PutConfigurationFiles:
     Type: "Custom::S3PutObject"
     Properties:
