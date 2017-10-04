@@ -9,12 +9,21 @@ Parameters:
   s3configKey:
     Type: String
     Default: 'config/'
-  s3LambdaCodeFile:
+  s3OutputFilename:
+    Type: String
+    Default: 'output.nc'
+  s3StatusFilename:
+    Type: String
+    Default: 'status.xml'
+  s3LambdaCodeFileName:
     Type: String
     Description: "Lambda code file name ex: request-handler-0.01-lambda-package.zip"
   s3LambdaCodeURL:
     Type: String
     Description: "Public url ex: https://imos-binary.s3-ap-southeast-2.amazonaws.com/jobs/aws_wps_systest/6/request-handler-0.01-lambda-package.zip"
+  s3GetCapabilitiesFilename:
+    Type: String
+    Default: 'GetCapabilities.ftl'
   getCapabilitiesURL:
     Type: String
     Default: 'https://raw.githubusercontent.com/aodn/aws-wps/master/wps-common/src/main/resources/xml/GetCapabilities/GetCapabilities.ftl'
@@ -24,9 +33,18 @@ Parameters:
   netcdfOutputURL:
     Type: String
     Default: 'https://raw.githubusercontent.com/aodn/aws-wps/master/wps-common/src/main/resources/xml/DescribeProcess/NetcdfOutput.xml'
+  templatesFilename:
+    Type: String
+    Default: 'templates.xml'
   templatesURL:
     Type: String
     Default: 'https://raw.githubusercontent.com/aodn/aws-wps/master/wps-common/src/main/resources/config/templates.xml'
+  downloadConfigFilename:
+    Type: String
+    Default: 'downloadConfig.properties'
+  downloadConfigURL:
+    Type: String
+    Default: 'https://raw.githubusercontent.com/aodn/aws-wps/master/wps-common/src/main/resources/config/downloadConfig.properties'
   githubToken:
       Type: String
   githubFilePrefix:
@@ -51,15 +69,6 @@ Parameters:
     Type: String
   dockerImage:
     Type: String
-  s3OutputFilename:
-    Type: String
-    Default: 'output.nc'
-  s3StatusFilename:
-    Type: String
-    Default: 'status.xml'
-  s3GetCapabilitiesFilename:
-    Type: String
-    Default: 'GetCapabilities.ftl'
   geoserverWpsEndpoint:
     Type: String
     Default: 'http://geoserver-wps.aodn.org.au/geoserver/wps'
@@ -230,6 +239,12 @@ Resources:
           -
             Name: "AWS_REGION_SES"
             Value: !Ref awsRegionSes
+          -
+            Name: "AGGREGATOR_TEMPLATE_FILE_S3_KEY"
+            Value: !Join [ "", [ !Ref s3configKey,  !Ref templatesFilename] ]
+          -
+            Name: "DOWNLOAD_CONFIG_S3_KEY"
+            Value: !Join [ "", [ !Ref s3configKey,  !Ref downloadConfigFilename] ]
       RetryStrategy:
         Attempts: 2
     Metadata:
@@ -372,7 +387,7 @@ Resources:
       Timeout: 60
       Code:
         S3Bucket: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
-        S3Key: !Join [ "", [ !Ref s3configKey,  !Ref s3LambdaCodeFile] ]
+        S3Key: !Join [ "", [ !Ref s3configKey,  !Ref s3LambdaCodeFileName] ]
       Environment:
         Variables:
           AWS_BATCH_JOB_NAME: !Ref jobName
@@ -565,6 +580,7 @@ Resources:
           GITHUB_FILE_GOGODUCK: !Ref gogduckURL
           GITHUB_FILE_NETCDF_OUTPUT: !Ref netcdfOutputURL
           GITHUB_FILE_TEMPLATES: !Ref templatesURL
+          GITHUB_FILE_DOWNLOAD_CONFIG: !Ref downloadConfigURL
           HTTP_FILE_PREFIX: !Ref httpFilePrefix
           HTTP_FILE_WPS_REQUEST_HANDLER: !Ref s3LambdaCodeURL
   EphemeralS3Bucket:
