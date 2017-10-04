@@ -116,6 +116,11 @@ public class ExecuteOperation implements Operation {
         if (responseForm != null) {
             //  Pass the requested output format to the AWS batch aggregator
             OutputDefinitionType outputDefinition = responseForm.getRawDataOutput();
+            if(outputDefinition == null) {
+                //TODO: what if there are multiple outputs with different mime types
+                outputDefinition = responseForm.getResponseDocument().getOutput().get(0);
+            }
+
             String outputMimeType = outputDefinition.getMimeType();
             parameters.put(outputDefinition.getIdentifier().getValue(), outputMimeType);
         }
