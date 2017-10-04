@@ -38,6 +38,7 @@ public class WpsConfig {
     public static final String DESCRIBE_PROCESS_S3_BUCKET_CONFIG_KEY = "DESCRIBE_PROCESS_S3_BUCKET";
     public static final String DESCRIBE_PROCESS_S3_KEY_PREFIX_CONFIG_KEY = "DESCRIBE_PROCESS_S3_KEY_PREFIX";
     public static final String GEOSERVER_WPS_ENDPOINT_URL_CONFIG_KEY = "GEOSERVER_WPS_ENDPOINT_URL";
+    public static final String GEOSERVER_CATALOGUE_ENDPOINT_URL_CONFIG_KEY = "GEOSERVER_CATALOGUE_ENDPOINT_URL";
     public static final String GEOSERVER_WPS_ENDPOINT_TEMPLATE_KEY = "geoserverWPSEndpointURL";
 
     public static final String AGGREGATOR_CONFIG_S3_BUCKET_CONFIG_KEY = "AGGREGATOR_CONFIG_S3_BUCKET";
@@ -57,8 +58,6 @@ public class WpsConfig {
     private static final String COMPLETED_JOB_EMAIL_KEY = "jobCompleteEmail";
     private static final String FAILED_JOB_EMAIL_SUBJECT_KEY = "jobFailedEmailSubject";
     private static final String FAILED_JOB_EMAIL_KEY = "jobFailedEmail";
-
-    public static final String CONFIG_LOCATION_KEY = "CONFIG_LOCATION";
 
     public static final String S3_BASE_URL = "https://s3.amazonaws.com/";
     public static final String APPLICATION_PROPERTIES = "application.properties";
@@ -103,6 +102,7 @@ public class WpsConfig {
             setProperty(properties, AGGREGATOR_CONFIG_S3_BUCKET_CONFIG_KEY);
             setProperty(properties, AGGREGATOR_TEMPLATE_FILE_S3_KEY_CONFIG_KEY);
             setProperty(properties, DOWNLOAD_CONFIG_S3_KEY_CONFIG_KEY);
+            setProperty(properties, GEOSERVER_CATALOGUE_ENDPOINT_URL_CONFIG_KEY);
         }
 
         return properties;
@@ -156,7 +156,8 @@ public class WpsConfig {
      * @param keyValue
      * @return Decrypted key value.
      */
-    private String decryptKey(String keyValue) {
+    private String decryptKey(String keyValue)
+    {
         if (keyValue != null) {
             byte[] encryptedKey = Base64.decode(keyValue);
             AWSKMS client = AWSKMSClientBuilder.defaultClient();

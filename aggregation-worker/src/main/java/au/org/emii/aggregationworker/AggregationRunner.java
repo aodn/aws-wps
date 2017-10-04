@@ -157,9 +157,7 @@ public class AggregationRunner implements CommandLineRunner {
 
 
             //  Query geoserver to get a list of files for the aggregation
-            //  TODO: source geoserver location from config
-            HttpIndexReader indexReader = new HttpIndexReader("http://geoserver-123.aodn.org.au/geoserver/imos/ows");
-
+            HttpIndexReader indexReader = new HttpIndexReader(WpsConfig.getConfig(WpsConfig.GEOSERVER_CATALOGUE_ENDPOINT_URL_CONFIG_KEY));
 
             Set<DownloadRequest> downloads = indexReader.getDownloadRequestList(layer, "time", "file_url", subsetParams);
 
@@ -204,6 +202,7 @@ public class AggregationRunner implements CommandLineRunner {
             Downloader downloader = new Downloader(downloadConnectTimeout, downloadReadTimeout);
 
             Path outputFile = Files.createTempFile("agg", ".nc");
+            Path convertedFile = null;
 
             long chunkSize = 1024;
             //  TODO:  chunk size
@@ -218,19 +217,15 @@ public class AggregationRunner implements CommandLineRunner {
 
 
                 //  Convert to required output
-                //  TODO: working dir?  Right spot?
                 Path workingDir = downloadConfig.getDownloadDirectory();
 
-                // TODO: right value for mime?
+                //  Instantiate the correct converter for the requested mimeType & do the conversion
                 Converter converter = Converter.newInstance(resultMime);
-                Path convertedFile = workingDir.resolve("converted" + converter.getExtension());
+                convertedFile = workingDir.resolve("converted" + converter.getExtension());
                 converter.convert(outputFile, convertedFile);
-                String mimeType = converter.getMimeType();
-                String extension = converter.getExtension();
 
                 //  Form output file location
-                //  TODO: get filename right
-                S3URI s3URI = new S3URI(outputBucketName, batchJobId + "/" + outputFilename + "." + extension);
+                S3URI s3URI = new S3URI(outputBucketName, batchJobId + "/" + outputFilename + "." + converter.getExtension());
 
                 logger.info("Copying output file to : " + s3URI.toString());
 
@@ -246,6 +241,7 @@ public class AggregationRunner implements CommandLineRunner {
                 statusDocument = ExecuteStatusBuilder.getStatusDocument(statusS3Bucket, statusFilename, batchJobId, EnumStatus.SUCCEEDED, null, null, outputMap);
                 statusUpdater.updateStatus(statusDocument, batchJobId);
             } finally {
+                Files.deleteIfExists(convertedFile);
                 Files.deleteIfExists(outputFile);
             }
 
@@ -281,5 +277,4 @@ public class AggregationRunner implements CommandLineRunner {
             System.exit(1);
         }
     }
-
 }
