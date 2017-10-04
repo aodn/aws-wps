@@ -30,8 +30,6 @@ Parameters:
   downloadConfigURL:
     Type: String
     Default: 'https://raw.githubusercontent.com/aodn/aws-wps/master/wps-common/src/main/resources/config/downloadConfig.properties'
-  githubToken:
-      Type: String
   jobName:
     Type: String
     Default: 'javaduck'
@@ -108,7 +106,7 @@ Resources:
     Condition: CreateEphemeralBucket
     DeletionPolicy: "Delete"
     Properties:
-      BucketName: !Join ["-", [!FindInMap [EnvironmentMap, !Ref environment, BucketName], !Ref AWS::StackName, !Ref AWS::StackId]]
+      BucketName: !Join ["-", [!FindInMap [EnvironmentMap, !Ref environment, BucketName], !Ref 'AWS::StackName']]
   BatchServiceRole:
     Type: 'AWS::IAM::Role'
     Properties:
@@ -476,12 +474,10 @@ Resources:
     Properties:
       Code:
         ZipFile: !Join ["\n", [
-        "from __future__ import print_function",
         "import json",
         "import os",
         "import boto3",
         "from urllib2 import urlopen, Request",
-        "from cStringIO import StringIO",
         "from botocore.vendored import requests",
         "",
         "SUCCESS = 'SUCCESS'",
@@ -490,15 +486,13 @@ Resources:
         "",
         "s3c = boto3.client('s3')",
         "target_bucket = os.getenv('BUCKET')",
-        "token = os.getenv('GITHUB_TOKEN') ",
         "config_location = os.getenv('CONFIG_LOCATION')",
         "filename_suffix = os.getenv('FILENAME_SUFFIX')",
+        "http_prefix = os.getenv('HTTP_FILE_PREFIX') ",
         "",
         "",
         "def handler(event, context):",
         "    try:",
-        "        github_prefix = os.getenv('GITHUB_FILE_PREFIX') ",
-        "        http_prefix = os.getenv('HTTP_FILE_PREFIX') ",
         "        for env_var in os.environ:",
         "            env_var_value = os.getenv(env_var)",
         "            print('Environment Variable {} : {}'.format(env_var, env_var_value))",
@@ -506,11 +500,8 @@ Resources:
         "        for env_var in os.environ:",
         "            env_var_value = os.getenv(env_var)",
         "            filename = os.getenv('{}_{}'.format(env_var, filename_suffix))",
-        "            if env_var.startswith(github_prefix) and not env_var.endswith(filename_suffix) and env_var_value != github_prefix:",
-        "                put(filename, env_var_value, True)",
-        "            else:",
-        "                if env_var.startswith(http_prefix) and not env_var.endswith(filename_suffix) and env_var_value != http_prefix:",
-        "                    put(filename, env_var_value)",
+        "            if env_var.startswith(http_prefix) and not env_var.endswith(filename_suffix) and env_var_value != http_prefix:",
+        "                put(filename, env_var_value)",
         "",
         "        return send(event, context, SUCCESS, responseData, 'CustomResourcePhysicalID')",
         "    except Exception as e:",
@@ -518,12 +509,9 @@ Resources:
         "        return send(event, context, FAILED, responseData, 'CustomResourcePhysicalID')",
         "",
         "",
-        "def put(filename, url, add_token=False):",
+        "def put(filename, url):",
         "    print('Downloading url : {}'.format(url))",
         "    request = Request(url)",
-        "    if add_token:",
-        "        print('Adding GitHub Token to request')",
-        "        request.add_header('Authorization', 'token %s' % token)",
         "    response = urlopen(request)",
         "",
         "    file_contents = response.read()",
@@ -570,21 +558,19 @@ Resources:
       Environment:
         Variables:
           BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
-          GITHUB_TOKEN: !Ref githubToken
           CONFIG_LOCATION: !Ref s3configKey
           FILENAME_SUFFIX: 'FILENAME'
           HTTP_FILE_PREFIX: 'HTTP_FILE'
-          GITHUB_FILE_PREFIX: 'GITHUB_FILE'
-          GITHUB_FILE_GET_CAPABILITIES: !Ref getCapabilitiesURL
-          GITHUB_FILE_GET_CAPABILITIES_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "getCapabilities"]
-          GITHUB_FILE_GOGODUCK: !Ref gogduckURL
-          GITHUB_FILE_GOGODUCK_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "gogoduck"]
-          GITHUB_FILE_NETCDF_OUTPUT: !Ref netcdfOutputURL
-          GITHUB_FILE_NETCDF_OUTPUT_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "netcdf"]
-          GITHUB_FILE_TEMPLATES: !Ref templatesURL
-          GITHUB_FILE_TEMPLATES_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "templates"]
-          GITHUB_FILE_DOWNLOAD_CONFIG: !Ref downloadConfigURL
-          GITHUB_FILE_DOWNLOAD_CONFIG_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "downloadConfig"]
+          HTTP_FILE_GET_CAPABILITIES: !Ref getCapabilitiesURL
+          HTTP_FILE_GET_CAPABILITIES_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "getCapabilities"]
+          HTTP_FILE_GOGODUCK: !Ref gogduckURL
+          HTTP_FILE_GOGODUCK_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "gogoduck"]
+          HTTP_FILE_NETCDF_OUTPUT: !Ref netcdfOutputURL
+          HTTP_FILE_NETCDF_OUTPUT_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "netcdf"]
+          HTTP_FILE_TEMPLATES: !Ref templatesURL
+          HTTP_FILE_TEMPLATES_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "templates"]
+          HTTP_FILE_DOWNLOAD_CONFIG: !Ref downloadConfigURL
+          HTTP_FILE_DOWNLOAD_CONFIG_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "downloadConfig"]
           HTTP_FILE_WPS_REQUEST_HANDLER: !Ref s3LambdaCodeURL
           HTTP_FILE_WPS_REQUEST_HANDLER_FILENAME: !Ref s3LambdaCodeFilename
   S3PutConfigurationFiles:
