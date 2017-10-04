@@ -156,9 +156,13 @@ public class AggregationRunner implements CommandLineRunner {
             logger.info("Callback email address = " + email);
 
 
+            //  TODO: Qa the parameters/settings passed?
+
+            //  Instantiate the correct converter for the requested mimeType & do the conversion
+            Converter converter = Converter.newInstance(resultMime);
+
             //  Query geoserver to get a list of files for the aggregation
             HttpIndexReader indexReader = new HttpIndexReader(WpsConfig.getConfig(WpsConfig.GEOSERVER_CATALOGUE_ENDPOINT_URL_CONFIG_KEY));
-
             Set<DownloadRequest> downloads = indexReader.getDownloadRequestList(layer, "time", "file_url", subsetParams);
 
 
@@ -219,8 +223,7 @@ public class AggregationRunner implements CommandLineRunner {
                 //  Convert to required output
                 Path workingDir = downloadConfig.getDownloadDirectory();
 
-                //  Instantiate the correct converter for the requested mimeType & do the conversion
-                Converter converter = Converter.newInstance(resultMime);
+                //  Perform the conversion
                 convertedFile = workingDir.resolve("converted" + converter.getExtension());
                 converter.convert(outputFile, convertedFile);
 
