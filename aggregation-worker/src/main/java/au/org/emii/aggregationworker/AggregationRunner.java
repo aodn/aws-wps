@@ -37,7 +37,6 @@ import ucar.unidata.geoloc.LatLonRect;
 import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Set;
 
@@ -53,7 +52,6 @@ public class AggregationRunner implements CommandLineRunner {
     public static final int DEFAULT_READ_TIMEOUT_MS = 60000;
 
     private static final Logger logger = LoggerFactory.getLogger(au.org.emii.aggregationworker.AggregationRunner.class);
-
 
     private String statusS3Bucket = null;
     private String statusFilename = null;
@@ -74,8 +72,6 @@ public class AggregationRunner implements CommandLineRunner {
         String expirationPeriod = "expirationPeriod"; // Needed to be replaced
 
         try {
-
-
             //  Capture the AWS job specifics - they are passed to the docker runtime as
             //  environment variables.
             batchJobId = WpsConfig.getConfig(AWS_BATCH_JOB_ID_CONFIG_KEY);

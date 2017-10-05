@@ -54,10 +54,10 @@ Parameters:
     Default: '1024'
   workerDownloadAttempts:
     Type: String
-    Default: '/tmp'
+    Default: '4'
   workerDownloadDirectory:
     Type: String
-    Default: '4'
+    Default: '/tmp'
   workerLocalStorageLimitBytes:
     Type: String
     Default: '104857600'
