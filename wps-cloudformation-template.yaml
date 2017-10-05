@@ -20,7 +20,7 @@ Parameters:
     Default: 'https://raw.githubusercontent.com/aodn/aws-wps/master/wps-common/src/main/resources/config/GetCapabilities.ftl'
   gogduckURL:
     Type: String
-    Default: 'https://raw.githubusercontent.com/aodn/aws-wps/master/wps-common/src/main/resources/config/DescribeProcess/GoGoDuck.xml'
+    Default: 'https://raw.githubusercontent.com/aodn/aws-wps/master/wps-common/src/main/resources/config/GoGoDuck.xml'
   netcdfOutputURL:
     Type: String
     Default: 'https://raw.githubusercontent.com/aodn/aws-wps/master/wps-common/src/main/resources/config/NetcdfOutput.xml'
@@ -246,9 +246,6 @@ Resources:
           -
             Name: "AGGREGATOR_TEMPLATE_FILE_S3_KEY"
             Value: !Join [ "", [ !Ref s3configKey,  !FindInMap [ConfigurationFileMap, "Filename", "templates"]] ]
-          -
-            Name: "DOWNLOAD_CONFIG_S3_KEY"
-            Value: !Join [ "", [ !Ref s3configKey,  !FindInMap [ConfigurationFileMap, "Filename", "downloadConfig"]] ]
           -
             Name: "AGGREGATOR_CONFIG_S3_BUCKET"
             Value: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
