@@ -27,9 +27,6 @@ Parameters:
   templatesURL:
     Type: String
     Default: 'https://raw.githubusercontent.com/aodn/aws-wps/master/wps-common/src/main/resources/config/templates.xml'
-  downloadConfigURL:
-    Type: String
-    Default: 'https://raw.githubusercontent.com/aodn/aws-wps/master/wps-common/src/main/resources/config/downloadConfig.properties'
   jobName:
     Type: String
     Default: 'javaduck'
@@ -102,7 +99,6 @@ Mappings:
     Filename:
       outputWithoutExtension: "output"
       status: "status.xml"
-      downloadConfig: "downloadConfig.properties"
       templates: "templates.xml"
       getCapabilities: "GetCapabilities.ftl"
       gogoduck: "GoGoDuck.xml"
@@ -606,8 +602,6 @@ Resources:
           HTTP_FILE_NETCDF_OUTPUT_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "netcdf"]
           HTTP_FILE_TEMPLATES: !Ref templatesURL
           HTTP_FILE_TEMPLATES_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "templates"]
-          HTTP_FILE_DOWNLOAD_CONFIG: !Ref downloadConfigURL
-          HTTP_FILE_DOWNLOAD_CONFIG_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "downloadConfig"]
           HTTP_FILE_WPS_REQUEST_HANDLER: !Ref s3LambdaCodeURL
           HTTP_FILE_WPS_REQUEST_HANDLER_FILENAME: !Ref s3LambdaCodeFilename
   S3PutConfigurationFiles:
