@@ -156,8 +156,7 @@ public class WpsConfig {
      * @param keyValue
      * @return Decrypted key value.
      */
-    private String decryptKey(String keyValue)
-    {
+    private String decryptKey(String keyValue) {
         if (keyValue != null) {
             byte[] encryptedKey = Base64.decode(keyValue);
             AWSKMS client = AWSKMSClientBuilder.defaultClient();
