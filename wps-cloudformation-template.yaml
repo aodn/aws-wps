@@ -82,7 +82,7 @@ Mappings:
       BucketName: "aws-wps-dev"
   ConfigurationFileMap:
     Filename:
-      output: "output.nc"
+      outputWithoutExtension: "output"
       status: "status.xml"
       downloadConfig: "downloadConfig.properties"
       templates: "templates.xml"
@@ -213,7 +213,7 @@ Resources:
         Environment:
           -
             Name: "OUTPUT_S3_FILENAME"
-            Value: !FindInMap [ConfigurationFileMap, "Filename", "output"]
+            Value: !FindInMap [ConfigurationFileMap, "Filename", "outputWithoutExtension"]
           -
             Name: "OUTPUT_S3_BUCKET"
             Value: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
