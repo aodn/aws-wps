@@ -37,7 +37,6 @@ import ucar.unidata.geoloc.LatLonRect;
 import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Set;
 
@@ -73,8 +72,6 @@ public class AggregationRunner implements CommandLineRunner {
         String expirationPeriod = "expirationPeriod"; // Needed to be replaced
 
         try {
-
-
             //  Capture the AWS job specifics - they are passed to the docker runtime as
             //  environment variables.
             batchJobId = WpsConfig.getConfig(AWS_BATCH_JOB_ID_CONFIG_KEY);
@@ -87,7 +84,6 @@ public class AggregationRunner implements CommandLineRunner {
 
             String aggregatorConfigS3Bucket = WpsConfig.getConfig(AGGREGATOR_CONFIG_S3_BUCKET_CONFIG_KEY);
             String aggregatorTemplateFileS3Key = WpsConfig.getConfig(AGGREGATOR_TEMPLATE_FILE_S3_KEY_CONFIG_KEY);
-            String downloadConfigS3Key = WpsConfig.getConfig(DOWNLOAD_CONFIG_S3_KEY_CONFIG_KEY);
 
             //  Parse connect timeout
             String downloadConnectTimeoutString = WpsConfig.getConfig(DOWNLOAD_CONNECT_TIMEOUT_CONFIG_KEY);
@@ -200,7 +196,7 @@ public class AggregationRunner implements CommandLineRunner {
             AggregationOverrides overrides = getAggregationOverrides(aggregatorConfigS3Bucket, aggregatorTemplateFileS3Key, null, layer);
 
             //  Apply download configuration
-            DownloadConfig downloadConfig = getDownloadConfig(aggregatorConfigS3Bucket, downloadConfigS3Key);
+            DownloadConfig downloadConfig = getDownloadConfig();
 
             //  Apply connect/read timeouts
             Downloader downloader = new Downloader(downloadConnectTimeout, downloadReadTimeout);
@@ -208,8 +204,8 @@ public class AggregationRunner implements CommandLineRunner {
             Path outputFile = Files.createTempFile("agg", ".nc");
             Path convertedFile = null;
 
-            long chunkSize = 1024;
-            //  TODO:  chunk size
+            long chunkSize = Long.valueOf(WpsConfig.getConfig(CHUNK_SIZE_KEY));
+
             try (
                     ParallelDownloadManager downloadManager = new ParallelDownloadManager(downloadConfig, downloader);
                     NetcdfAggregator netcdfAggregator = new NetcdfAggregator(outputFile, overrides, chunkSize, bbox, null, timeRange)
