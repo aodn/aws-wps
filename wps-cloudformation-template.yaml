@@ -393,6 +393,7 @@ Resources:
           DESCRIBE_PROCESS_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
           DESCRIBE_PROCESS_S3_KEY_PREFIX: !Ref s3configKey
           GEOSERVER_WPS_ENDPOINT_URL: !Ref geoserverWpsEndpoint
+          GEOSERVER_CATALOGUE_ENDPOINT_URL: !Ref geoserver
     DependsOn: S3PutConfigurationFiles
     Metadata:
       'AWS::CloudFormation::Designer':
