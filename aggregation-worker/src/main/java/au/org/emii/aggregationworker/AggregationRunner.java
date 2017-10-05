@@ -52,6 +52,7 @@ public class AggregationRunner implements CommandLineRunner {
 
     private static final Logger logger = LoggerFactory.getLogger(au.org.emii.aggregationworker.AggregationRunner.class);
 
+
     private String statusS3Bucket = null;
     private String statusFilename = null;
 
@@ -199,15 +200,15 @@ public class AggregationRunner implements CommandLineRunner {
             AggregationOverrides overrides = getAggregationOverrides(aggregatorConfigS3Bucket, aggregatorTemplateFileS3Key, null, layer);
 
             //  Apply download configuration
-            DownloadConfig downloadConfig = getDownloadConfig(aggregatorConfigS3Bucket, downloadConfigS3Key);
+            DownloadConfig downloadConfig = getDownloadConfig();
 
             //  Apply connect/read timeouts
             Downloader downloader = new Downloader(downloadConnectTimeout, downloadReadTimeout);
 
             Path outputFile = Files.createTempFile("agg", ".nc");
 
-            long chunkSize = 1024;
-            //  TODO:  chunk size
+            long chunkSize = Long.valueOf(WpsConfig.getConfig(CHUNK_SIZE_KEY));
+
             try (
                     ParallelDownloadManager downloadManager = new ParallelDownloadManager(downloadConfig, downloader);
                     NetcdfAggregator netcdfAggregator = new NetcdfAggregator(outputFile, overrides, chunkSize, bbox, null, timeRange)
@@ -266,5 +267,4 @@ public class AggregationRunner implements CommandLineRunner {
             System.exit(1);
         }
     }
-
 }

@@ -29,6 +29,13 @@ public class WpsConfig {
     public static final String OUTPUT_S3_BUCKET_CONFIG_KEY = "OUTPUT_S3_BUCKET";
     public static final String OUTPUT_S3_FILENAME_CONFIG_KEY = "OUTPUT_S3_FILENAME";
 
+    public static final String CHUNK_SIZE_KEY = "CHUNK_SIZE";
+    public static final String DOWNLOAD_ATTEMPTS_CONFIG_KEY = "DOWNLOAD_ATTEMPTS";
+    public static final String DOWNLOAD_DIRECTORY_PROPERTY_KEY = "DOWNLOAD_DIRECTORY";
+    public static final String LOCAL_STORAGE_LIMIT_PROPERTY_KEY = "LOCAL_STORAGE_LIMIT_BYTES";
+    public static final String POOL_SIZE_CONFIG_KEY = "POOL_SIZE";
+    public static final String RETRY_INTERVAL_CONFIG_KEY = "RETRY_INTERVAL_MS";
+
     public static final String AWS_BATCH_JOB_ID_CONFIG_KEY = "AWS_BATCH_JOB_ID";
     public static final String AWS_BATCH_CE_NAME_CONFIG_KEY = "AWS_BATCH_CE_NAME";
     public static final String AWS_BATCH_JQ_NAME_CONFIG_KEY = "AWS_BATCH_JQ_NAME";
@@ -103,6 +110,13 @@ public class WpsConfig {
             setProperty(properties, AGGREGATOR_CONFIG_S3_BUCKET_CONFIG_KEY);
             setProperty(properties, AGGREGATOR_TEMPLATE_FILE_S3_KEY_CONFIG_KEY);
             setProperty(properties, DOWNLOAD_CONFIG_S3_KEY_CONFIG_KEY);
+
+            setProperty(properties, CHUNK_SIZE_KEY);
+            setProperty(properties, DOWNLOAD_ATTEMPTS_CONFIG_KEY);
+            setProperty(properties, DOWNLOAD_DIRECTORY_PROPERTY_KEY);
+            setProperty(properties, LOCAL_STORAGE_LIMIT_PROPERTY_KEY);
+            setProperty(properties, POOL_SIZE_CONFIG_KEY);
+            setProperty(properties, RETRY_INTERVAL_CONFIG_KEY);
         }
 
         return properties;

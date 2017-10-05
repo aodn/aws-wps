@@ -17,13 +17,13 @@ Parameters:
     Default: "http://imos-binary.s3-website-ap-southeast-2.amazonaws.com/jobs/aws_wps_prod/aws_wps_prod-latest.zip"
   getCapabilitiesURL:
     Type: String
-    Default: 'https://raw.githubusercontent.com/aodn/aws-wps/master/wps-common/src/main/resources/xml/GetCapabilities/GetCapabilities.ftl'
+    Default: 'https://raw.githubusercontent.com/aodn/aws-wps/master/wps-common/src/main/resources/config/GetCapabilities.ftl'
   gogduckURL:
     Type: String
-    Default: 'https://raw.githubusercontent.com/aodn/aws-wps/master/wps-common/src/main/resources/xml/DescribeProcess/GoGoDuck.xml'
+    Default: 'https://raw.githubusercontent.com/aodn/aws-wps/master/wps-common/src/main/resources/config/DescribeProcess/GoGoDuck.xml'
   netcdfOutputURL:
     Type: String
-    Default: 'https://raw.githubusercontent.com/aodn/aws-wps/master/wps-common/src/main/resources/xml/DescribeProcess/NetcdfOutput.xml'
+    Default: 'https://raw.githubusercontent.com/aodn/aws-wps/master/wps-common/src/main/resources/config/NetcdfOutput.xml'
   templatesURL:
     Type: String
     Default: 'https://raw.githubusercontent.com/aodn/aws-wps/master/wps-common/src/main/resources/config/templates.xml'
@@ -49,6 +49,24 @@ Parameters:
   geoserverWpsEndpoint:
     Type: String
     Default: 'http://geoserver-wps.aodn.org.au/geoserver/wps'
+  chunkSize:
+    Type: String
+    Default: '1024'
+  workerDownloadAttempts:
+    Type: String
+    Default: '/tmp'
+  workerDownloadDirectory:
+    Type: String
+    Default: '4'
+  workerLocalStorageLimitBytes:
+    Type: String
+    Default: '104857600'
+  workerPoolSize:
+    Type: String
+    Default: '8'
+  workerRetryIntervalMs:
+    Type: String
+    Default: '60000'
   environment:
     Type: String
     Default: dev
@@ -238,6 +256,24 @@ Resources:
           -
             Name: "AGGREGATOR_CONFIG_S3_BUCKET"
             Value: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
+          -
+            Name: "CHUNK_SIZE"
+            Value: !Ref chunkSize
+          -
+            Name: "DOWNLOAD_ATTEMPTS"
+            Value: !Ref workerDownloadAttempts
+          -
+            Name: "DOWNLOAD_DIRECTORY"
+            Value: !Ref workerDownloadDirectory
+          -
+            Name: "LOCAL_STORAGE_LIMIT_BYTES"
+            Value: !Ref workerLocalStorageLimitBytes
+          -
+            Name: "POOL_SIZE"
+            Value: !Ref workerPoolSize
+          -
+            Name: "RETRY_INTERVAL_MS"
+            Value: !Ref workerRetryIntervalMs
       RetryStrategy:
         Attempts: 2
     Metadata:
