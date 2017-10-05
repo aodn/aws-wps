@@ -7,6 +7,7 @@ import au.org.aodn.aws.wps.status.S3StatusUpdater;
 import au.org.aodn.aws.wps.status.WpsConfig;
 import au.org.emii.aggregator.NetcdfAggregator;
 import au.org.emii.aggregator.overrides.AggregationOverrides;
+import au.org.emii.aggregator.converter.Converter;
 import au.org.emii.download.Download;
 import au.org.emii.download.DownloadConfig;
 import au.org.emii.download.DownloadRequest;
@@ -36,6 +37,7 @@ import ucar.unidata.geoloc.LatLonRect;
 import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Set;
 
@@ -154,15 +156,14 @@ public class AggregationRunner implements CommandLineRunner {
             logger.info("Callback email address = " + email);
 
 
+            //  TODO: Qa the parameters/settings passed?
+
+            //  Instantiate the correct converter for the requested mimeType & do the conversion
+            Converter converter = Converter.newInstance(resultMime);
+
             //  Query geoserver to get a list of files for the aggregation
-            //  TODO: source geoserver location from config
-            HttpIndexReader indexReader = new HttpIndexReader("http://geoserver-123.aodn.org.au/geoserver/imos/ows");
-
-
+            HttpIndexReader indexReader = new HttpIndexReader(WpsConfig.getConfig(WpsConfig.GEOSERVER_CATALOGUE_ENDPOINT_URL_CONFIG_KEY));
             Set<DownloadRequest> downloads = indexReader.getDownloadRequestList(layer, "time", "file_url", subsetParams);
-
-            //  Form output file location
-            S3URI s3URI = new S3URI(outputBucketName, batchJobId + "/" + outputFilename);
 
 
             LatLonRect bbox = null;
@@ -205,6 +206,7 @@ public class AggregationRunner implements CommandLineRunner {
             Downloader downloader = new Downloader(downloadConnectTimeout, downloadReadTimeout);
 
             Path outputFile = Files.createTempFile("agg", ".nc");
+            Path convertedFile = null;
 
             long chunkSize = 1024;
             //  TODO:  chunk size
@@ -217,11 +219,22 @@ public class AggregationRunner implements CommandLineRunner {
                     downloadManager.remove();
                 }
 
+
+                //  Convert to required output
+                Path workingDir = downloadConfig.getDownloadDirectory();
+
+                //  Perform the conversion
+                convertedFile = workingDir.resolve("converted" + converter.getExtension());
+                converter.convert(outputFile, convertedFile);
+
+                //  Form output file location
+                S3URI s3URI = new S3URI(outputBucketName, batchJobId + "/" + outputFilename + "." + converter.getExtension());
+
                 logger.info("Copying output file to : " + s3URI.toString());
 
                 DefaultAWSCredentialsProviderChain credentialProviderChain = new DefaultAWSCredentialsProviderChain();
                 TransferManager tx = new TransferManager(credentialProviderChain.getCredentials());
-                Upload myUpload = tx.upload(s3URI.getBucket(), s3URI.getKey(), outputFile.toFile());
+                Upload myUpload = tx.upload(s3URI.getBucket(), s3URI.getKey(), convertedFile.toFile());
                 myUpload.waitForCompletion();
                 tx.shutdownNow();
 
@@ -231,6 +244,7 @@ public class AggregationRunner implements CommandLineRunner {
                 statusDocument = ExecuteStatusBuilder.getStatusDocument(statusS3Bucket, statusFilename, batchJobId, EnumStatus.SUCCEEDED, null, null, outputMap);
                 statusUpdater.updateStatus(statusDocument, batchJobId);
             } finally {
+                Files.deleteIfExists(convertedFile);
                 Files.deleteIfExists(outputFile);
             }
 
@@ -266,5 +280,4 @@ public class AggregationRunner implements CommandLineRunner {
             System.exit(1);
         }
     }
-
 }
