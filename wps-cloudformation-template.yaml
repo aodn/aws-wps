@@ -2,10 +2,6 @@ AWSTemplateFormatVersion: 2010-09-09
 Description: >-
   A template for AWS-WPS
 Parameters:
-  securityGroup:
-    Type: String
-  subnets:
-    Type: CommaDelimitedList
   s3configKey:
     Type: String
     Default: 'config/'
@@ -103,6 +99,19 @@ Mappings:
       getCapabilities: "GetCapabilities.ftl"
       gogoduck: "GoGoDuck.xml"
       netcdf: "NetcdfOutput.xml"
+  RegionMap:
+    ap-southeast-2:
+      vpc: vpc-7302ee16
+      subnets:
+        - subnet-7976213f
+        - subnet-54b3aa20
+        - subnet-d722d0b2
+    eu-central-1:
+      vpc: vpc-16c5247f
+      subnets:
+        - subnet-9e0003e6
+        - subnet-f82bcb91
+        - subnet-5086a51a
 Conditions:
   CreateEphemeralBucket: !Equals [ !Ref environment, dev ]
   CreatePersistentBucket: !And
@@ -250,6 +259,9 @@ Resources:
             Name: "AGGREGATOR_CONFIG_S3_BUCKET"
             Value: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
           -
+            Name: "GEOSERVER_CATALOGUE_ENDPOINT_URL"
+            Value: !Ref geoserver
+          -
             Name: "CHUNK_SIZE"
             Value: !Ref chunkSize
           -
@@ -297,9 +309,9 @@ Resources:
         MaxvCpus: !Ref maxVCPUs
         InstanceTypes:
           - optimal
-        Subnets: !Ref subnets
+        Subnets: !FindInMap [RegionMap, !Ref "AWS::Region", subnets]
         SecurityGroupIds:
-          - !Ref securityGroup
+          - !Ref ComputeEnvironmentInstanceSecurityGroup
         InstanceRole: !Ref IamInstanceProfile
         SpotIamFleetRole: !Ref SpotIamFleetRole
         BidPercentage: 20
@@ -307,6 +319,21 @@ Resources:
     Metadata:
       'AWS::CloudFormation::Designer':
         id: 7a2b9b81-942a-4563-8b0a-7ed0cb6c6aad
+  ComputeEnvironmentInstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow http to client host
+      VpcId: !FindInMap [RegionMap, !Ref "AWS::Region", vpc]
+      SecurityGroupIngress:
+      - IpProtocol: '-1'
+        FromPort: '-1'
+        ToPort: '-1'
+        CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+      - IpProtocol: '-1'
+        FromPort: '-1'
+        ToPort: '-1'
+        CidrIp: 0.0.0.0/0
   WPSApi:
     Type: AWS::ApiGateway::RestApi
     Properties:
@@ -383,7 +410,7 @@ Resources:
     DependsOn: LambdaPermission
     Type: AWS::ApiGateway::Method
     Properties:
-      AuthorizationType: AWS_IAM
+      AuthorizationType: NONE
       HttpMethod: ANY
       Integration:
         Type: AWS_PROXY
@@ -422,7 +449,6 @@ Resources:
           DESCRIBE_PROCESS_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
           DESCRIBE_PROCESS_S3_KEY_PREFIX: !Ref s3configKey
           GEOSERVER_WPS_ENDPOINT_URL: !Ref geoserverWpsEndpoint
-          GEOSERVER_CATALOGUE_ENDPOINT_URL: !Ref geoserver
     DependsOn: S3PutConfigurationFiles
     Metadata:
       'AWS::CloudFormation::Designer':
