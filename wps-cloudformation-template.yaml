@@ -2,10 +2,6 @@ AWSTemplateFormatVersion: 2010-09-09
 Description: >-
   A template for AWS-WPS
 Parameters:
-  securityGroup:
-    Type: String
-  subnets:
-    Type: CommaDelimitedList
   s3configKey:
     Type: String
     Default: 'config/'
@@ -103,6 +99,13 @@ Mappings:
       getCapabilities: "GetCapabilities.ftl"
       gogoduck: "GoGoDuck.xml"
       netcdf: "NetcdfOutput.xml"
+  RegionMap:
+    ap-southeast-2:
+      vpc: vpc-7302ee16
+      subnets:
+        - subnet-7976213f
+        - subnet-54b3aa20
+        - subnet-d722d0b2
 Conditions:
   CreateEphemeralBucket: !Equals [ !Ref environment, dev ]
   CreatePersistentBucket: !And
@@ -297,9 +300,9 @@ Resources:
         MaxvCpus: !Ref maxVCPUs
         InstanceTypes:
           - optimal
-        Subnets: !Ref subnets
+        Subnets: !FindInMap [RegionMap, ap-southeast-2, subnets]
         SecurityGroupIds:
-          - !Ref securityGroup
+          - !Ref ComputeEnvironmentInstanceSecurityGroup
         InstanceRole: !Ref IamInstanceProfile
         SpotIamFleetRole: !Ref SpotIamFleetRole
         BidPercentage: 20
@@ -307,6 +310,21 @@ Resources:
     Metadata:
       'AWS::CloudFormation::Designer':
         id: 7a2b9b81-942a-4563-8b0a-7ed0cb6c6aad
+  ComputeEnvironmentInstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow http to client host
+      VpcId: !FindInMap [RegionMap, ap-southeast-2, vpc]
+      SecurityGroupIngress:
+      - IpProtocol: '-1'
+        FromPort: '-1'
+        ToPort: '-1'
+        CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+      - IpProtocol: '-1'
+        FromPort: '-1'
+        ToPort: '-1'
+        CidrIp: 0.0.0.0/0
   WPSApi:
     Type: AWS::ApiGateway::RestApi
     Properties:
@@ -383,7 +401,7 @@ Resources:
     DependsOn: LambdaPermission
     Type: AWS::ApiGateway::Method
     Properties:
-      AuthorizationType: AWS_IAM
+      AuthorizationType: NONE
       HttpMethod: ANY
       Integration:
         Type: AWS_PROXY
