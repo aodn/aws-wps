@@ -106,6 +106,12 @@ Mappings:
         - subnet-7976213f
         - subnet-54b3aa20
         - subnet-d722d0b2
+    eu-central-1:
+      vpc: vpc-16c5247f
+      subnets:
+        - subnet-9e0003e6
+        - subnet-f82bcb91
+        - subnet-5086a51a
 Conditions:
   CreateEphemeralBucket: !Equals [ !Ref environment, dev ]
   CreatePersistentBucket: !And
@@ -300,7 +306,7 @@ Resources:
         MaxvCpus: !Ref maxVCPUs
         InstanceTypes:
           - optimal
-        Subnets: !FindInMap [RegionMap, ap-southeast-2, subnets]
+        Subnets: !FindInMap [RegionMap, !Ref "AWS::Region", subnets]
         SecurityGroupIds:
           - !Ref ComputeEnvironmentInstanceSecurityGroup
         InstanceRole: !Ref IamInstanceProfile
@@ -314,7 +320,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Allow http to client host
-      VpcId: !FindInMap [RegionMap, ap-southeast-2, vpc]
+      VpcId: !FindInMap [RegionMap, !Ref "AWS::Region", vpc]
       SecurityGroupIngress:
       - IpProtocol: '-1'
         FromPort: '-1'
