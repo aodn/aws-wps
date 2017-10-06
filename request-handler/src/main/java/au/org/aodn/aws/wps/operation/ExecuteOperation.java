@@ -77,14 +77,16 @@ public class ExecuteOperation implements Operation {
         LOGGER.info("Job submitted.  Job ID : " + jobId);
 
         String statusDocument;
+        ExecuteStatusBuilder statusBuilder = new ExecuteStatusBuilder(jobId, statusS3BucketName, statusFileName);
+
         S3StatusUpdater statusUpdater = new S3StatusUpdater(statusS3BucketName, statusFileName);
         try {
-            statusDocument = ExecuteStatusBuilder.getStatusDocument(statusS3BucketName, statusFileName, jobId, EnumStatus.ACCEPTED, null, null, null);
+            statusDocument = statusBuilder.createResponseDocument(EnumStatus.ACCEPTED, null, null, null);
             statusUpdater.updateStatus(statusDocument, jobId);
         } catch (UnsupportedEncodingException e) {
             LOGGER.error(e.getMessage(), e);
             //  Form failed status document
-            statusDocument = ExecuteStatusBuilder.getStatusDocument(statusS3BucketName, statusFileName, jobId, EnumStatus.FAILED, "Failed to create status file : " + e.getMessage(), "StatusFileError", null);
+            statusDocument = statusBuilder.createResponseDocument(EnumStatus.FAILED, "Failed to create status file : " + e.getMessage(), "StatusFileError", null);
         }
 
         return statusDocument;

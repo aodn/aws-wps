@@ -1,6 +1,11 @@
 package au.org.emii.geoserver.client;
 
 
+import au.org.emii.aggregator.exception.AggregationException;
+import au.org.emii.download.DownloadRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.InputStream;
@@ -8,11 +13,10 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLEncoder;
-import java.util.*;
-import au.org.emii.aggregator.exception.AggregationException;
-import au.org.emii.download.DownloadRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 
 public class HttpIndexReader implements IndexReader {
@@ -55,12 +59,10 @@ public class HttpIndexReader implements IndexReader {
             BufferedInputStream bufferedStream = null;
             DataInputStream dataInputStream = null;
 
-
-            //  Make HTTP request to geoserver
-            conn = (HttpURLConnection) url.openConnection();
-
             try
             {
+                //  Make HTTP request to geoserver
+                conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");
                 conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
                 conn.setRequestProperty("Content-Length", String.valueOf(postDataBytes.length));
@@ -93,6 +95,9 @@ public class HttpIndexReader implements IndexReader {
                     }
                     i++;
                 }
+            } catch (Exception e) {
+                logger.error(e.getMessage(), e);
+                throw e;
             } finally {
                 if (inputStream != null) {
                     inputStream.close();
@@ -173,6 +178,7 @@ public class HttpIndexReader implements IndexReader {
             }
             logger.debug("DownloadRequest - # files requested : " + downloadList.size());
         } catch (Exception e) {
+            logger.error(e.getMessage(), e);
             logger.error("We could not obtain list of URLs, does the collection still exist?");
             throw new AggregationException(String.format("Could not obtain list of URLs: '%s'", e.getMessage()));
         }
