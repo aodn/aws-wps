@@ -219,8 +219,8 @@ public class AggregationRunner implements CommandLineRunner {
                 S3Utils.uploadToS3(resultS3URI, convertedFile.toFile());
 
                 //  Lookup the metadata URL for the layer
-                String catalogueURL = WpsConfig.getConfig(GEONETWORK_CATALOGUE_URL_CONFIG_KEY);//"https://catalogue-imos.aodn.org.au/geonetwork";
-                String layerSearchField = WpsConfig.getConfig(GEONETWORK_CATALOGUE_LAYER_FIELD_CONFIG_KEY);//"layer";
+                String catalogueURL = WpsConfig.getConfig(GEONETWORK_CATALOGUE_URL_CONFIG_KEY);
+                String layerSearchField = WpsConfig.getConfig(GEONETWORK_CATALOGUE_LAYER_FIELD_CONFIG_KEY);
                 CatalogueReader catalogueReader = new CatalogueReader(catalogueURL, layerSearchField);
 
                 // Create provenance document

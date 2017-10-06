@@ -32,8 +32,6 @@ public class ProvenanceWriter {
         try {
             //  Get from S3 bucket location
             AmazonS3Client s3Client = new AmazonS3Client();
-            //Region region = Region.getRegion(Regions.fromName(s3RegionName));
-            //s3Client.setRegion(region);
 
             S3Object templateObject = s3Client.getObject(s3Bucket, s3Key);
             S3ObjectInputStream contentStream = templateObject.getObjectContent();
