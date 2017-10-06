@@ -69,7 +69,7 @@ public class AggregationRunner implements CommandLineRunner {
     @Override
     public void run(String... args) {
 
-        Date startTime = new Date();
+        DateTime startTime = new DateTime(DateTimeZone.UTC);
         S3StatusUpdater statusUpdater = null;
         String batchJobId = null, email = null;
         EmailService emailService = null;
@@ -90,7 +90,6 @@ public class AggregationRunner implements CommandLineRunner {
 
             String aggregatorConfigS3Bucket = WpsConfig.getConfig(AGGREGATOR_CONFIG_S3_BUCKET_CONFIG_KEY);
             String aggregatorTemplateFileS3Key = WpsConfig.getConfig(AGGREGATOR_TEMPLATE_FILE_S3_KEY_CONFIG_KEY);
-            String downloadConfigS3Key = WpsConfig.getConfig(DOWNLOAD_CONFIG_S3_KEY_CONFIG_KEY);
             String aggregatorProvenanceTemplateS3Key = WpsConfig.getConfig(PROVENANCE_TEMPLATE_S3_KEY_CONFIG_KEY);
 
             //  Parse connect timeout
@@ -146,7 +145,7 @@ public class AggregationRunner implements CommandLineRunner {
             String resultMime = commandLine.getOptionValue('m');
             email = commandLine.getOptionValue('e');
 
-            SubsetParameters subsetParams = new SubsetParameters(subset);
+            SubsetParameters subsetParams = SubsetParameters.parse(subset);
 
             if(email != null) {
                 email = email.substring(email.indexOf("=") + 1);
@@ -169,36 +168,16 @@ public class AggregationRunner implements CommandLineRunner {
             HttpIndexReader indexReader = new HttpIndexReader(WpsConfig.getConfig(WpsConfig.GEOSERVER_CATALOGUE_ENDPOINT_URL_CONFIG_KEY));
             Set<DownloadRequest> downloads = indexReader.getDownloadRequestList(layer, "time", "file_url", subsetParams);
 
-
-            LatLonRect bbox = null;
-            SubsetParameters.SubsetParameter latSubset = subsetParams.get("LATITUDE");
-            SubsetParameters.SubsetParameter lonSubset = subsetParams.get("LONGITUDE");
-
-            if (latSubset != null && lonSubset != null) {
-
-                double minLon = Double.parseDouble(lonSubset.start);
-                double minLat = Double.parseDouble(latSubset.start);
-                double maxLon = Double.parseDouble(lonSubset.end);
-                double maxLat = Double.parseDouble(latSubset.end);
-                LatLonPoint lowerLeft = new LatLonPointImmutable(minLat, minLon);
-                LatLonPoint upperRight = new LatLonPointImmutable(maxLat, maxLon);
-                bbox = new LatLonRect(lowerLeft, upperRight);
-
-                logger.info("Bounding box: LAT [" + minLat + ", " + maxLat + "], LON [" + minLon + ", " + maxLon + "]");
+            //  Apply subset parameters
+            LatLonRect bbox = subsetParams.getBbox();
+            if (bbox != null) {
+                logger.info("Bounding box: LAT [" + bbox.getLatMin() + ", " + bbox.getLatMax() + "], LON [" + bbox.getLonMin() + ", " + bbox.getLonMax() + "]");
             }
 
-
-            CalendarDateRange subsetTimeRange = null;
-
-            //  Apply time range (if provided)
-            SubsetParameters.SubsetParameter timeSubset = subsetParams.get("TIME");
-            if (timeSubset != null) {
-                CalendarDate subsetStartTime = CalendarDate.parseISOformat("Gregorian", timeSubset.start);
-                CalendarDate subsetEndTime = CalendarDate.parseISOformat("Gregorian", timeSubset.end);
-                subsetTimeRange = CalendarDateRange.of(subsetStartTime, subsetEndTime);
-                logger.info("Time range specified for aggregation: START [" + timeSubset.start + "], END [" + timeSubset.end + "]");
+            CalendarDateRange subsetTimeRange = subsetParams.getTimeRange();
+            if (subsetTimeRange != null) {
+                logger.info("Time range specified for aggregation: START [" + subsetTimeRange.getStart() + "], END [" + subsetTimeRange.getEnd() + "]");
             }
-
 
             //  Apply overrides (if provided)
             AggregationOverrides overrides = getAggregationOverrides(aggregatorConfigS3Bucket, aggregatorTemplateFileS3Key, null, layer);
@@ -260,7 +239,8 @@ public class AggregationRunner implements CommandLineRunner {
                 String provenanceDocument = ProvenanceWriter.write(aggregatorConfigS3Bucket, aggregatorProvenanceTemplateS3Key, params);
 
                 //  Upload provenance document to S3
-                S3URI provenanceS3URI = new S3URI(outputBucketName, batchJobId + "/" + outputFilename + "." + converter.getExtension());
+                //  TODO: configurable provenance filename?
+                S3URI provenanceS3URI = new S3URI(outputBucketName, batchJobId + "/provenance.xml");
                 S3Utils.uploadToS3(provenanceS3URI, provenanceDocument);
 
                 HashMap<String, String> outputMap = new HashMap<>();

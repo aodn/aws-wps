@@ -202,7 +202,7 @@ public class HttpIndexReader implements IndexReader {
     public static void main(String[] args) {
         HttpIndexReader indexReader = new HttpIndexReader("http://geoserver-123.aodn.org.au/geoserver/imos");
         String subsetString = "TIME,2009-01-01T00:00:00.000Z,2017-12-25T23:04:00.000Z;LATITUDE,-33.433849,-32.150743;LONGITUDE,114.15197,115.741219;DEPTH,0.0,100.0";
-        SubsetParameters subsetParams = new SubsetParameters(subsetString);
+        SubsetParameters subsetParams = SubsetParameters.parse(subsetString);
         Set<DownloadRequest> downloadList = null;
 
         try {
@@ -221,9 +221,9 @@ public class HttpIndexReader implements IndexReader {
     {
         String cqlTimeFilter = null;
 
-        if(subset.get("TIME") != null) {
-            String timeCoverageStart = subset.get("TIME").start;
-            String timeCoverageEnd = subset.get("TIME").end;
+        if(subset.getTimeRange() != null) {
+            String timeCoverageStart = subset.getTimeRange().getStart().toString();
+            String timeCoverageEnd = subset.getTimeRange().getEnd().toString();
 
             if (timeCoverageStart != null && timeCoverageEnd != null) {  //  Start + end dates
                 cqlTimeFilter = String.format("%s >= %s AND %s <= %s",
