@@ -1,11 +1,13 @@
 package au.org.emii.aggregationworker;
 
 
+import au.org.aodn.aws.util.S3Utils;
 import au.org.aodn.aws.wps.status.EnumStatus;
 import au.org.aodn.aws.wps.status.ExecuteStatusBuilder;
 import au.org.aodn.aws.wps.status.S3StatusUpdater;
 import au.org.aodn.aws.wps.status.WpsConfig;
 import au.org.emii.aggregator.NetcdfAggregator;
+import au.org.emii.aggregator.catalogue.CatalogueReader;
 import au.org.emii.aggregator.overrides.AggregationOverrides;
 import au.org.emii.aggregator.converter.Converter;
 import au.org.emii.download.Download;
@@ -17,13 +19,14 @@ import au.org.emii.geoserver.client.HttpIndexReader;
 import au.org.emii.geoserver.client.SubsetParameters;
 import au.org.emii.util.EmailService;
 import au.org.emii.util.IntegerHelper;
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
-import com.amazonaws.services.s3.transfer.TransferManager;
-import com.amazonaws.services.s3.transfer.Upload;
+import au.org.emii.util.ProvenanceWriter;
+import freemarker.template.Configuration;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Options;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
@@ -37,8 +40,9 @@ import ucar.unidata.geoloc.LatLonRect;
 import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 
@@ -65,6 +69,7 @@ public class AggregationRunner implements CommandLineRunner {
     @Override
     public void run(String... args) {
 
+        Date startTime = new Date();
         S3StatusUpdater statusUpdater = null;
         String batchJobId = null, email = null;
         EmailService emailService = null;
@@ -88,6 +93,7 @@ public class AggregationRunner implements CommandLineRunner {
             String aggregatorConfigS3Bucket = WpsConfig.getConfig(AGGREGATOR_CONFIG_S3_BUCKET_CONFIG_KEY);
             String aggregatorTemplateFileS3Key = WpsConfig.getConfig(AGGREGATOR_TEMPLATE_FILE_S3_KEY_CONFIG_KEY);
             String downloadConfigS3Key = WpsConfig.getConfig(DOWNLOAD_CONFIG_S3_KEY_CONFIG_KEY);
+            String aggregatorProvenanceTemplateS3Key = WpsConfig.getConfig(PROVENANCE_TEMPLATE_S3_KEY_CONFIG_KEY);
 
             //  Parse connect timeout
             String downloadConnectTimeoutString = WpsConfig.getConfig(DOWNLOAD_CONNECT_TIMEOUT_CONFIG_KEY);
@@ -184,14 +190,14 @@ public class AggregationRunner implements CommandLineRunner {
             }
 
 
-            CalendarDateRange timeRange = null;
+            CalendarDateRange subsetTimeRange = null;
 
             //  Apply time range (if provided)
             SubsetParameters.SubsetParameter timeSubset = subsetParams.get("TIME");
             if (timeSubset != null) {
-                CalendarDate startTime = CalendarDate.parseISOformat("Gregorian", timeSubset.start);
-                CalendarDate endTime = CalendarDate.parseISOformat("Gregorian", timeSubset.end);
-                timeRange = CalendarDateRange.of(startTime, endTime);
+                CalendarDate subsetStartTime = CalendarDate.parseISOformat("Gregorian", timeSubset.start);
+                CalendarDate subsetEndTime = CalendarDate.parseISOformat("Gregorian", timeSubset.end);
+                subsetTimeRange = CalendarDateRange.of(subsetStartTime, subsetEndTime);
                 logger.info("Time range specified for aggregation: START [" + timeSubset.start + "], END [" + timeSubset.end + "]");
             }
 
@@ -212,7 +218,7 @@ public class AggregationRunner implements CommandLineRunner {
             //  TODO:  chunk size
             try (
                     ParallelDownloadManager downloadManager = new ParallelDownloadManager(downloadConfig, downloader);
-                    NetcdfAggregator netcdfAggregator = new NetcdfAggregator(outputFile, overrides, chunkSize, bbox, null, timeRange)
+                    NetcdfAggregator netcdfAggregator = new NetcdfAggregator(outputFile, overrides, chunkSize, bbox, null, subsetTimeRange)
             ) {
                 for (Download download : downloadManager.download(downloads)) {
                     netcdfAggregator.add(download.getPath());
@@ -228,18 +234,41 @@ public class AggregationRunner implements CommandLineRunner {
                 converter.convert(outputFile, convertedFile);
 
                 //  Form output file location
-                S3URI s3URI = new S3URI(outputBucketName, batchJobId + "/" + outputFilename + "." + converter.getExtension());
+                S3URI resultS3URI = new S3URI(outputBucketName, batchJobId + "/" + outputFilename + "." + converter.getExtension());
 
-                logger.info("Copying output file to : " + s3URI.toString());
+                logger.info("Copying output file to : " + resultS3URI.toString());
 
-                DefaultAWSCredentialsProviderChain credentialProviderChain = new DefaultAWSCredentialsProviderChain();
-                TransferManager tx = new TransferManager(credentialProviderChain.getCredentials());
-                Upload myUpload = tx.upload(s3URI.getBucket(), s3URI.getKey(), convertedFile.toFile());
-                myUpload.waitForCompletion();
-                tx.shutdownNow();
+                //  Upload to S3
+                S3Utils.uploadToS3(resultS3URI, convertedFile.toFile());
+
+                //  Lookup the metadata URL for the layer
+                //  TODO: source from environment
+                String catalogueURL = WpsConfig.getConfig(GEONETWORK_CATALOGUE_URL_CONFIG_KEY);//"https://catalogue-imos.aodn.org.au/geonetwork";
+                String layerSearchField = WpsConfig.getConfig(GEONETWORK_CATALOGUE_LAYER_FIELD_CONFIG_KEY);//"layer";
+                CatalogueReader catalogueReader = new CatalogueReader(catalogueURL, layerSearchField);
+
+                // Create provenance document
+                Configuration config = new Configuration();
+                config.setClassForTemplateLoading(ProvenanceWriter.class, "");
+
+                Map<String, Object> params = new HashMap<>();
+                params.put("jobId", batchJobId);
+                params.put("downloadUrl", WpsConfig.getS3ExternalURL(resultS3URI.getBucket(), resultS3URI.getKey()));
+                params.put("settingsPath", WpsConfig.getS3ExternalURL(aggregatorConfigS3Bucket, aggregatorTemplateFileS3Key));
+                params.put("startTime", startTime);
+                params.put("endTime", new DateTime(DateTimeZone.UTC));
+                params.put("layer", layer);
+                params.put("parameters", subsetParams);
+                params.put("sourceMetadataUrl", catalogueReader.getMetadataUrl(layer));
+                String provenanceDocument = ProvenanceWriter.write(aggregatorConfigS3Bucket, aggregatorProvenanceTemplateS3Key, params);
+
+                //  Upload provenance document to S3
+                S3URI provenanceS3URI = new S3URI(outputBucketName, batchJobId + "/" + outputFilename + "." + converter.getExtension());
+                S3Utils.uploadToS3(provenanceS3URI, provenanceDocument);
 
                 HashMap<String, String> outputMap = new HashMap<>();
-                outputMap.put("result", WpsConfig.getS3ExternalURL(s3URI.getBucket(), s3URI.getKey()));
+                outputMap.put("result", WpsConfig.getS3ExternalURL(resultS3URI.getBucket(), resultS3URI.getKey()));
+                outputMap.put("provenance", WpsConfig.getS3ExternalURL(provenanceS3URI.getBucket(), provenanceS3URI.getKey()));
 
                 statusDocument = ExecuteStatusBuilder.getStatusDocument(statusS3Bucket, statusFilename, batchJobId, EnumStatus.SUCCEEDED, null, null, outputMap);
                 statusUpdater.updateStatus(statusDocument, batchJobId);
@@ -280,4 +309,5 @@ public class AggregationRunner implements CommandLineRunner {
             System.exit(1);
         }
     }
+
 }
