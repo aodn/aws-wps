@@ -78,8 +78,6 @@ public class AggregationRunner implements CommandLineRunner {
         String expirationPeriod = "expirationPeriod"; // Needed to be replaced
 
         try {
-
-
             //  Capture the AWS job specifics - they are passed to the docker runtime as
             //  environment variables.
             batchJobId = WpsConfig.getConfig(AWS_BATCH_JOB_ID_CONFIG_KEY);
@@ -206,7 +204,7 @@ public class AggregationRunner implements CommandLineRunner {
             AggregationOverrides overrides = getAggregationOverrides(aggregatorConfigS3Bucket, aggregatorTemplateFileS3Key, null, layer);
 
             //  Apply download configuration
-            DownloadConfig downloadConfig = getDownloadConfig(aggregatorConfigS3Bucket, downloadConfigS3Key);
+            DownloadConfig downloadConfig = getDownloadConfig();
 
             //  Apply connect/read timeouts
             Downloader downloader = new Downloader(downloadConnectTimeout, downloadReadTimeout);
@@ -214,8 +212,8 @@ public class AggregationRunner implements CommandLineRunner {
             Path outputFile = Files.createTempFile("agg", ".nc");
             Path convertedFile = null;
 
-            long chunkSize = 1024;
-            //  TODO:  chunk size
+            long chunkSize = Long.valueOf(WpsConfig.getConfig(CHUNK_SIZE_KEY));
+
             try (
                     ParallelDownloadManager downloadManager = new ParallelDownloadManager(downloadConfig, downloader);
                     NetcdfAggregator netcdfAggregator = new NetcdfAggregator(outputFile, overrides, chunkSize, bbox, null, subsetTimeRange)
@@ -242,7 +240,6 @@ public class AggregationRunner implements CommandLineRunner {
                 S3Utils.uploadToS3(resultS3URI, convertedFile.toFile());
 
                 //  Lookup the metadata URL for the layer
-                //  TODO: source from environment
                 String catalogueURL = WpsConfig.getConfig(GEONETWORK_CATALOGUE_URL_CONFIG_KEY);//"https://catalogue-imos.aodn.org.au/geonetwork";
                 String layerSearchField = WpsConfig.getConfig(GEONETWORK_CATALOGUE_LAYER_FIELD_CONFIG_KEY);//"layer";
                 CatalogueReader catalogueReader = new CatalogueReader(catalogueURL, layerSearchField);
@@ -309,5 +306,4 @@ public class AggregationRunner implements CommandLineRunner {
             System.exit(1);
         }
     }
-
 }
