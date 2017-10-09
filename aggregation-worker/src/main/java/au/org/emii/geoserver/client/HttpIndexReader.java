@@ -157,23 +157,54 @@ public class HttpIndexReader implements IndexReader {
             logger.info(String.format("Parameters: '%s'", new String(postDataBytes)));
             String line = null;
             Integer i = 0;
+            int fileUrlIndex = 0;
+            int fileSizeIndex = 0;
+
             while ((line = dataInputStream.readLine()) != null) {
-                if (i > 0) { // Skip first line - it's the headers
+
+                if (i > 0) { // First line is the headers
                     String[] lineParts = line.split(",");
-                    long fileSize = Long.parseLong(lineParts[3]);
-                    URI fileURI = new URI(lineParts[2]);
+                    long fileSize = Long.parseLong(lineParts[fileSizeIndex]);
+                    URI fileURI = new URI(lineParts[fileUrlIndex]);
 
                     //  TODO:  source the base URL from configuration
                     URL fileURL = new URL("http://data.aodn.org.au/" + fileURI.toString());
 
+                    logger.info("Added download: " + fileURL.toString());
                     DownloadRequest downloadRequest = new DownloadRequest(fileURL, fileSize);
                     downloadList.add(downloadRequest);
+                } else {
+                    //  The first line is the header - which lists all of the fields returned.
+                    //  We are actually only really interested in the 'file_url' field- because
+                    //  that is the URL of the file (obviously).  Some collections return different
+                    //  sets of columns in the CSV - so find the column position where the file_url is located.
+                    String[] headerFields = line.split(",");
+                    logger.info("Header line = " + line);
+                    logger.info("Header fields = " + headerFields.toString());
+                    int headerFieldIndex = 0;
+                    for(String currentField : headerFields)
+                    {
+                        logger.info("Header field name [" + currentField + "]");
+
+                        if(currentField.trim().equalsIgnoreCase(urlField))
+                        {
+                            logger.info("Found 'file_url' field in CSV output at position [" + headerFieldIndex + "]");
+                            fileUrlIndex = headerFieldIndex;
+                        }
+
+                        if(currentField.trim().equalsIgnoreCase("size"))
+                        {
+                            logger.info("Found 'size' field in CSV output at position [" + headerFieldIndex + "]");
+                            fileSizeIndex = headerFieldIndex;
+                        }
+                        headerFieldIndex++;
+                    }
                 }
                 i++;
             }
             logger.debug("DownloadRequest - # files requested : " + downloadList.size());
         } catch (Exception e) {
-            logger.error("We could not obtain list of URLs, does the collection still exist?");
+            logger.error("We could not obtain list of URLs, does the collection still exist?", e);
             throw new AggregationException(String.format("Could not obtain list of URLs: '%s'", e.getMessage()));
         }
 

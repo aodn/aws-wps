@@ -56,12 +56,19 @@ public class CatalogueReader {
             XPathExpression expr = xpath.compile("//metadata/link['" + METADATA_PROTOCOL + "']");
             NodeList nl = (NodeList) expr.evaluate(doc, XPathConstants.NODESET);
 
-            if (nl.getLength() == 0) {
+            if (nl.getLength() == 0 || nl.item(0) == null) {
                 logger.error("No metadata URL found for {}", layer);
                 return "";
             }
 
             String nodeValue = nl.item(0).getTextContent();
+
+            if(nodeValue == null)
+            {
+                logger.error("No metadata URL found for {}", layer);
+                return "";
+            }
+
             String[] linkInfo = nodeValue.split("\\|");
 
             if (linkInfo.length < 3) {
@@ -75,6 +82,4 @@ public class CatalogueReader {
             return "";
         }
     }
-
 }
-

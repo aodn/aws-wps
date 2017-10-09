@@ -22,17 +22,14 @@ public class S3Utils {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(S3Utils.class);
 
-    public static String readS3ObjectAsString(String s3Bucket, String s3Key, String s3Region) throws IOException
-    {
+    public static String readS3ObjectAsString(String s3Bucket, String s3Key, String s3Region) throws IOException {
         String objectString = null;
         S3ObjectInputStream contentStream = getS3ObjectStream(s3Bucket, s3Key, s3Region);
 
         //  read file to String
         try {
             objectString = Utils.inputStreamToString(contentStream);
-        }
-        catch(IOException ioex)
-        {
+        } catch (IOException ioex) {
             //  Bad stuff - blow up!
             LOGGER.error("Problem loading S3 object: ", ioex);
             throw ioex;
@@ -41,11 +38,10 @@ public class S3Utils {
     }
 
 
-    public static S3ObjectInputStream getS3ObjectStream(String s3Bucket, String s3Key, String s3Region) throws IOException
-    {
+    public static S3ObjectInputStream getS3ObjectStream(String s3Bucket, String s3Key, String s3Region) throws IOException {
         //  Get from S3 bucket location
         AmazonS3Client s3Client = new AmazonS3Client();
-        if(s3Region != null) {
+        if (s3Region != null) {
             Region region = Region.getRegion(Regions.fromName(s3Region));
             s3Client.setRegion(region);
         }
@@ -57,8 +53,7 @@ public class S3Utils {
 
 
     public static void uploadToS3(S3URI s3URI, File file)
-            throws InterruptedException
-    {
+            throws InterruptedException {
         DefaultAWSCredentialsProviderChain credentialProviderChain = new DefaultAWSCredentialsProviderChain();
         TransferManager tx = new TransferManager(credentialProviderChain.getCredentials());
         Upload myUpload = tx.upload(s3URI.getBucket(), s3URI.getKey(), file);
@@ -68,8 +63,7 @@ public class S3Utils {
 
 
     public static void uploadToS3(S3URI s3URI, String content)
-            throws InterruptedException, IOException
-    {
+            throws InterruptedException, IOException {
         DefaultAWSCredentialsProviderChain credentialProviderChain = new DefaultAWSCredentialsProviderChain();
         TransferManager tx = new TransferManager(credentialProviderChain.getCredentials());
         try {
@@ -77,9 +71,7 @@ public class S3Utils {
             Upload myUpload = tx.upload(s3URI.getBucket(), s3URI.getKey(), stringStream, null);
             myUpload.waitForCompletion();
             tx.shutdownNow();
-        }
-        catch(UnsupportedEncodingException ex)
-        {
+        } catch (UnsupportedEncodingException ex) {
             LOGGER.error("Unable to upload content to S3 : " + ex.getMessage(), ex);
             throw new IOException("Unable to upload content to S3 : " + ex.getMessage(), ex);
         }

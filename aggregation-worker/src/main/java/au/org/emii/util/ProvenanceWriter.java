@@ -41,9 +41,7 @@ public class ProvenanceWriter {
             try {
                 templateString = Utils.inputStreamToString(contentStream);
                 logger.info("Provenance template: " + templateString);
-            }
-            catch(IOException ioex)
-            {
+            } catch (IOException ioex) {
                 //  Bad stuff - blow up!
                 logger.error("Problem loading template: ", ioex);
                 throw ioex;
@@ -65,11 +63,10 @@ public class ProvenanceWriter {
             return writer.toString();
         } catch (FileNotFoundException e) {
             logger.error("No template (" + PROVENANCE_TEMPLATE_NAME + ") found for provenance document");
-            return "Provenance template '"+ PROVENANCE_TEMPLATE_NAME + "' not found";
-        } catch (TemplateException|IOException e) {
+            return "Provenance template '" + PROVENANCE_TEMPLATE_NAME + "' not found";
+        } catch (TemplateException | IOException e) {
             logger.error("Error loading provenance document. S3 bucket [" + s3Bucket + ", S3 Key [" + s3Key + "]");
             return "Error loading provenance template '" + PROVENANCE_TEMPLATE_NAME + "' not found";
         }
     }
 }
-
