@@ -9,6 +9,7 @@ import java.net.URI;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.*;
+
 import au.org.emii.aggregator.exception.AggregationException;
 import au.org.emii.download.DownloadRequest;
 import org.slf4j.Logger;
@@ -59,8 +60,7 @@ public class HttpIndexReader implements IndexReader {
             //  Make HTTP request to geoserver
             conn = (HttpURLConnection) url.openConnection();
 
-            try
-            {
+            try {
                 conn.setRequestMethod("GET");
                 conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
                 conn.setRequestProperty("Content-Length", String.valueOf(postDataBytes.length));
@@ -179,21 +179,17 @@ public class HttpIndexReader implements IndexReader {
                     //  that is the URL of the file (obviously).  Some collections return different
                     //  sets of columns in the CSV - so find the column position where the file_url is located.
                     String[] headerFields = line.split(",");
-                    logger.info("Header line = " + line);
-                    logger.info("Header fields = " + headerFields.toString());
+
                     int headerFieldIndex = 0;
-                    for(String currentField : headerFields)
-                    {
+                    for (String currentField : headerFields) {
                         logger.info("Header field name [" + currentField + "]");
 
-                        if(currentField.trim().equalsIgnoreCase(urlField))
-                        {
-                            logger.info("Found 'file_url' field in CSV output at position [" + headerFieldIndex + "]");
+                        if (currentField.trim().equalsIgnoreCase(urlField)) {
+                            logger.info("Found " + urlField + "] field in CSV output at position [" + headerFieldIndex + "]");
                             fileUrlIndex = headerFieldIndex;
                         }
 
-                        if(currentField.trim().equalsIgnoreCase("size"))
-                        {
+                        if (currentField.trim().equalsIgnoreCase("size")) {
                             logger.info("Found 'size' field in CSV output at position [" + headerFieldIndex + "]");
                             fileSizeIndex = headerFieldIndex;
                         }
@@ -248,11 +244,10 @@ public class HttpIndexReader implements IndexReader {
         }
     }
 
-    private String getCqlTimeFilter(SubsetParameters subset, String timeField)
-    {
+    private String getCqlTimeFilter(SubsetParameters subset, String timeField) {
         String cqlTimeFilter = null;
 
-        if(subset.getTimeRange() != null) {
+        if (subset.getTimeRange() != null) {
             String timeCoverageStart = subset.getTimeRange().getStart().toString();
             String timeCoverageEnd = subset.getTimeRange().getEnd().toString();
 
