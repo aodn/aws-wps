@@ -96,24 +96,18 @@ public class AggregationRunner implements CommandLineRunner {
             //  Parse connect timeout
             String downloadConnectTimeoutString = WpsConfig.getConfig(DOWNLOAD_CONNECT_TIMEOUT_CONFIG_KEY);
             int downloadConnectTimeout;
-            if(downloadConnectTimeoutString != null && IntegerHelper.isInteger(downloadConnectTimeoutString))
-            {
+            if (downloadConnectTimeoutString != null && IntegerHelper.isInteger(downloadConnectTimeoutString)) {
                 downloadConnectTimeout = Integer.parseInt(downloadConnectTimeoutString);
-            }
-            else
-            {
+            } else {
                 downloadConnectTimeout = DEFAULT_CONNECT_TIMEOUT_MS;
             }
 
             // Parse read timeout
             String downloadReadTimeoutString = WpsConfig.getConfig(DOWNLOAD_READ_TIMEOUT_CONFIG_KEY);
             int downloadReadTimeout;
-            if(downloadReadTimeoutString != null && IntegerHelper.isInteger(downloadReadTimeoutString))
-            {
+            if (downloadReadTimeoutString != null && IntegerHelper.isInteger(downloadReadTimeoutString)) {
                 downloadReadTimeout = Integer.parseInt(downloadConnectTimeoutString);
-            }
-            else
-            {
+            } else {
                 downloadReadTimeout = DEFAULT_READ_TIMEOUT_MS;
             }
 
@@ -125,7 +119,7 @@ public class AggregationRunner implements CommandLineRunner {
 
             //  Update status document to indicate job has started
             statusUpdater = new S3StatusUpdater(statusS3Bucket, statusFilename);
-            statusUpdater.updateStatus(statusDocument, batchJobId);git
+            statusUpdater.updateStatus(statusDocument, batchJobId);
             jobReportUrl = statusBuilder.getStatusLocation();
 
             logger.info("AWS BATCH JOB ID     : " + batchJobId);
@@ -150,7 +144,7 @@ public class AggregationRunner implements CommandLineRunner {
 
             SubsetParameters subsetParams = SubsetParameters.parse(subset);
 
-            if(email != null) {
+            if (email != null) {
                 email = email.substring(email.indexOf("=") + 1);
                 emailService = new EmailService();
             }
@@ -198,7 +192,7 @@ public class AggregationRunner implements CommandLineRunner {
 
             try (
                     ParallelDownloadManager downloadManager = new ParallelDownloadManager(downloadConfig, downloader);
-                    NetcdfAggregator netcdfAggregator = new NetcdfAggregator(outputFile, overrides, chunkSize, bbox, null, subsetTimeRange)
+                    NetcdfAggregator netcdfAggregator = new NetcdfAggregator(outputFile, overrides, chunkSize, bbox, subsetParams.getVerticalRange(), subsetTimeRange)
             ) {
                 for (Download download : downloadManager.download(downloads)) {
                     netcdfAggregator.add(download.getPath());
@@ -253,11 +247,15 @@ public class AggregationRunner implements CommandLineRunner {
                 statusDocument = statusBuilder.createResponseDocument(EnumStatus.SUCCEEDED, null, null, outputMap);
                 statusUpdater.updateStatus(statusDocument, batchJobId);
             } finally {
-                Files.deleteIfExists(convertedFile);
-                Files.deleteIfExists(outputFile);
+                if (convertedFile != null) {
+                    Files.deleteIfExists(convertedFile);
+                }
+                if (outputFile != null) {
+                    Files.deleteIfExists(outputFile);
+                }
             }
 
-            if(emailService != null) {
+            if (emailService != null) {
                 try {
                     emailService.sendCompletedJobEmail(email, batchJobId, jobReportUrl, expirationPeriod);
                 } catch (Exception ex) {
@@ -279,7 +277,7 @@ public class AggregationRunner implements CommandLineRunner {
                 }
             }
 
-            if(emailService != null) {
+            if (emailService != null) {
                 try {
                     emailService.sendFailedJobEmail(email, batchJobId, jobReportUrl);
                 } catch (Exception ex) {
