@@ -69,7 +69,7 @@ public class AggregationRunner implements CommandLineRunner {
         EmailService emailService = null;
         ExecuteStatusBuilder statusBuilder = null;
 
-        String jobReportUrl = "jobReportUrl"; // Needed to be replaced
+        String jobReportUrl = null; // Needed to be replaced
         String expirationPeriod = "expirationPeriod"; // Needed to be replaced
 
         try {
@@ -118,7 +118,7 @@ public class AggregationRunner implements CommandLineRunner {
 
             //  Update status document to indicate job has started
             statusUpdater = new S3StatusUpdater(statusS3Bucket, statusFilename);
-            statusUpdater.updateStatus(statusDocument, batchJobId);git
+            statusUpdater.updateStatus(statusDocument, batchJobId);
             jobReportUrl = statusBuilder.getStatusLocation();
 
             logger.info("AWS BATCH JOB ID     : " + batchJobId);
