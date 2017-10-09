@@ -8,7 +8,10 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLEncoder;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 import au.org.emii.aggregator.exception.AggregationException;
 import au.org.emii.download.DownloadRequest;
@@ -93,6 +96,9 @@ public class HttpIndexReader implements IndexReader {
                     }
                     i++;
                 }
+            } catch (Exception e) {
+                logger.error(e.getMessage(), e);
+                throw e;
             } finally {
                 if (inputStream != null) {
                     inputStream.close();
@@ -200,7 +206,8 @@ public class HttpIndexReader implements IndexReader {
             }
             logger.debug("DownloadRequest - # files requested : " + downloadList.size());
         } catch (Exception e) {
-            logger.error("We could not obtain list of URLs, does the collection still exist?", e);
+            logger.error(e.getMessage(), e);
+            logger.error("We could not obtain list of URLs, does the collection still exist?");
             throw new AggregationException(String.format("Could not obtain list of URLs: '%s'", e.getMessage()));
         }
 

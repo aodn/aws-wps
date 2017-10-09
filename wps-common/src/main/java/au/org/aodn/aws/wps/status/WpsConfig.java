@@ -70,7 +70,6 @@ public class WpsConfig {
     private static final String FAILED_JOB_EMAIL_SUBJECT_KEY = "jobFailedEmailSubject";
     private static final String FAILED_JOB_EMAIL_KEY = "jobFailedEmail";
 
-    public static final String S3_BASE_URL = "https://s3.amazonaws.com/";
     public static final String APPLICATION_PROPERTIES = "application.properties";
     private static Properties properties = null;
 
@@ -156,7 +155,8 @@ public class WpsConfig {
     }
 
     public static String getS3ExternalURL(String s3Bucket, String s3Key) {
-        return String.format("%s%s/%s", S3_BASE_URL, s3Bucket, s3Key);
+        String region = getConfig(WpsConfig.AWS_REGION_CONFIG_KEY);
+        return String.format("https://s3-%s.amazonaws.com/%s/%s", region, s3Bucket, s3Key);
     }
 
     /**

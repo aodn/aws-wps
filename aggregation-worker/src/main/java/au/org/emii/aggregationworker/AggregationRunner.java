@@ -75,7 +75,7 @@ public class AggregationRunner implements CommandLineRunner {
         EmailService emailService = null;
         ExecuteStatusBuilder statusBuilder = null;
 
-        String jobReportUrl = "jobReportUrl"; // Needed to be replaced
+        String jobReportUrl = null; // Needed to be replaced
         String expirationPeriod = "expirationPeriod"; // Needed to be replaced
 
         try {
