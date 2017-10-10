@@ -72,9 +72,6 @@ Parameters:
   geonetworkLayerSearchField:
     Type: String
     Default: 'layer'
-  provenanceTemplateS3Key:
-    Type: String
-    Default: '$LATEST/config/aggregator/provenance_template_gridded.ftl'
   environment:
     Type: String
     Default: dev
