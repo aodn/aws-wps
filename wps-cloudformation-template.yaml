@@ -295,7 +295,7 @@ Resources:
             Value: !Ref geonetworkLayerSearchField
 
             Name: "PROVENANCE_TEMPLATE_S3_KEY"
-            Value: !Ref provenanceTemplateS3Key
+            Value: !Join [ "", [ !Ref s3configKey,  !FindInMap [ConfigurationFileMap, "Filename", "provenanceTemplateGridded"]] ]
       RetryStrategy:
         Attempts: 2
     DependsOn:  JobInstanceRole
