@@ -1,5 +1,6 @@
-package au.org.emii.util;
+package au.org.aodn.aws.util;
 
+import au.org.aodn.aws.exception.EmailException;
 import au.org.aodn.aws.wps.status.WpsConfig;
 import org.apache.velocity.Template;
 import org.apache.velocity.VelocityContext;
@@ -33,15 +34,19 @@ public class EmailTemplateManager {
         velocityEngine.init(p);
     }
 
-    public String getCompletedJobSubject(String uuid) throws Exception {
+    public String getRegisteredJobSubject(String uuid) throws EmailException {
+        return getSubject(uuid, WpsConfig.getRegisteredJobEmailSubjectTemplate());
+    }
+
+    public String getCompletedJobSubject(String uuid) throws EmailException {
         return getSubject(uuid, WpsConfig.getCompletedJobEmailSubjectTemplate());
     }
 
-    public String getFailedJobSubject(String uuid) throws Exception {
+    public String getFailedJobSubject(String uuid) throws EmailException {
         return getSubject(uuid, WpsConfig.getFailedJobEmailSubjectTemplate());
     }
 
-    private String getSubject(String uuid, String template) throws Exception {
+    private String getSubject(String uuid, String template) throws EmailException {
         try {
             Template t = velocityEngine.getTemplate(template);
             VelocityContext context = new VelocityContext();
@@ -51,12 +56,35 @@ public class EmailTemplateManager {
 
             return writer.toString();
         } catch (Exception e) {
-            LOGGER.error("Unable to retrieve email subject. Error Message:", e);
-            throw e;
+            String errorMsg = "Unable to retrieve email subject.";
+            LOGGER.error(String.format("%s Error Message:", errorMsg), e);
+            throw new EmailException(errorMsg, e);
         }
     }
 
-    public String getCompletedEmailContent(String uuid, String jobReportUrl, String expirationPeriod) throws Exception {
+    public String getRegisteredEmailContent(String uuid, String jobReportUrl) throws EmailException {
+        try {
+            Template t = velocityEngine.getTemplate(WpsConfig.getRegisteredJobEmailTemplate());
+            VelocityContext context = new VelocityContext();
+            context.put(UUID, uuid);
+            context.put(SITE_ACRONYM, WpsConfig.getConfig(WpsConfig.SITE_ACRONYM));
+            context.put(JOB_REPORT_URL, jobReportUrl);
+            context.put(EMAIL_SIGNATURE, WpsConfig.getConfig(WpsConfig.EMAIL_SIGNATURE));
+            context.put(CONTACT_EMAIL, WpsConfig.getConfig(WpsConfig.CONTACT_EMAIL));
+            context.put(EMAIL_FOOTER, WpsConfig.getConfig(WpsConfig.EMAIL_FOOTER));
+
+            StringWriter writer = new StringWriter();
+            t.merge(context, writer);
+
+            return writer.toString();
+        } catch (Exception e) {
+            String errorMsg = "Unable to retrieve registered job email content.";
+            LOGGER.error(String.format("%s Error Message:", errorMsg), e);
+            throw new EmailException(errorMsg, e);
+        }
+    }
+
+    public String getCompletedEmailContent(String uuid, String jobReportUrl, String expirationPeriod) throws EmailException {
         try {
             Template t = velocityEngine.getTemplate(WpsConfig.getCompletedJobEmailTemplate());
             VelocityContext context = new VelocityContext();
@@ -73,12 +101,13 @@ public class EmailTemplateManager {
 
             return writer.toString();
         } catch (Exception e) {
-            LOGGER.error("Unable to retrieve email content. Error Message:", e);
-            throw e;
+            String errorMsg = "Unable to retrieve completed job email content.";
+            LOGGER.error(String.format("%s Error Message:", errorMsg), e);
+            throw new EmailException(errorMsg, e);
         }
     }
 
-    public String getFailedEmailContent(String uuid, String jobReportUrl) throws Exception {
+    public String getFailedEmailContent(String uuid, String jobReportUrl) throws EmailException {
         try {
             Template t = velocityEngine.getTemplate(WpsConfig.getFailedJobEmailTemplate());
             VelocityContext context = new VelocityContext();
@@ -93,8 +122,8 @@ public class EmailTemplateManager {
 
             return writer.toString();
         } catch (Exception e) {
-            LOGGER.error("Unable to retrieve email content. Error Message:", e);
-            throw e;
-        }
+            String errorMsg = "Unable to retrieve failed job email content.";
+            LOGGER.error(String.format("%s Error Message:", errorMsg), e);
+            throw new EmailException(errorMsg, e);        }
     }
 }

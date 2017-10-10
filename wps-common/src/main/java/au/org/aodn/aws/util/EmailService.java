@@ -1,5 +1,6 @@
-package au.org.emii.util;
+package au.org.aodn.aws.util;
 
+import au.org.aodn.aws.exception.EmailException;
 import au.org.aodn.aws.wps.status.WpsConfig;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.simpleemail.AmazonSimpleEmailService;
@@ -61,7 +62,15 @@ public class EmailService {
         }
     }
 
-    public void sendCompletedJobEmail(String to, String uuid, String jobReportUrl, String expirationPeriod) throws Exception {
+    public void sendRegisteredJobEmail(String to, String uuid, String jobReportUrl) throws EmailException {
+        String subject = templateManager.getRegisteredJobSubject(uuid);
+        String textBody = templateManager.getRegisteredEmailContent(uuid, jobReportUrl);
+        String from = WpsConfig.getConfig(FROM_EMAIL);
+
+        sendEmail(to, from, subject, null, textBody);
+    }
+
+    public void sendCompletedJobEmail(String to, String uuid, String jobReportUrl, String expirationPeriod) throws EmailException {
         String subject = templateManager.getCompletedJobSubject(uuid);
         String textBody = templateManager.getCompletedEmailContent(uuid, jobReportUrl, expirationPeriod);
         String from = WpsConfig.getConfig(FROM_EMAIL);
@@ -69,7 +78,7 @@ public class EmailService {
         sendEmail(to, from, subject, null, textBody);
     }
 
-    public void sendFailedJobEmail(String to, String uuid, String jobReportUrl) throws Exception {
+    public void sendFailedJobEmail(String to, String uuid, String jobReportUrl) throws EmailException {
         String subject = templateManager.getFailedJobSubject(uuid);
         String textBody = templateManager.getFailedEmailContent(uuid, jobReportUrl);
         String from = WpsConfig.getConfig(FROM_EMAIL);

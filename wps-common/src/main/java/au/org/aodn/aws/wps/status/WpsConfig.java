@@ -69,6 +69,8 @@ public class WpsConfig {
     private static final String COMPLETED_JOB_EMAIL_KEY = "jobCompleteEmail";
     private static final String FAILED_JOB_EMAIL_SUBJECT_KEY = "jobFailedEmailSubject";
     private static final String FAILED_JOB_EMAIL_KEY = "jobFailedEmail";
+    private static final String REGISTERED_JOB_EMAIL_SUBJECT_KEY = "jobRegisteredEmailSubject";
+    private static final String REGISTERED_JOB_EMAIL_KEY = "jobRegisteredEmail";
 
     public static final String APPLICATION_PROPERTIES = "application.properties";
     private static Properties properties = null;
@@ -136,6 +138,14 @@ public class WpsConfig {
 
     public static String getConfig(String configName) {
         return getProperties().getProperty(configName);
+    }
+
+    public static String getRegisteredJobEmailSubjectTemplate() {
+        return String.format("%s/%s", getConfig(EMAIL_TEMPLATES_LOCATION_KEY), getConfig(REGISTERED_JOB_EMAIL_SUBJECT_KEY));
+    }
+
+    public static String getRegisteredJobEmailTemplate() {
+        return String.format("%s/%s", getConfig(EMAIL_TEMPLATES_LOCATION_KEY), getConfig(REGISTERED_JOB_EMAIL_KEY));
     }
 
     public static String getCompletedJobEmailSubjectTemplate() {
