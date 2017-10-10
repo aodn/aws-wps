@@ -111,8 +111,8 @@ Mappings:
       getCapabilities: "GetCapabilities.ftl"
       gogoduck: "GoGoDuck.xml"
       netcdf: "NetcdfOutput.xml"
-      provenanceTemplateGrided: "provenance_template_gridded.ftl"
-      provenanceTemplateNonGrided: "provenance_template_non_gridded.ftl"
+      provenanceTemplateGridded: "provenance_template_gridded.ftl"
+      provenanceTemplateNonGridded: "provenance_template_non_gridded.ftl"
   RegionMap:
     ap-southeast-2:
       vpc: vpc-7302ee16
