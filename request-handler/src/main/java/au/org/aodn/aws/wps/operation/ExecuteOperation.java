@@ -1,5 +1,6 @@
 package au.org.aodn.aws.wps.operation;
 
+import au.org.aodn.aws.util.EmailService;
 import au.org.aodn.aws.wps.status.EnumStatus;
 import au.org.aodn.aws.wps.status.ExecuteStatusBuilder;
 import au.org.aodn.aws.wps.status.S3StatusUpdater;
@@ -13,7 +14,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.UnsupportedEncodingException;
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import static au.org.aodn.aws.wps.status.WpsConfig.*;
 
@@ -77,14 +79,24 @@ public class ExecuteOperation implements Operation {
         LOGGER.info("Job submitted.  Job ID : " + jobId);
 
         String statusDocument;
+        ExecuteStatusBuilder statusBuilder = new ExecuteStatusBuilder(jobId, statusS3BucketName, statusFileName);
+
         S3StatusUpdater statusUpdater = new S3StatusUpdater(statusS3BucketName, statusFileName);
         try {
-            statusDocument = ExecuteStatusBuilder.getStatusDocument(statusS3BucketName, statusFileName, jobId, EnumStatus.ACCEPTED, null, null, null);
+            statusDocument = statusBuilder.createResponseDocument(EnumStatus.ACCEPTED, null, null, null);
             statusUpdater.updateStatus(statusDocument, jobId);
+
+            EmailService emailService = new EmailService();
+            String callbackParams = parameterMap.get("callbackParams");
+            String email = callbackParams.substring(callbackParams.indexOf("=") + 1);
+            emailService.sendRegisteredJobEmail(email, jobId, "Job Report URL (Service not yet implemented)");
         } catch (UnsupportedEncodingException e) {
             LOGGER.error(e.getMessage(), e);
             //  Form failed status document
-            statusDocument = ExecuteStatusBuilder.getStatusDocument(statusS3BucketName, statusFileName, jobId, EnumStatus.FAILED, "Failed to create status file : " + e.getMessage(), "StatusFileError", null);
+            statusDocument = statusBuilder.createResponseDocument(EnumStatus.FAILED, "Failed to create status file : " + e.getMessage(), "StatusFileError", null);
+        } catch (Exception e) {
+            LOGGER.error(e.getMessage(), e);
+            statusDocument = statusBuilder.createResponseDocument(EnumStatus.FAILED, e.getMessage(), "EmailError", null);
         }
 
         return statusDocument;

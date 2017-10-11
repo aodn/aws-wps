@@ -1,4 +1,20 @@
 <ac:templates xmlns:ac="http://aodn.org.au/aggregator/configuration">
+    <ac:template match=".*bathy_ppb_deakin.*" name="bathymetry">
+        <ac:attributes>
+            <ac:attribute>
+                <ac:name>geospatial_lat_min</ac:name><ac:type>String</ac:type><ac:value>${LAT_MIN}</ac:value>
+            </ac:attribute>
+            <ac:attribute>
+                <ac:name>geospatial_lat_max</ac:name><ac:type>String</ac:type><ac:value>${LAT_MAX}</ac:value>
+            </ac:attribute>
+            <ac:attribute>
+                <ac:name>geospatial_lon_min</ac:name><ac:type>String</ac:type><ac:value>${LON_MIN}</ac:value>
+            </ac:attribute>
+            <ac:attribute>
+                <ac:name>geospatial_lon_max</ac:name><ac:type>String</ac:type><ac:value>${LON_MAX}</ac:value>
+            </ac:attribute>
+        </ac:attributes>
+    </ac:template>
     <ac:template match="srs_ghrsst.*,srs_sst.*" name="srs_ghrsst">
         <ac:attributes>
             <ac:attribute>

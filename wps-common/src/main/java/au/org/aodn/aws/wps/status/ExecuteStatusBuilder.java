@@ -12,40 +12,31 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
+import static au.org.aodn.aws.wps.status.WpsConfig.AWS_BATCH_JOB_S3_KEY;
+
 public class ExecuteStatusBuilder {
 
     private static int CHUNK_SIZE = 512;
 
     private String location;
-    String jobId;
-    Logger LOGGER = LoggerFactory.getLogger(ExecuteStatusBuilder.class);
+    private String jobId;
+    private String s3Bucket;
+    private String filename;
 
+    private static final  Logger LOGGER = LoggerFactory.getLogger(ExecuteStatusBuilder.class);
 
-    public ExecuteStatusBuilder() {
-    }
-
-    public ExecuteStatusBuilder(String location, String jobId) {
-        this.location = location;
+    public ExecuteStatusBuilder(String jobId, String s3Bucket, String filename) {
+        String jobPrefix = WpsConfig.getConfig(AWS_BATCH_JOB_S3_KEY);
+        this.location = WpsConfig.getS3ExternalURL(s3Bucket, jobPrefix + jobId + "/" + filename);
         this.jobId = jobId;
+        this.s3Bucket = s3Bucket;
+        this.filename = filename;
     }
 
     public String getStatusLocation() {
         return this.location;
 
     }
-
-
-    public static final String getStatusDocument(String s3Bucket, String statusFilename, String jobId, EnumStatus jobStatus, String message, String messageCode, HashMap<String, String> outputsHrefs) {
-        String statusLocation = WpsConfig.getS3ExternalURL(s3Bucket, jobId + "/" + statusFilename);
-        ExecuteStatusBuilder statusBuilder = new ExecuteStatusBuilder(statusLocation, jobId);
-        return statusBuilder.createResponseDocument(jobStatus, message, messageCode, outputsHrefs);
-    }
-
-
-    public String createResponseDocument(EnumStatus jobStatus) {
-        return createResponseDocument(jobStatus, "", "", null);
-    }
-
 
     /**
      * The outputs HashMap is a map of the output name to the output result.
@@ -97,13 +88,6 @@ public class ExecuteStatusBuilder {
 
         return StatusHelper.createResponseXmlDocument(response);
     }
-
-
-    public static void main(String[] args) {
-        System.out.println();
-        ExecuteStatusBuilder e = new ExecuteStatusBuilder();
-    }
-
 
     private ProcessFailedType getProcessFailedType(String message, String code) {
         ProcessFailedType failed = new ProcessFailedType();

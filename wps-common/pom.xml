@@ -28,11 +28,38 @@
             <version>1.6.3</version>
         </dependency>
         <dependency>
+            <groupId>edu.ucar</groupId>
+            <artifactId>cdm</artifactId>
+            <version>4.6.9</version>
+        </dependency>
+        <dependency>
+            <groupId>velocity</groupId>
+            <artifactId>velocity</artifactId>
+            <version>1.4</version>
+        </dependency>
+        <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-s3</artifactId>
-            <version>1.11.172</version>
+            <version>1.11.203</version>
+        </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-ses</artifactId>
+            <version>1.11.203</version>
         </dependency>
     </dependencies>
+
+    <repositories>
+        <repository>
+            <id>unidata-releases</id>
+            <name>UNIDATA Releases</name>
+            <url>https://artifacts.unidata.ucar.edu/content/repositories/unidata-releases/</url>
+        </repository>
+        <repository>
+            <id>mvnrepository</id>
+            <url>https://mvnrepository.com/artifact/</url>
+        </repository>
+    </repositories>
 
     <build>
         <plugins>

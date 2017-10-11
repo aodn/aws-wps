@@ -39,6 +39,8 @@ public class WpsConfig {
     public static final String AWS_BATCH_JOB_ID_CONFIG_KEY = "AWS_BATCH_JOB_ID";
     public static final String AWS_BATCH_CE_NAME_CONFIG_KEY = "AWS_BATCH_CE_NAME";
     public static final String AWS_BATCH_JQ_NAME_CONFIG_KEY = "AWS_BATCH_JQ_NAME";
+    public static final String AWS_BATCH_JOB_S3_KEY = "JOB_S3_KEY";
+    private static final String AWS_BATCH_JOB_EXPIRATION_IN_DAYS = "JOB_EXPIRATION_IN_DAYS";
 
     public static final String GET_CAPABILITIES_TEMPLATE_S3_BUCKET_CONFIG_KEY = "GET_CAPABILITIES_TEMPLATE_S3_BUCKET";
     public static final String GET_CAPABILITIES_TEMPLATE_S3_KEY_CONFIG_KEY = "GET_CAPABILITIES_TEMPLATE_S3_KEY";
@@ -54,6 +56,11 @@ public class WpsConfig {
     public static final String DOWNLOAD_CONNECT_TIMEOUT_CONFIG_KEY = "DOWNLOAD_CONNECT_TIMEOUT";
     public static final String DOWNLOAD_READ_TIMEOUT_CONFIG_KEY = "DOWNLOAD_READ_TIMEOUT";
 
+    public static final String GEONETWORK_CATALOGUE_URL_CONFIG_KEY = "GEONETWORK_CATALOGUE_URL";
+    public static final String GEONETWORK_CATALOGUE_LAYER_FIELD_CONFIG_KEY = "GEONETWORK_LAYER_SEARCH_FIELD";
+
+    public static final String PROVENANCE_TEMPLATE_S3_KEY_CONFIG_KEY = "PROVENANCE_TEMPLATE_S3_KEY";
+
     public static final String SITE_ACRONYM = "siteAcronym";
     public static final String EMAIL_SIGNATURE = "emailSignature";
     public static final String CONTACT_EMAIL = "contactEmail";
@@ -64,8 +71,9 @@ public class WpsConfig {
     private static final String COMPLETED_JOB_EMAIL_KEY = "jobCompleteEmail";
     private static final String FAILED_JOB_EMAIL_SUBJECT_KEY = "jobFailedEmailSubject";
     private static final String FAILED_JOB_EMAIL_KEY = "jobFailedEmail";
+    private static final String REGISTERED_JOB_EMAIL_SUBJECT_KEY = "jobRegisteredEmailSubject";
+    private static final String REGISTERED_JOB_EMAIL_KEY = "jobRegisteredEmail";
 
-    public static final String S3_BASE_URL = "https://s3.amazonaws.com/";
     public static final String APPLICATION_PROPERTIES = "application.properties";
     private static Properties properties = null;
 
@@ -99,6 +107,8 @@ public class WpsConfig {
             setProperty(properties, AWS_BATCH_JOB_ID_CONFIG_KEY);
             setProperty(properties, AWS_BATCH_CE_NAME_CONFIG_KEY);
             setProperty(properties, AWS_BATCH_JQ_NAME_CONFIG_KEY);
+            setProperty(properties, AWS_BATCH_JOB_EXPIRATION_IN_DAYS);
+            setProperty(properties, AWS_BATCH_JOB_S3_KEY);
 
             setProperty(properties, GET_CAPABILITIES_TEMPLATE_S3_BUCKET_CONFIG_KEY);
             setProperty(properties, GET_CAPABILITIES_TEMPLATE_S3_KEY_CONFIG_KEY);
@@ -109,6 +119,9 @@ public class WpsConfig {
             setProperty(properties, AGGREGATOR_TEMPLATE_FILE_S3_KEY_CONFIG_KEY);
 
             setProperty(properties, GEOSERVER_CATALOGUE_ENDPOINT_URL_CONFIG_KEY);
+            setProperty(properties, GEONETWORK_CATALOGUE_URL_CONFIG_KEY);
+            setProperty(properties, GEONETWORK_CATALOGUE_LAYER_FIELD_CONFIG_KEY);
+            setProperty(properties, PROVENANCE_TEMPLATE_S3_KEY_CONFIG_KEY);
             setProperty(properties, CHUNK_SIZE_KEY);
             setProperty(properties, DOWNLOAD_ATTEMPTS_CONFIG_KEY);
             setProperty(properties, DOWNLOAD_DIRECTORY_PROPERTY_KEY);
@@ -131,6 +144,18 @@ public class WpsConfig {
         return getProperties().getProperty(configName);
     }
 
+    public static String getJobExpiration() {
+        return String.format("%s days", getConfig(AWS_BATCH_JOB_EXPIRATION_IN_DAYS));
+    }
+
+    public static String getRegisteredJobEmailSubjectTemplate() {
+        return String.format("%s/%s", getConfig(EMAIL_TEMPLATES_LOCATION_KEY), getConfig(REGISTERED_JOB_EMAIL_SUBJECT_KEY));
+    }
+
+    public static String getRegisteredJobEmailTemplate() {
+        return String.format("%s/%s", getConfig(EMAIL_TEMPLATES_LOCATION_KEY), getConfig(REGISTERED_JOB_EMAIL_KEY));
+    }
+
     public static String getCompletedJobEmailSubjectTemplate() {
         return String.format("%s/%s", getConfig(EMAIL_TEMPLATES_LOCATION_KEY), getConfig(COMPLETED_JOB_EMAIL_SUBJECT_KEY));
     }
@@ -148,7 +173,8 @@ public class WpsConfig {
     }
 
     public static String getS3ExternalURL(String s3Bucket, String s3Key) {
-        return String.format("%s%s/%s", S3_BASE_URL, s3Bucket, s3Key);
+        String region = getConfig(WpsConfig.AWS_REGION_CONFIG_KEY);
+        return String.format("https://s3-%s.amazonaws.com/%s/%s", region, s3Bucket, s3Key);
     }
 
     /**

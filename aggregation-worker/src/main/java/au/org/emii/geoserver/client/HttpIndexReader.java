@@ -8,7 +8,11 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLEncoder;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
 import au.org.emii.aggregator.exception.AggregationException;
 import au.org.emii.download.DownloadRequest;
 import org.slf4j.Logger;
@@ -59,8 +63,7 @@ public class HttpIndexReader implements IndexReader {
             //  Make HTTP request to geoserver
             conn = (HttpURLConnection) url.openConnection();
 
-            try
-            {
+            try {
                 conn.setRequestMethod("GET");
                 conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
                 conn.setRequestProperty("Content-Length", String.valueOf(postDataBytes.length));
@@ -93,6 +96,9 @@ public class HttpIndexReader implements IndexReader {
                     }
                     i++;
                 }
+            } catch (Exception e) {
+                logger.error(e.getMessage(), e);
+                throw e;
             } finally {
                 if (inputStream != null) {
                     inputStream.close();
@@ -157,22 +163,50 @@ public class HttpIndexReader implements IndexReader {
             logger.info(String.format("Parameters: '%s'", new String(postDataBytes)));
             String line = null;
             Integer i = 0;
+            int fileUrlIndex = 0;
+            int fileSizeIndex = 0;
+
             while ((line = dataInputStream.readLine()) != null) {
-                if (i > 0) { // Skip first line - it's the headers
+
+                if (i > 0) { // First line is the headers
                     String[] lineParts = line.split(",");
-                    long fileSize = Long.parseLong(lineParts[3]);
-                    URI fileURI = new URI(lineParts[2]);
+                    long fileSize = Long.parseLong(lineParts[fileSizeIndex]);
+                    URI fileURI = new URI(lineParts[fileUrlIndex]);
 
                     //  TODO:  source the base URL from configuration
                     URL fileURL = new URL("http://data.aodn.org.au/" + fileURI.toString());
 
+                    logger.info("Added download: " + fileURL.toString());
                     DownloadRequest downloadRequest = new DownloadRequest(fileURL, fileSize);
                     downloadList.add(downloadRequest);
+                } else {
+                    //  The first line is the header - which lists all of the fields returned.
+                    //  We are actually only really interested in the 'file_url' field- because
+                    //  that is the URL of the file (obviously).  Some collections return different
+                    //  sets of columns in the CSV - so find the column position where the file_url is located.
+                    String[] headerFields = line.split(",");
+
+                    int headerFieldIndex = 0;
+                    for (String currentField : headerFields) {
+                        logger.info("Header field name [" + currentField + "]");
+
+                        if (currentField.trim().equalsIgnoreCase(urlField)) {
+                            logger.info("Found " + urlField + "] field in CSV output at position [" + headerFieldIndex + "]");
+                            fileUrlIndex = headerFieldIndex;
+                        }
+
+                        if (currentField.trim().equalsIgnoreCase("size")) {
+                            logger.info("Found 'size' field in CSV output at position [" + headerFieldIndex + "]");
+                            fileSizeIndex = headerFieldIndex;
+                        }
+                        headerFieldIndex++;
+                    }
                 }
                 i++;
             }
             logger.debug("DownloadRequest - # files requested : " + downloadList.size());
         } catch (Exception e) {
+            logger.error(e.getMessage(), e);
             logger.error("We could not obtain list of URLs, does the collection still exist?");
             throw new AggregationException(String.format("Could not obtain list of URLs: '%s'", e.getMessage()));
         }
@@ -202,7 +236,7 @@ public class HttpIndexReader implements IndexReader {
     public static void main(String[] args) {
         HttpIndexReader indexReader = new HttpIndexReader("http://geoserver-123.aodn.org.au/geoserver/imos");
         String subsetString = "TIME,2009-01-01T00:00:00.000Z,2017-12-25T23:04:00.000Z;LATITUDE,-33.433849,-32.150743;LONGITUDE,114.15197,115.741219;DEPTH,0.0,100.0";
-        SubsetParameters subsetParams = new SubsetParameters(subsetString);
+        SubsetParameters subsetParams = SubsetParameters.parse(subsetString);
         Set<DownloadRequest> downloadList = null;
 
         try {
@@ -217,13 +251,12 @@ public class HttpIndexReader implements IndexReader {
         }
     }
 
-    private String getCqlTimeFilter(SubsetParameters subset, String timeField)
-    {
+    private String getCqlTimeFilter(SubsetParameters subset, String timeField) {
         String cqlTimeFilter = null;
 
-        if(subset.get("TIME") != null) {
-            String timeCoverageStart = subset.get("TIME").start;
-            String timeCoverageEnd = subset.get("TIME").end;
+        if (subset.getTimeRange() != null) {
+            String timeCoverageStart = subset.getTimeRange().getStart().toString();
+            String timeCoverageEnd = subset.getTimeRange().getEnd().toString();
 
             if (timeCoverageStart != null && timeCoverageEnd != null) {  //  Start + end dates
                 cqlTimeFilter = String.format("%s >= %s AND %s <= %s",

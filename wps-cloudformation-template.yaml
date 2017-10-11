@@ -5,6 +5,9 @@ Parameters:
   s3configKey:
     Type: String
     Default: 'config/'
+  s3jobKey:
+    Type: String
+    Default: 'jobs/'
   s3LambdaCodeFilename:
     Type: String
     Description: "Lambda code file name ex: request-handler-0.01-lambda-package.zip"
@@ -23,6 +26,12 @@ Parameters:
   templatesURL:
     Type: String
     Default: 'https://raw.githubusercontent.com/aodn/aws-wps/master/wps-common/src/main/resources/config/templates.xml'
+  provenanceTemplateGriddedURL:
+    Type: String
+    Default: 'https://raw.githubusercontent.com/aodn/aws-wps/master/wps-common/src/main/resources/config/provenance_template_gridded.ftl'
+  provenanceTemplateNonGriddedURL:
+    Type: String
+    Default: 'https://raw.githubusercontent.com/aodn/aws-wps/master/wps-common/src/main/resources/config/provenance_template_non_gridded.ftl'
   jobName:
     Type: String
     Default: 'javaduck'
@@ -32,6 +41,9 @@ Parameters:
   jobMemory:
     Type: String
     Default: '2000'
+  jobExpirationInDays:
+    Type: Number
+    Default: 7
   maxVCPUs:
     Type: String
     Default: '4'
@@ -60,6 +72,12 @@ Parameters:
   workerRetryIntervalMs:
     Type: String
     Default: '60000'
+  geonetworkCatalogueURL:
+    Type: String
+    Default: 'https://catalogue-imos.aodn.org.au/geonetwork'
+  geonetworkLayerSearchField:
+    Type: String
+    Default: 'layer'
   environment:
     Type: String
     Default: dev
@@ -99,7 +117,9 @@ Mappings:
       getCapabilities: "GetCapabilities.ftl"
       gogoduck: "GoGoDuck.xml"
       netcdf: "NetcdfOutput.xml"
-  RegionMap:
+      provenanceTemplateGridded: "provenance_template_gridded.ftl"
+      provenanceTemplateNonGridded: "provenance_template_non_gridded.ftl"
+  production:
     ap-southeast-2:
       vpc: vpc-7302ee16
       subnets:
@@ -112,6 +132,13 @@ Mappings:
         - subnet-9e0003e6
         - subnet-f82bcb91
         - subnet-5086a51a
+  dev:
+    ap-southeast-2:
+      vpc: vpc-5e0e3a3a
+      subnets:
+        - subnet-4d471e14
+        - subnet-eab65ea3
+        - subnet-19956d7e
 Conditions:
   CreateEphemeralBucket: !Equals [ !Ref environment, dev ]
   CreatePersistentBucket: !And
@@ -124,12 +151,36 @@ Resources:
     DeletionPolicy: "Retain"
     Properties:
       BucketName: !FindInMap [EnvironmentMap, !Ref environment, BucketName]
+      LifecycleConfiguration:
+        Rules:
+          - Id: "JobExpirationInDays"
+            Prefix: !Ref s3jobKey
+            Status: Enabled
+            ExpirationInDays: !Ref jobExpirationInDays
   EphemeralS3Bucket:
     Type: "AWS::S3::Bucket"
     Condition: CreateEphemeralBucket
     DeletionPolicy: "Delete"
     Properties:
       BucketName: !Join ["-", [!FindInMap [EnvironmentMap, !Ref environment, BucketName], !Ref 'AWS::StackName']]
+      LifecycleConfiguration:
+        Rules:
+          - Id: "JobExpirationInDays"
+            Prefix: !Ref s3jobKey
+            Status: Enabled
+            ExpirationInDays: !Ref jobExpirationInDays
+  S3BucketPolicy:
+    Type: "AWS::S3::BucketPolicy"
+    Properties:
+      Bucket: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
+      PolicyDocument:
+        Statement:
+          -
+            Action:
+              - "s3:GetObject"
+            Effect: "Allow"
+            Resource: !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]],"/", !Ref s3jobKey,"*"]]
+            Principal: "*"
   BatchServiceRole:
     Type: 'AWS::IAM::Role'
     Properties:
@@ -142,9 +193,6 @@ Resources:
             Action: 'sts:AssumeRole'
       ManagedPolicyArns:
         - 'arn:aws:iam::aws:policy/service-role/AWSBatchServiceRole'
-    Metadata:
-      'AWS::CloudFormation::Designer':
-        id: 119037ec-2cef-4c76-bbea-9e62091e725d
   SpotIamFleetRole:
     Type: 'AWS::IAM::Role'
     Properties:
@@ -162,9 +210,6 @@ Resources:
     Properties:
       Roles:
         - !Ref EcsInstanceRole
-    Metadata:
-      'AWS::CloudFormation::Designer':
-        id: 65b9b65e-442f-4006-bffb-39aa71c5708c
   EcsInstanceRole:
     Type: 'AWS::IAM::Role'
     Properties:
@@ -179,9 +224,6 @@ Resources:
       ManagedPolicyArns:
         - >-
           arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
-    Metadata:
-      'AWS::CloudFormation::Designer':
-        id: 303fb35e-a959-48ec-a564-e36ae4902115
   JobInstanceRole:
     Type: 'AWS::IAM::Role'
     Properties:
@@ -279,11 +321,23 @@ Resources:
           -
             Name: "RETRY_INTERVAL_MS"
             Value: !Ref workerRetryIntervalMs
+          -
+            Name: "GEONETWORK_CATALOGUE_URL"
+            Value: !Ref geonetworkCatalogueURL
+          -
+            Name: "GEONETWORK_LAYER_SEARCH_FIELD"
+            Value: !Ref geonetworkLayerSearchField
+          -
+            Name: "PROVENANCE_TEMPLATE_S3_KEY"
+            Value: !Join [ "", [ !Ref s3configKey,  !FindInMap [ConfigurationFileMap, "Filename", "provenanceTemplateGridded"]] ]
+          -
+            Name: "JOB_EXPIRATION_IN_DAYS"
+            Value: !Ref jobExpirationInDays
+          -
+            Name: "JOB_S3_KEY"
+            Value: !Ref s3jobKey
       RetryStrategy:
         Attempts: 2
-    Metadata:
-      'AWS::CloudFormation::Designer':
-        id: f17c8aa4-8ab7-4ee1-b3a6-7a8727b8bff5
     DependsOn:  JobInstanceRole
   JobQueue:
     Type: 'AWS::Batch::JobQueue'
@@ -293,9 +347,6 @@ Resources:
       ComputeEnvironmentOrder:
         - Order: 1
           ComputeEnvironment: !Ref ComputeEnvironment
-    Metadata:
-      'AWS::CloudFormation::Designer':
-        id: 376a0983-1cf3-4145-bafe-96b0750be936
   ComputeEnvironment:
     Type: 'AWS::Batch::ComputeEnvironment'
     DeletionPolicy: Delete
@@ -309,21 +360,18 @@ Resources:
         MaxvCpus: !Ref maxVCPUs
         InstanceTypes:
           - optimal
-        Subnets: !FindInMap [RegionMap, !Ref "AWS::Region", subnets]
+        Subnets: !FindInMap [!Ref environment, !Ref "AWS::Region", subnets]
         SecurityGroupIds:
           - !Ref ComputeEnvironmentInstanceSecurityGroup
         InstanceRole: !Ref IamInstanceProfile
         SpotIamFleetRole: !Ref SpotIamFleetRole
         BidPercentage: 20
       ServiceRole: !Ref BatchServiceRole
-    Metadata:
-      'AWS::CloudFormation::Designer':
-        id: 7a2b9b81-942a-4563-8b0a-7ed0cb6c6aad
   ComputeEnvironmentInstanceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Allow http to client host
-      VpcId: !FindInMap [RegionMap, !Ref "AWS::Region", vpc]
+      VpcId: !FindInMap [!Ref environment, !Ref "AWS::Region", vpc]
       SecurityGroupIngress:
       - IpProtocol: '-1'
         FromPort: '-1'
@@ -449,10 +497,9 @@ Resources:
           DESCRIBE_PROCESS_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
           DESCRIBE_PROCESS_S3_KEY_PREFIX: !Ref s3configKey
           GEOSERVER_WPS_ENDPOINT_URL: !Ref geoserverWpsEndpoint
+          AWS_REGION_SES: !Ref awsRegionSes
+          JOB_S3_KEY: !Ref s3jobKey
     DependsOn: S3PutConfigurationFiles
-    Metadata:
-      'AWS::CloudFormation::Designer':
-        id: 2f9d630f-4908-418a-9455-e9b730d0c673
   LambdaExecutionRole:
     Type: 'AWS::IAM::Role'
     Properties:
@@ -488,9 +535,14 @@ Resources:
                   !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]]],
                   !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]],"/*"]]
                 ]
-    Metadata:
-      'AWS::CloudFormation::Designer':
-        id: 5a6cf0c9-ebd3-41f0-8b4c-009af363b85b
+              -
+                Effect: "Allow"
+                Action: ["ses:SendEmail"]
+                Resource: ["*"]
+              -
+                Effect: "Allow"
+                Action: ["ses:SendRawEmail"]
+                Resource: ["*"]
   S3PutObjectFunctionRole:
     Type: 'AWS::IAM::Role'
     Properties:
@@ -625,6 +677,10 @@ Resources:
           HTTP_FILE_NETCDF_OUTPUT_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "netcdf"]
           HTTP_FILE_TEMPLATES: !Ref templatesURL
           HTTP_FILE_TEMPLATES_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "templates"]
+          HTTP_FILE_PROVENANCE_TEMPLATE_GRIDDED: !Ref provenanceTemplateGriddedURL
+          HTTP_FILE_PROVENANCE_TEMPLATE_GRIDDED_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "provenanceTemplateGridded"]
+          HTTP_FILE_PROVENANCE_TEMPLATE_NON_GRIDDED: !Ref provenanceTemplateNonGriddedURL
+          HTTP_FILE_PROVENANCE_TEMPLATE_NON_GRIDDED_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "provenanceTemplateNonGridded"]
           HTTP_FILE_WPS_REQUEST_HANDLER: !Ref s3LambdaCodeURL
           HTTP_FILE_WPS_REQUEST_HANDLER_FILENAME: !Ref s3LambdaCodeFilename
   S3PutConfigurationFiles:
@@ -638,122 +694,3 @@ Outputs:
     Value: !Ref JobQueue
   JobDefinitionArn:
     Value: !Ref JobDefinition
-Metadata:
-  'AWS::CloudFormation::Designer':
-    f17c8aa4-8ab7-4ee1-b3a6-7a8727b8bff5:
-      size:
-        width: 60
-        height: 60
-      position:
-        x: 60
-        'y': 660
-      z: 1
-      embeds: []
-    303fb35e-a959-48ec-a564-e36ae4902115:
-      size:
-        width: 60
-        height: 60
-      position:
-        x: 180
-        'y': 660
-      z: 1
-      embeds: []
-    65b9b65e-442f-4006-bffb-39aa71c5708c:
-      size:
-        width: 60
-        height: 60
-      position:
-        x: 300
-        'y': 660
-      z: 1
-      embeds: []
-      isassociatedwith:
-        - 303fb35e-a959-48ec-a564-e36ae4902115
-    119037ec-2cef-4c76-bbea-9e62091e725d:
-      size:
-        width: 60
-        height: 60
-      position:
-        x: 420
-        'y': 660
-      z: 1
-      embeds: []
-    d3ba16c5-0aeb-466c-8178-faca02f99c1a:
-      size:
-        width: 60
-        height: 60
-      position:
-        x: 540
-        'y': 390
-      z: 1
-      embeds: []
-    4bc5138a-265b-4dfa-9d1e-9f9efad6ef93:
-      size:
-        width: 600
-        height: 510
-      position:
-        x: 60
-        'y': 90
-      z: 1
-      embeds:
-        - ec8b2cb0-b28c-4d69-bf68-486d10499b6f
-    ec8b2cb0-b28c-4d69-bf68-486d10499b6f:
-      size:
-        width: 60
-        height: 60
-      position:
-        x: 390
-        'y': 360
-      z: 2
-      parent: 4bc5138a-265b-4dfa-9d1e-9f9efad6ef93
-      embeds: []
-    7a2b9b81-942a-4563-8b0a-7ed0cb6c6aad:
-      size:
-        width: 60
-        height: 60
-      position:
-        x: 660
-        'y': 660
-      z: 1
-      embeds: []
-      isrelatedto:
-        - a41bc925-27c0-4347-893d-3de5628f24f5
-        - ec8b2cb0-b28c-4d69-bf68-486d10499b6f
-        - 65b9b65e-442f-4006-bffb-39aa71c5708c
-        - 119037ec-2cef-4c76-bbea-9e62091e725d
-    376a0983-1cf3-4145-bafe-96b0750be936:
-      size:
-        width: 60
-        height: 60
-      position:
-        x: 660
-        'y': 570
-      z: 1
-      embeds: []
-      isrelatedto:
-        - 7a2b9b81-942a-4563-8b0a-7ed0cb6c6aad
-    49a7ceae-b82e-44c7-851b-3a0590c37a44:
-      source:
-        id: d3ba16c5-0aeb-466c-8178-faca02f99c1a
-      target:
-        id: 4bc5138a-265b-4dfa-9d1e-9f9efad6ef93
-    2f9d630f-4908-418a-9455-e9b730d0c673:
-      size:
-        width: 60
-        height: 60
-      position:
-        x: 330
-        'y': 390
-      z: 1
-      embeds: []
-      isrelatedto:
-        - 5a6cf0c9-ebd3-41f0-8b4c-009af363b85b
-    5a6cf0c9-ebd3-41f0-8b4c-009af363b85b:
-      size:
-        width: 60
-        height: 60
-      position:
-        x: 320
-        'y': 260
-      z: 1
-      embeds: []
