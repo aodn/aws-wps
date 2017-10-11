@@ -54,6 +54,11 @@ public class WpsConfig {
     public static final String DOWNLOAD_CONNECT_TIMEOUT_CONFIG_KEY = "DOWNLOAD_CONNECT_TIMEOUT";
     public static final String DOWNLOAD_READ_TIMEOUT_CONFIG_KEY = "DOWNLOAD_READ_TIMEOUT";
 
+    public static final String GEONETWORK_CATALOGUE_URL_CONFIG_KEY = "GEONETWORK_CATALOGUE_URL";
+    public static final String GEONETWORK_CATALOGUE_LAYER_FIELD_CONFIG_KEY = "GEONETWORK_LAYER_SEARCH_FIELD";
+
+    public static final String PROVENANCE_TEMPLATE_S3_KEY_CONFIG_KEY = "PROVENANCE_TEMPLATE_S3_KEY";
+
     public static final String SITE_ACRONYM = "siteAcronym";
     public static final String EMAIL_SIGNATURE = "emailSignature";
     public static final String CONTACT_EMAIL = "contactEmail";
@@ -108,6 +113,9 @@ public class WpsConfig {
             setProperty(properties, AGGREGATOR_TEMPLATE_FILE_S3_KEY_CONFIG_KEY);
 
             setProperty(properties, GEOSERVER_CATALOGUE_ENDPOINT_URL_CONFIG_KEY);
+            setProperty(properties, GEONETWORK_CATALOGUE_URL_CONFIG_KEY);
+            setProperty(properties, GEONETWORK_CATALOGUE_LAYER_FIELD_CONFIG_KEY);
+            setProperty(properties, PROVENANCE_TEMPLATE_S3_KEY_CONFIG_KEY);
             setProperty(properties, CHUNK_SIZE_KEY);
             setProperty(properties, DOWNLOAD_ATTEMPTS_CONFIG_KEY);
             setProperty(properties, DOWNLOAD_DIRECTORY_PROPERTY_KEY);
