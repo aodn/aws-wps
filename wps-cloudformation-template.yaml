@@ -5,6 +5,9 @@ Parameters:
   s3configKey:
     Type: String
     Default: 'config/'
+  s3jobKey:
+    Type: String
+    Default: 'jobs/'
   s3LambdaCodeFilename:
     Type: String
     Description: "Lambda code file name ex: request-handler-0.01-lambda-package.zip"
@@ -38,6 +41,9 @@ Parameters:
   jobMemory:
     Type: String
     Default: '2000'
+  jobExpirationInDays:
+    Type: Number
+    Default: 7
   maxVCPUs:
     Type: String
     Default: '4'
@@ -113,7 +119,6 @@ Mappings:
       netcdf: "NetcdfOutput.xml"
       provenanceTemplateGridded: "provenance_template_gridded.ftl"
       provenanceTemplateNonGridded: "provenance_template_non_gridded.ftl"
-  RegionMap:
   production:
     ap-southeast-2:
       vpc: vpc-7302ee16
@@ -146,12 +151,36 @@ Resources:
     DeletionPolicy: "Retain"
     Properties:
       BucketName: !FindInMap [EnvironmentMap, !Ref environment, BucketName]
+      LifecycleConfiguration:
+        Rules:
+          - Id: "JobExpirationInDays"
+            Prefix: !Ref s3jobKey
+            Status: Enabled
+            ExpirationInDays: !Ref jobExpirationInDays
   EphemeralS3Bucket:
     Type: "AWS::S3::Bucket"
     Condition: CreateEphemeralBucket
     DeletionPolicy: "Delete"
     Properties:
       BucketName: !Join ["-", [!FindInMap [EnvironmentMap, !Ref environment, BucketName], !Ref 'AWS::StackName']]
+      LifecycleConfiguration:
+        Rules:
+          - Id: "JobExpirationInDays"
+            Prefix: !Ref s3jobKey
+            Status: Enabled
+            ExpirationInDays: !Ref jobExpirationInDays
+  S3BucketPolicy:
+    Type: "AWS::S3::BucketPolicy"
+    Properties:
+      Bucket: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
+      PolicyDocument:
+        Statement:
+          -
+            Action:
+              - "s3:GetObject"
+            Effect: "Allow"
+            Resource: !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]],"/", !Ref s3jobKey,"*"]]
+            Principal: "*"
   BatchServiceRole:
     Type: 'AWS::IAM::Role'
     Properties:
@@ -301,6 +330,12 @@ Resources:
           -
             Name: "PROVENANCE_TEMPLATE_S3_KEY"
             Value: !Join [ "", [ !Ref s3configKey,  !FindInMap [ConfigurationFileMap, "Filename", "provenanceTemplateGridded"]] ]
+          -
+            Name: "JOB_EXPIRATION_IN_DAYS"
+            Value: !Ref jobExpirationInDays
+          -
+            Name: "JOB_S3_KEY"
+            Value: !Ref s3jobKey
       RetryStrategy:
         Attempts: 2
     DependsOn:  JobInstanceRole
@@ -462,6 +497,8 @@ Resources:
           DESCRIBE_PROCESS_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
           DESCRIBE_PROCESS_S3_KEY_PREFIX: !Ref s3configKey
           GEOSERVER_WPS_ENDPOINT_URL: !Ref geoserverWpsEndpoint
+          AWS_REGION_SES: !Ref awsRegionSes
+          JOB_S3_KEY: !Ref s3jobKey
     DependsOn: S3PutConfigurationFiles
   LambdaExecutionRole:
     Type: 'AWS::IAM::Role'
@@ -498,6 +535,14 @@ Resources:
                   !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]]],
                   !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]],"/*"]]
                 ]
+              -
+                Effect: "Allow"
+                Action: ["ses:SendEmail"]
+                Resource: ["*"]
+              -
+                Effect: "Allow"
+                Action: ["ses:SendRawEmail"]
+                Resource: ["*"]
   S3PutObjectFunctionRole:
     Type: 'AWS::IAM::Role'
     Properties:
