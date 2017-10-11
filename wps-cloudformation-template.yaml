@@ -653,6 +653,8 @@ Resources:
     Properties:
       ServiceToken: !GetAtt S3PutObjectFunction.Arn
 Outputs:
+  GatewayApiUrl:
+    Value: !If [CreateCustomDomainName, !Join ['', ['https://', !Ref domainName, '.', !Ref hostedZoneName,'/wps']], !Join ['', ['https://', !Ref WPSApi, '.execute-api.',!Ref "AWS::Region",'.amazonaws.com','/LATEST/wps']]]
   ComputeEnvironmentArn:
     Value: !Ref ComputeEnvironment
   JobQueueArn:
