@@ -99,7 +99,7 @@ Mappings:
       getCapabilities: "GetCapabilities.ftl"
       gogoduck: "GoGoDuck.xml"
       netcdf: "NetcdfOutput.xml"
-  RegionMap:
+  production:
     ap-southeast-2:
       vpc: vpc-7302ee16
       subnets:
@@ -112,6 +112,13 @@ Mappings:
         - subnet-9e0003e6
         - subnet-f82bcb91
         - subnet-5086a51a
+  dev:
+    ap-southeast-2:
+      vpc: vpc-5e0e3a3a
+      subnets:
+        - subnet-4d471e14
+        - subnet-eab65ea3
+        - subnet-19956d7e
 Conditions:
   CreateEphemeralBucket: !Equals [ !Ref environment, dev ]
   CreatePersistentBucket: !And
@@ -294,7 +301,7 @@ Resources:
         MaxvCpus: !Ref maxVCPUs
         InstanceTypes:
           - optimal
-        Subnets: !FindInMap [RegionMap, !Ref "AWS::Region", subnets]
+        Subnets: !FindInMap [!Ref environment, !Ref "AWS::Region", subnets]
         SecurityGroupIds:
           - !Ref ComputeEnvironmentInstanceSecurityGroup
         InstanceRole: !Ref IamInstanceProfile
@@ -305,7 +312,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Allow http to client host
-      VpcId: !FindInMap [RegionMap, !Ref "AWS::Region", vpc]
+      VpcId: !FindInMap [!Ref environment, !Ref "AWS::Region", vpc]
       SecurityGroupIngress:
       - IpProtocol: '-1'
         FromPort: '-1'
