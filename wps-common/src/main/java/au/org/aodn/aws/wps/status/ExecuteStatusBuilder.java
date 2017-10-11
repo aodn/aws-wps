@@ -12,6 +12,8 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
+import static au.org.aodn.aws.wps.status.WpsConfig.AWS_BATCH_JOB_S3_KEY;
+
 public class ExecuteStatusBuilder {
 
     private static int CHUNK_SIZE = 512;
@@ -24,7 +26,8 @@ public class ExecuteStatusBuilder {
     private static final  Logger LOGGER = LoggerFactory.getLogger(ExecuteStatusBuilder.class);
 
     public ExecuteStatusBuilder(String jobId, String s3Bucket, String filename) {
-        this.location = WpsConfig.getS3ExternalURL(s3Bucket, jobId + "/" + filename);;
+        String jobPrefix = WpsConfig.getConfig(AWS_BATCH_JOB_S3_KEY);
+        this.location = WpsConfig.getS3ExternalURL(s3Bucket, jobPrefix + jobId + "/" + filename);
         this.jobId = jobId;
         this.s3Bucket = s3Bucket;
         this.filename = filename;
