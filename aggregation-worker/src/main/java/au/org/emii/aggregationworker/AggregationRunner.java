@@ -1,6 +1,8 @@
 package au.org.emii.aggregationworker;
 
 
+import au.org.aodn.aws.exception.EmailException;
+import au.org.aodn.aws.util.EmailService;
 import au.org.aodn.aws.util.S3Utils;
 import au.org.aodn.aws.wps.status.EnumStatus;
 import au.org.aodn.aws.wps.status.ExecuteStatusBuilder;
@@ -8,16 +10,11 @@ import au.org.aodn.aws.wps.status.S3StatusUpdater;
 import au.org.aodn.aws.wps.status.WpsConfig;
 import au.org.emii.aggregator.NetcdfAggregator;
 import au.org.emii.aggregator.catalogue.CatalogueReader;
-import au.org.emii.aggregator.overrides.AggregationOverrides;
 import au.org.emii.aggregator.converter.Converter;
-import au.org.emii.download.Download;
-import au.org.emii.download.DownloadConfig;
-import au.org.emii.download.DownloadRequest;
-import au.org.emii.download.Downloader;
-import au.org.emii.download.ParallelDownloadManager;
+import au.org.emii.aggregator.overrides.AggregationOverrides;
+import au.org.emii.download.*;
 import au.org.emii.geoserver.client.HttpIndexReader;
 import au.org.emii.geoserver.client.SubsetParameters;
-import au.org.emii.util.EmailService;
 import au.org.emii.util.IntegerHelper;
 import au.org.emii.util.ProvenanceWriter;
 import freemarker.template.Configuration;
@@ -32,19 +29,15 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import thredds.crawlabledataset.s3.S3URI;
-import ucar.nc2.time.CalendarDate;
 import ucar.nc2.time.CalendarDateRange;
-import ucar.unidata.geoloc.LatLonPoint;
-import ucar.unidata.geoloc.LatLonPointImmutable;
 import ucar.unidata.geoloc.LatLonRect;
+
 import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-
 
 import static au.org.aodn.aws.wps.status.WpsConfig.*;
 import static au.org.emii.aggregator.au.org.emii.aggregator.config.AggregationOverridesReader.getAggregationOverrides;
@@ -74,9 +67,6 @@ public class AggregationRunner implements CommandLineRunner {
         String batchJobId = null, email = null;
         EmailService emailService = null;
         ExecuteStatusBuilder statusBuilder = null;
-
-        String jobReportUrl = null; // Needed to be replaced
-        String expirationPeriod = "expirationPeriod"; // Needed to be replaced
 
         try {
             //  Capture the AWS job specifics - they are passed to the docker runtime as
@@ -120,7 +110,6 @@ public class AggregationRunner implements CommandLineRunner {
             //  Update status document to indicate job has started
             statusUpdater = new S3StatusUpdater(statusS3Bucket, statusFilename);
             statusUpdater.updateStatus(statusDocument, batchJobId);
-            jobReportUrl = statusBuilder.getStatusLocation();
 
             logger.info("AWS BATCH JOB ID     : " + batchJobId);
             logger.info("AWS BATCH CE NAME    : " + awsBatchComputeEnvName);
@@ -208,7 +197,8 @@ public class AggregationRunner implements CommandLineRunner {
                 converter.convert(outputFile, convertedFile);
 
                 //  Form output file location
-                S3URI resultS3URI = new S3URI(outputBucketName, batchJobId + "/" + outputFilename + "." + converter.getExtension());
+                String jobPrefix = WpsConfig.getConfig(AWS_BATCH_JOB_S3_KEY);
+                S3URI resultS3URI = new S3URI(outputBucketName, jobPrefix + batchJobId + "/" + outputFilename + "." + converter.getExtension());
 
                 logger.info("Copying output file to : " + resultS3URI.toString());
 
@@ -237,7 +227,7 @@ public class AggregationRunner implements CommandLineRunner {
 
                 //  Upload provenance document to S3
                 //  TODO: configurable provenance filename?
-                S3URI provenanceS3URI = new S3URI(outputBucketName, batchJobId + "/provenance.xml");
+                S3URI provenanceS3URI = new S3URI(outputBucketName, jobPrefix + batchJobId + "/provenance.xml");
                 S3Utils.uploadToS3(provenanceS3URI, provenanceDocument);
 
                 HashMap<String, String> outputMap = new HashMap<>();
@@ -255,13 +245,10 @@ public class AggregationRunner implements CommandLineRunner {
                 }
             }
 
-            if (emailService != null) {
-                try {
-                    emailService.sendCompletedJobEmail(email, batchJobId, jobReportUrl, expirationPeriod);
-                } catch (Exception ex) {
-                    logger.error("Unable to send completed job email. Error Message:", ex);
-                }
-            }
+            String jobPrefix = WpsConfig.getConfig(AWS_BATCH_JOB_S3_KEY);
+            String outputFileLocation = WpsConfig.getS3ExternalURL(outputBucketName, jobPrefix + batchJobId + "/" + outputFilename + "." + converter.getExtension());
+            emailService.sendCompletedJobEmail(email, batchJobId, outputFileLocation, WpsConfig.getJobExpiration());
+
         } catch (Throwable e) {
             e.printStackTrace();
             if (statusUpdater != null) {
@@ -279,9 +266,9 @@ public class AggregationRunner implements CommandLineRunner {
 
             if (emailService != null) {
                 try {
-                    emailService.sendFailedJobEmail(email, batchJobId, jobReportUrl);
-                } catch (Exception ex) {
-                    logger.error("Unable to send failed job email. Error Message:", ex);
+                    emailService.sendFailedJobEmail(email, batchJobId, "Job Report URL (Service not yet implemented)");
+                } catch (EmailException ex) {
+                    logger.error(ex.getMessage(), ex);
                 }
             }
             System.exit(1);

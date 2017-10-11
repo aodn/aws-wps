@@ -5,14 +5,13 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
-import com.amazonaws.services.s3.model.PutObjectResult;
 import com.amazonaws.util.StringInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 import java.io.UnsupportedEncodingException;
-import java.util.HashMap;
+
+import static au.org.aodn.aws.wps.status.WpsConfig.AWS_BATCH_JOB_S3_KEY;
 
 /**
  * Created by alexm12 on 24/08/2017.
@@ -25,7 +24,6 @@ public class S3StatusUpdater {
     private final String statusFilename;
 
     public S3StatusUpdater(String s3bucket, String statusFilename) {
-
         this.s3bucket = s3bucket;
         this.statusFilename = statusFilename;
     }
@@ -37,7 +35,8 @@ public class S3StatusUpdater {
         StringInputStream inputStream = new StringInputStream(statusDocument);
         try {
             AmazonS3 client = AmazonS3ClientBuilder.defaultClient();
-            PutObjectRequest putRequest = new PutObjectRequest(s3bucket, jobId + "/" + statusFilename, inputStream, new ObjectMetadata());
+            String jobPrefix = WpsConfig.getConfig(AWS_BATCH_JOB_S3_KEY);
+            PutObjectRequest putRequest = new PutObjectRequest(s3bucket, jobPrefix + jobId + "/" + statusFilename, inputStream, new ObjectMetadata());
             putRequest.setCannedAcl(CannedAccessControlList.PublicRead);
             client.putObject(putRequest);
         }
