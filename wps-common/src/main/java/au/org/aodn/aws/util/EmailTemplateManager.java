@@ -30,6 +30,7 @@ public class EmailTemplateManager {
         Properties p = new Properties();
         p.setProperty("resource.loader", "class");
         p.setProperty("class.resource.loader.class", ClasspathResourceLoader.class.getName());
+        p.setProperty("runtime.log", "/tmp/velocity.log");
         velocityEngine = new VelocityEngine();
         velocityEngine.init(p);
     }

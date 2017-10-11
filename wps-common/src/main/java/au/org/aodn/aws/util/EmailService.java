@@ -58,7 +58,12 @@ public class EmailService {
             client.sendEmail(request);
             LOGGER.info(String.format("Email sent to %s", to));
         } catch (Exception e) {
-            LOGGER.error(String.format("Unable to send email to %s Error message: ", to), e);
+            LOGGER.error(String.format("Unable to send email. Error message: %s", e.getMessage()), e);
+            LOGGER.error(String.format("To: %s", to));
+            LOGGER.error(String.format("From: %s", from));
+            LOGGER.error(String.format("Subject: %s", subject));
+            LOGGER.error(String.format("Html Body: %s", htmlBody));
+            LOGGER.error(String.format("Text Body: %s", textBody));
         }
     }
 

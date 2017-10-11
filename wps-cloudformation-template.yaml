@@ -438,6 +438,7 @@ Resources:
           DESCRIBE_PROCESS_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
           DESCRIBE_PROCESS_S3_KEY_PREFIX: !Ref s3configKey
           GEOSERVER_WPS_ENDPOINT_URL: !Ref geoserverWpsEndpoint
+          AWS_REGION_SES: !Ref awsRegionSes
     DependsOn: S3PutConfigurationFiles
   LambdaExecutionRole:
     Type: 'AWS::IAM::Role'
@@ -474,6 +475,14 @@ Resources:
                   !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]]],
                   !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]],"/*"]]
                 ]
+              -
+                Effect: "Allow"
+                Action: ["ses:SendEmail"]
+                Resource: ["*"]
+              -
+                Effect: "Allow"
+                Action: ["ses:SendRawEmail"]
+                Resource: ["*"]
   S3PutObjectFunctionRole:
     Type: 'AWS::IAM::Role'
     Properties:
