@@ -133,9 +133,7 @@ Conditions:
   CreatePersistentBucket: !And
     - !Equals [!Ref createPersistentBucket, true]
     - !Not [!Condition CreateEphemeralBucket]
-  CreateCustomDomainName: !And
-      - !Not [ !Equals [!Ref domainName, '']]
-      - !Not [ !Equals [!Ref acmCertificate, '']]
+  CreateCustomDomainName: !Not [ !Equals [!Ref domainName, '']]
 Resources:
   PersistentS3Bucket:
     Type: "AWS::S3::Bucket"
