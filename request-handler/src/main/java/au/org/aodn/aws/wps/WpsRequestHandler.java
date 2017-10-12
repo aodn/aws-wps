@@ -3,7 +3,7 @@ package au.org.aodn.aws.wps;
 import au.org.aodn.aws.wps.AwsApiResponse.ResponseBuilder;
 import au.org.aodn.aws.wps.exception.ValidationException;
 import au.org.aodn.aws.wps.operation.Operation;
-import au.org.aodn.aws.wps.status.StatusHelper;
+import au.org.aodn.aws.util.JobFileUtil;
 import net.opengis.wps._1_0.ExecuteResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +35,7 @@ public class WpsRequestHandler implements RequestHandler, RequestValidator {
                 {
                     LOGGER.error("Operation : NULL.");
                     responseBuilder.statusCode(500);
-                    String exceptionReportString = StatusHelper.getExceptionReportString("No operation found.", "ExecutionError");
+                    String exceptionReportString = JobFileUtil.getExceptionReportString("No operation found.", "ExecutionError");
                     responseBuilder.body(exceptionReportString);
                 }
             }
@@ -43,13 +43,13 @@ public class WpsRequestHandler implements RequestHandler, RequestValidator {
             {
                 LOGGER.error("Request parser is NULL.");
                 responseBuilder.statusCode(500);
-                String exceptionReportString = StatusHelper.getExceptionReportString("Unable to build request parser.", "ExecutionError");
+                String exceptionReportString = JobFileUtil.getExceptionReportString("Unable to build request parser.", "ExecutionError");
                 responseBuilder.body(exceptionReportString);
             }
         } catch (Exception e) {
             LOGGER.error("Exception : " + e.getMessage(), e);
             responseBuilder.statusCode(500);
-            String exceptionReportString = StatusHelper.getExceptionReportString(e.getMessage(), "ExecutionError");
+            String exceptionReportString = JobFileUtil.getExceptionReportString(e.getMessage(), "ExecutionError");
             responseBuilder.body(exceptionReportString);
         }
 
