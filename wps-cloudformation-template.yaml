@@ -76,6 +76,7 @@ Parameters:
     Description: An Amazon Certificate Manager Certificate ARN located in US-East-1 region.
   hostedZoneName:
     Type: String
+    Default: ''
     Description: A Route53 Hosted Zone name, without the trailing dot. To be used for the API Gateway endpoint
   domainName:
     Type: String
