@@ -1,5 +1,6 @@
 package au.org.aodn.aws.wps.status;
 
+import au.org.aodn.aws.util.JobFileUtil;
 import net.opengis.ows._1.CodeType;
 import net.opengis.wps._1_0.*;
 import org.slf4j.Logger;
@@ -57,7 +58,7 @@ public class ExecuteStatusBuilder {
         StatusType status = new StatusType();
 
         try {
-            status.setCreationTime(StatusHelper.getCreationDate());
+            status.setCreationTime(JobFileUtil.getCreationDate());
         } catch (DatatypeConfigurationException e) {
             throw new RuntimeException(e);
         }
@@ -86,12 +87,12 @@ public class ExecuteStatusBuilder {
         response.setStatus(status);
 
 
-        return StatusHelper.createResponseXmlDocument(response);
+        return JobFileUtil.createXmlDocument(response);
     }
 
     private ProcessFailedType getProcessFailedType(String message, String code) {
         ProcessFailedType failed = new ProcessFailedType();
-        failed.setExceptionReport(StatusHelper.getExceptionReport(message, code));
+        failed.setExceptionReport(JobFileUtil.getExceptionReport(message, code));
         return failed;
     }
 

@@ -123,6 +123,7 @@ Mappings:
     Filename:
       outputWithoutExtension: "output"
       status: "status.xml"
+      request: "request.xml"
       templates: "templates.xml"
       getCapabilities: "GetCapabilities.ftl"
       gogoduck: "GoGoDuck.xml"
@@ -299,6 +300,9 @@ Resources:
           -
             Name: "STATUS_S3_FILENAME"
             Value: !FindInMap [ConfigurationFileMap, "Filename", "status"]
+          -
+            Name: "REQUEST_S3_FILENAME"
+            Value: !FindInMap [ConfigurationFileMap, "Filename", "request"]
           -
             Name: "AWS_REGION"
             Value: !Ref "AWS::Region"
@@ -529,6 +533,7 @@ Resources:
           AWS_BATCH_JOB_DEFINITION_NAME: !Select [1, !Split ["/", !Ref JobDefinition]]
           STATUS_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
           STATUS_S3_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "status"]
+          REQUEST_S3_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "request"]
           GET_CAPABILITIES_TEMPLATE_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
           GET_CAPABILITIES_TEMPLATE_S3_KEY: !Join [ "", [ !Ref s3configKey, !FindInMap [ConfigurationFileMap, "Filename", "getCapabilities"] ] ]
           DESCRIBE_PROCESS_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]

@@ -3,7 +3,7 @@ package au.org.aodn.aws.wps.lambda;
 import au.org.aodn.aws.wps.AwsApiRequest;
 import au.org.aodn.aws.wps.AwsApiResponse;
 import au.org.aodn.aws.wps.WpsRequestHandler;
-import au.org.aodn.aws.wps.status.StatusHelper;
+import au.org.aodn.aws.util.JobFileUtil;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import org.slf4j.Logger;
@@ -31,7 +31,7 @@ public class WpsLambdaRequestHandler implements RequestHandler<AwsApiRequest, Aw
             //  Send caller a WPS error response
             AwsApiResponse.ResponseBuilder responseBuilder = new AwsApiResponse.ResponseBuilder();
             responseBuilder.statusCode(500);
-            responseBuilder.body(StatusHelper.getExceptionReportString(message, "WPSError"));
+            responseBuilder.body(JobFileUtil.getExceptionReportString(message, "WPSError"));
             response = responseBuilder.build();
         }
 

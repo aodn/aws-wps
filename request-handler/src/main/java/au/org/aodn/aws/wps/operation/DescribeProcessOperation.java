@@ -1,7 +1,7 @@
 package au.org.aodn.aws.wps.operation;
 
 import au.org.aodn.aws.util.Utils;
-import au.org.aodn.aws.wps.status.StatusHelper;
+import au.org.aodn.aws.util.JobFileUtil;
 import au.org.aodn.aws.wps.status.WpsConfig;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
@@ -96,7 +96,7 @@ public class DescribeProcessOperation implements Operation {
                 } catch (Exception ex) {
                     //  Bad stuff - blow up!
                     LOGGER.error("Problem reading XML document for [" + identifier + "]", ex);
-                    return StatusHelper.getExceptionReportString("Error retrieving process description: " + ex.getMessage(), "ProcessingError");
+                    return JobFileUtil.getExceptionReportString("Error retrieving process description: " + ex.getMessage(), "ProcessingError");
                 }
             }
 
@@ -111,7 +111,7 @@ public class DescribeProcessOperation implements Operation {
             catch(Exception ex)
             {
                 LOGGER.error("Error forming process descriptions XML: " + ex.getMessage(), ex);
-                return StatusHelper.getExceptionReportString("Error forming process descriptions XML: " + ex.getMessage(), "ProcessingError");
+                return JobFileUtil.getExceptionReportString("Error forming process descriptions XML: " + ex.getMessage(), "ProcessingError");
             }
         }
 
