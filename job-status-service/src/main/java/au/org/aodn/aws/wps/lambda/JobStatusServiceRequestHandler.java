@@ -44,6 +44,8 @@ import java.util.ArrayList;
 
 public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusRequest, JobStatusResponse> {
 
+    private static final JobStatusFormatEnum DEFAULT_FORMAT = JobStatusFormatEnum.XML;
+
     private Logger LOGGER = LoggerFactory.getLogger(JobStatusServiceRequestHandler.class);
 
     @Override
@@ -51,8 +53,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
 
         JobStatusResponse response;
         JobStatusResponse.ResponseBuilder responseBuilder = new JobStatusResponse.ResponseBuilder();
-
-        String responseBody = "Test Response Body";
+        String responseBody;
 
         JobStatusRequestParameterParser parameterParser = new JobStatusRequestParameterParser(request);
         String jobId = parameterParser.getJobId();
@@ -60,29 +61,34 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
 
         LOGGER.info("Parameters passed: JOBID [" + jobId + "], FORMAT [" + format + "]");
 
+        //  Determine the format to send the response in
         JobStatusFormatEnum requestedStatusFormat = null;
 
-        //  TODO: throw error or default to particular format if format not recognized?
-        try {
-            requestedStatusFormat = JobStatusFormatEnum.valueOf(format.toUpperCase());
-            LOGGER.info("Valid job status format requested : " + requestedStatusFormat.name());
-        } catch (IllegalArgumentException iae) {
-            String jobStatusValuesString = "";
+        if (format != null) {
 
-            JobStatusFormatEnum[] validJobStatuses = JobStatusFormatEnum.values();
-            for(int index = 0; index <= validJobStatuses.length -1; index++)
-            {
-                jobStatusValuesString += validJobStatuses[index].name();
-                if(index + 1 <= validJobStatuses.length -1)
-                {
-                    jobStatusValuesString += ", ";
+            try {
+                requestedStatusFormat = JobStatusFormatEnum.valueOf(format.toUpperCase());
+                LOGGER.info("Valid job status format requested : " + requestedStatusFormat.name());
+            } catch (IllegalArgumentException iae) {
+                String jobStatusValuesString = "";
+
+                JobStatusFormatEnum[] validJobStatuses = JobStatusFormatEnum.values();
+                for (int index = 0; index <= validJobStatuses.length - 1; index++) {
+                    jobStatusValuesString += validJobStatuses[index].name();
+                    if (index + 1 <= validJobStatuses.length - 1) {
+                        jobStatusValuesString += ", ";
+                    }
                 }
+                LOGGER.error("UNKNOWN job status format requested [" + format + "].  Supported values : [" + jobStatusValuesString + "].  Defaulting to [" + DEFAULT_FORMAT.name() + "]");
+                requestedStatusFormat = DEFAULT_FORMAT;
             }
-            LOGGER.error("UNKNOWN job status format requested [" + format + "].  Supported values : [" + jobStatusValuesString + "]");
+        } else {
+            LOGGER.info("No format parameter passed.  Defaulting to [" + DEFAULT_FORMAT.name() + "]");
+            requestedStatusFormat = DEFAULT_FORMAT;
         }
 
 
-
+        //  Read the status file for the jobId passed (if it exists)
         try {
 
             String statusFilename = WpsConfig.getConfig(WpsConfig.STATUS_S3_FILENAME_CONFIG_KEY);
@@ -96,7 +102,11 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
 
             LOGGER.info("Status file exists for jobId [" + jobId + "]? " + statusExists);
 
-            if(statusExists) {
+            //  If the status file exists and the job is in an 'waiting' state (we have accepted the job but processing
+            //  has not yet commenced) we will attempt to work out the queue position of the job and add that to
+            //  the status information we send back to the caller.  If the job is being processed or processing has
+            //  completed (successful or failed), then we will return the information contained in the status file unaltered.
+            if (statusExists) {
 
                 String statusXMLString = S3Utils.readS3ObjectAsString(statusS3Bucket, s3Key, null);
 
@@ -115,44 +125,40 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
                 ProcessStartedType processStarted = currentStatus.getProcessStarted();
                 String processSucceeded = currentStatus.getProcessSucceeded();
 
-                LOGGER.info("processAccepted null? = " + (processAccepted == null));
-                LOGGER.info("processFailed   null? = " + (processFailed == null));
-                LOGGER.info("processPaused   null? = " + (processPaused == null));
-                LOGGER.info("processStarted  null? = " + (processStarted == null));
-                LOGGER.info("processFailed   null? = " + (processFailed == null));
-
-                if(processAccepted != null &&
+                if (processAccepted != null &&
                         (processFailed == null &&
-                         processPaused == null &&
-                         processStarted == null &&
-                         processSucceeded == null)) {
-
+                                processPaused == null &&
+                                processStarted == null &&
+                                processSucceeded == null)) {
 
                     LOGGER.info("Updating XML with progress description for jobId [" + jobId + "]");
-                    //  TODO:  hook here to perform a queue position lookup + insert the position information into the XML
+
+                    //  Perform a queue position lookup + insert the position information into the XML
                     //  All we have to do is setProcessAccepted to a string that includes some queue
                     //  position information.
                     String jobProgressDescription = getProgressDescription(jobId);
 
                     LOGGER.info("Progress description: " + jobProgressDescription);
 
-                    currentStatus.setProcessAccepted(currentStatus.getProcessAccepted() + " " + jobProgressDescription);
-                    currentResponse.setStatus(currentStatus);
+                    if(jobProgressDescription != null) {
+                        currentStatus.setProcessAccepted(currentStatus.getProcessAccepted() + " " + jobProgressDescription);
+                        currentResponse.setStatus(currentStatus);
+                    }
 
                     responseBody = StatusHelper.createResponseXmlDocument(currentResponse);
-                }
-                else
-                {
+                } else {
+                    //  Return unaltered status XML
                     responseBody = statusXMLString;
                 }
 
 
-                if(requestedStatusFormat.equals(JobStatusFormatEnum.HTML)) {
-                    //  TODO: apply HTML transform to XML
-                    LOGGER.info("HTML output format requested.  Running transform.");
+                //  If requested output format is HTML - perform a transform on the XML
+                if (requestedStatusFormat.equals(JobStatusFormatEnum.HTML)) {
 
+                    LOGGER.info("HTML output format requested.  Running transform.");
                     responseBody = generateHTML(currentResponse);
                 }
+
 
                 //  Execute the request
                 responseBuilder.isBase64Encoded(false);
@@ -163,17 +169,17 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
 
             } else {
 
+                //  TODO:  output XML or HTML error information
                 String notFoundResponseBody = "Not found.  Job ID [" + jobId + "]";
                 LOGGER.info(notFoundResponseBody);
                 //  Status document was not found in the S3 bucket
                 responseBuilder.statusCode(HttpStatus.SC_OK);
                 responseBuilder.body(notFoundResponseBody);
             }
-
         } catch (Exception ex) {
             String message = "Exception retrieving status of job [" + jobId + "]: " + ex.getMessage();
 
-            //  TODO:  form HTML/XML output for error?
+            //  TODO: output XML or HTML error information
             //  Bad stuff happened
             LOGGER.error(message, ex);
             //  Execute the request
@@ -188,21 +194,31 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
     }
 
 
+    /**
+     * Get a text description of the progress of the job.
+     * Currently this description indicates the position of the AWS batch
+     * job in the processing queue in the form
+     * 'Queue position <POSITION_OF_THE_JOB> of <TOTAL_NUMBER_OF_JOBS_QUEUED>'
+     *
+     * @param jobId
+     * @return
+     */
     private String getProgressDescription(String jobId) {
 
-        String description = "";
+        String description = null;
 
-        if(jobId != null) {
+        if (jobId != null) {
             AWSBatch batchClient = AWSBatchClientBuilder.defaultClient();
 
+            //  Determine the queue that the job has been assigned to
             String queueName = getQueueName(batchClient, jobId);
-
             LOGGER.info("Queue name for jobId [" + jobId + "] = " + queueName);
 
-            if(queueName != null) {
+            if (queueName != null) {
+                //  Determine the position of the job in the queue
                 QueuePosition queuePosition = getQueuePosition(batchClient, jobId, queueName);
 
-                if(queuePosition != null) {
+                if (queuePosition != null) {
                     description = "Queue position " + queuePosition.getPosition() + " of " + queuePosition.getNumberInQueue();
                 }
             }
@@ -212,7 +228,6 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
     }
 
     /**
-     *
      * @param jobId
      * @return
      */
@@ -259,19 +274,17 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
         int jobIndex = -1;
         JobSummary[] jobSummaries = new JobSummary[allJobs.size()];
         jobSummaries = allJobs.toArray(jobSummaries);
-        for(int index = 0; index <= jobSummaries.length -1; index ++)
-        {
+        for (int index = 0; index <= jobSummaries.length - 1; index++) {
             LOGGER.info("Search queue : jobId [" + jobSummaries[index].getJobId() + "], Match? [" + jobSummaries[index].getJobId().equalsIgnoreCase(jobId) + "]");
 
-            if(jobSummaries[index].getJobId().equalsIgnoreCase(jobId)) {
+            if (jobSummaries[index].getJobId().equalsIgnoreCase(jobId)) {
                 jobIndex = index;
                 LOGGER.info("Found Job at index [" + jobIndex + "] in queue");
             }
         }
 
         int jobPosition = 0;
-        if(jobIndex >= 0)
-        {
+        if (jobIndex >= 0) {
             jobPosition = jobIndex + 1;
         }
 
@@ -281,7 +294,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
 
     private String getQueueName(AWSBatch batchClient, String jobId) {
 
-        if(batchClient != null && jobId != null) {
+        if (batchClient != null && jobId != null) {
 
 
             try {
@@ -295,8 +308,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
                 if (describeResult != null && describeResult.getJobs().size() > 0) {
                     return describeResult.getJobs().get(0).getJobQueue();
                 }
-            }
-            catch(Exception ex) {
+            } catch (Exception ex) {
                 LOGGER.error("Unable to determine the queue for jobId [" + jobId + "]", ex);
             }
         }
