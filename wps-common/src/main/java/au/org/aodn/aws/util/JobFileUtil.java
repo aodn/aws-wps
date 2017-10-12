@@ -1,8 +1,7 @@
-package au.org.aodn.aws.wps.status;
+package au.org.aodn.aws.util;
 
 import net.opengis.ows._1.ExceptionReport;
 import net.opengis.ows._1.ExceptionType;
-import net.opengis.wps._1_0.ResponseBaseType;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
@@ -15,24 +14,24 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.TimeZone;
 
-public class StatusHelper {
+public class JobFileUtil {
 
     /**
-     * Generate an XML string from a response XML type.
+     * Generate an XML string from a XML type object.
      *
-     * @param response
+     * @param xmlObject
      * @return
      */
-    public static String createResponseXmlDocument(ResponseBaseType response) {
+    public static String createXmlDocument(Object xmlObject) {
         String responseDoc = null;
 
         JAXBContext context;
         try {
-            context = JAXBContext.newInstance(response.getClass());
+            context = JAXBContext.newInstance(xmlObject.getClass());
             Marshaller m = context.createMarshaller();
             m.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
             StringWriter writer = new StringWriter();
-            m.marshal(response, writer);
+            m.marshal(xmlObject, writer);
             responseDoc = writer.toString();
 
         } catch (JAXBException e) {

@@ -1,6 +1,6 @@
 package au.org.aodn.aws.wps.operation;
 
-import au.org.aodn.aws.wps.status.StatusHelper;
+import au.org.aodn.aws.util.JobFileUtil;
 import au.org.aodn.aws.wps.status.WpsConfig;
 import net.opengis.wps._1_0.GetCapabilities;
 import org.slf4j.Logger;
@@ -47,7 +47,7 @@ public class GetCapabilitiesOperation implements Operation {
         catch(Exception ex)
         {
             LOGGER.error("Unable to retrieve GetCapabilities XML: " + ex.getMessage(), ex);
-            return StatusHelper.getExceptionReportString("Unable to retrieve GetCapabilities document: " + ex.getMessage(), "ProcessingError");
+            return JobFileUtil.getExceptionReportString("Unable to retrieve GetCapabilities document: " + ex.getMessage(), "ProcessingError");
         }
 
         return getCapabilitiesDocument;
