@@ -6,7 +6,7 @@ import au.org.aodn.aws.util.EmailService;
 import au.org.aodn.aws.util.S3Utils;
 import au.org.aodn.aws.wps.status.EnumStatus;
 import au.org.aodn.aws.wps.status.ExecuteStatusBuilder;
-import au.org.aodn.aws.wps.status.S3StatusUpdater;
+import au.org.aodn.aws.wps.status.S3JobFileUpdater;
 import au.org.aodn.aws.wps.status.WpsConfig;
 import au.org.emii.aggregator.NetcdfAggregator;
 import au.org.emii.aggregator.catalogue.CatalogueReader;
@@ -51,8 +51,7 @@ public class AggregationRunner implements CommandLineRunner {
 
     private static final Logger logger = LoggerFactory.getLogger(au.org.emii.aggregationworker.AggregationRunner.class);
 
-    private String statusS3Bucket = null;
-    private String statusFilename = null;
+    private String statusS3Bucket = null, statusFilename = null, requestFilename = null;
 
     /**
      * Entry point for the aggregation.  Relies on command-line parameters.
@@ -63,7 +62,7 @@ public class AggregationRunner implements CommandLineRunner {
     public void run(String... args) {
 
         DateTime startTime = new DateTime(DateTimeZone.UTC);
-        S3StatusUpdater statusUpdater = null;
+        S3JobFileUpdater s3JobFileUpdater = null;
         String batchJobId = null, email = null;
         EmailService emailService = null;
         ExecuteStatusBuilder statusBuilder = null;
@@ -78,6 +77,7 @@ public class AggregationRunner implements CommandLineRunner {
             String outputFilename = WpsConfig.getConfig(OUTPUT_S3_FILENAME_CONFIG_KEY);
             statusS3Bucket = WpsConfig.getConfig(STATUS_S3_BUCKET_CONFIG_KEY);
             statusFilename = WpsConfig.getConfig(STATUS_S3_FILENAME_CONFIG_KEY);
+            requestFilename = WpsConfig.getConfig(REQUEST_S3_FILENAME_CONFIG_KEY);
 
             String aggregatorConfigS3Bucket = WpsConfig.getConfig(AGGREGATOR_CONFIG_S3_BUCKET_CONFIG_KEY);
             String aggregatorTemplateFileS3Key = WpsConfig.getConfig(AGGREGATOR_TEMPLATE_FILE_S3_KEY_CONFIG_KEY);
@@ -108,8 +108,8 @@ public class AggregationRunner implements CommandLineRunner {
             String statusDocument = statusBuilder.createResponseDocument(EnumStatus.STARTED, null, null, null);
 
             //  Update status document to indicate job has started
-            statusUpdater = new S3StatusUpdater(statusS3Bucket, statusFilename);
-            statusUpdater.updateStatus(statusDocument, batchJobId);
+            s3JobFileUpdater = new S3JobFileUpdater(statusS3Bucket, statusFilename, requestFilename);
+            s3JobFileUpdater.updateStatus(statusDocument, batchJobId);
 
             logger.info("AWS BATCH JOB ID     : " + batchJobId);
             logger.info("AWS BATCH CE NAME    : " + awsBatchComputeEnvName);
@@ -235,7 +235,7 @@ public class AggregationRunner implements CommandLineRunner {
                 outputMap.put("provenance", WpsConfig.getS3ExternalURL(provenanceS3URI.getBucket(), provenanceS3URI.getKey()));
 
                 statusDocument = statusBuilder.createResponseDocument(EnumStatus.SUCCEEDED, null, null, outputMap);
-                statusUpdater.updateStatus(statusDocument, batchJobId);
+                s3JobFileUpdater.updateStatus(statusDocument, batchJobId);
             } finally {
                 if (convertedFile != null) {
                     Files.deleteIfExists(convertedFile);
@@ -251,12 +251,12 @@ public class AggregationRunner implements CommandLineRunner {
 
         } catch (Throwable e) {
             e.printStackTrace();
-            if (statusUpdater != null) {
+            if (s3JobFileUpdater != null) {
                 if (batchJobId != null) {
                     String statusDocument = null;
                     try {
                         statusDocument = statusBuilder.createResponseDocument(EnumStatus.FAILED, "Exception occurred during aggregation :" + e.getMessage(), "AggregationError", null);
-                        statusUpdater.updateStatus(statusDocument, batchJobId);
+                        s3JobFileUpdater.updateStatus(statusDocument, batchJobId);
                     } catch (UnsupportedEncodingException uex) {
                         logger.error("Unable to update status. Status: " + statusDocument);
                         uex.printStackTrace();

@@ -26,6 +26,7 @@ public class WpsConfig {
     public static final String AWS_REGION_SES_CONFIG_KEY = "AWS_REGION_SES";
     public static final String STATUS_S3_BUCKET_CONFIG_KEY = "STATUS_S3_BUCKET";
     public static final String STATUS_S3_FILENAME_CONFIG_KEY = "STATUS_S3_FILENAME";
+    public static final String REQUEST_S3_FILENAME_CONFIG_KEY = "REQUEST_S3_FILENAME";
     public static final String OUTPUT_S3_BUCKET_CONFIG_KEY = "OUTPUT_S3_BUCKET";
     public static final String OUTPUT_S3_FILENAME_CONFIG_KEY = "OUTPUT_S3_FILENAME";
 
@@ -102,6 +103,7 @@ public class WpsConfig {
             setProperty(properties, AWS_REGION_SES_CONFIG_KEY);
             setProperty(properties, STATUS_S3_BUCKET_CONFIG_KEY);
             setProperty(properties, STATUS_S3_FILENAME_CONFIG_KEY);
+            setProperty(properties, REQUEST_S3_FILENAME_CONFIG_KEY);
             setProperty(properties, OUTPUT_S3_BUCKET_CONFIG_KEY);
             setProperty(properties, OUTPUT_S3_FILENAME_CONFIG_KEY);
             setProperty(properties, AWS_BATCH_JOB_ID_CONFIG_KEY);
