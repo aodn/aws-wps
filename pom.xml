@@ -18,5 +18,6 @@
         <module>wps-common</module>
         <module>request-handler</module>
         <module>aggregation-worker</module>
+        <module>job-status-service</module>
     </modules>
 </project>

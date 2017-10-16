@@ -1,11 +1,17 @@
 package au.org.aodn.aws.util;
 
+import com.amazonaws.util.StringInputStream;
 import net.opengis.ows._1.ExceptionReport;
 import net.opengis.ows._1.ExceptionType;
+import net.opengis.wps._1_0.ExecuteResponse;
+import net.opengis.wps._1_0.ResponseBaseType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
+import javax.xml.bind.Unmarshaller;
 import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.datatype.DatatypeFactory;
 import javax.xml.datatype.XMLGregorianCalendar;
@@ -15,6 +21,8 @@ import java.util.GregorianCalendar;
 import java.util.TimeZone;
 
 public class JobFileUtil {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(StatusHelper.class);
 
     /**
      * Generate an XML string from a XML type object.
@@ -81,4 +89,24 @@ public class JobFileUtil {
         return responseDoc;
     }
 
+
+    /**
+     * Create an ExecuteResponse object from a XML string
+     *
+     * @param xmlString
+     * @return
+     */
+    public static ExecuteResponse unmarshallExecuteResponse(String xmlString)
+    {
+        try {
+
+            JAXBContext context = JAXBContext.newInstance(ExecuteResponse.class);
+            Unmarshaller u = context.createUnmarshaller();
+
+            return (ExecuteResponse) u.unmarshal(new StringInputStream(xmlString));
+        } catch (Exception ex) {
+
+            return null;
+        }
+    }
 }

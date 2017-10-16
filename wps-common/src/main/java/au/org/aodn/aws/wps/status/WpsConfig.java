@@ -62,6 +62,9 @@ public class WpsConfig {
 
     public static final String PROVENANCE_TEMPLATE_S3_KEY_CONFIG_KEY = "PROVENANCE_TEMPLATE_S3_KEY";
 
+    public static final String STATUS_SERVICE_CONFIG_S3_BUCKET_CONFIG_KEY = "STATUS_SERVICE_CONFIG_S3_BUCKET";
+    public static final String STATUS_HTML_XSL_S3_KEY_CONFIG_KEY = "STATUS_HTML_XSL_S3_KEY";
+
     public static final String SITE_ACRONYM = "siteAcronym";
     public static final String EMAIL_SIGNATURE = "emailSignature";
     public static final String CONTACT_EMAIL = "contactEmail";
@@ -130,6 +133,8 @@ public class WpsConfig {
             setProperty(properties, LOCAL_STORAGE_LIMIT_PROPERTY_KEY);
             setProperty(properties, POOL_SIZE_CONFIG_KEY);
             setProperty(properties, RETRY_INTERVAL_CONFIG_KEY);
+            setProperty(properties, STATUS_SERVICE_CONFIG_S3_BUCKET_CONFIG_KEY);
+            setProperty(properties, STATUS_HTML_XSL_S3_KEY_CONFIG_KEY);
         }
 
         return properties;
