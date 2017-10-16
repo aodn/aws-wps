@@ -1,12 +1,12 @@
 package au.org.aodn.aws.wps.lambda;
 
+import au.org.aodn.aws.util.JobFileUtil;
 import au.org.aodn.aws.util.S3Utils;
 import au.org.aodn.aws.wps.JobStatusFormatEnum;
 import au.org.aodn.aws.wps.JobStatusRequest;
 import au.org.aodn.aws.wps.JobStatusRequestParameterParser;
 import au.org.aodn.aws.wps.JobStatusResponse;
 import au.org.aodn.aws.wps.status.QueuePosition;
-import au.org.aodn.aws.wps.status.StatusHelper;
 import au.org.aodn.aws.wps.status.WpsConfig;
 import com.amazonaws.services.batch.AWSBatch;
 import com.amazonaws.services.batch.AWSBatchClientBuilder;
@@ -111,7 +111,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
                 String statusXMLString = S3Utils.readS3ObjectAsString(statusS3Bucket, s3Key, null);
 
                 //  Read the status document
-                ExecuteResponse currentResponse = StatusHelper.unmarshallExecuteResponse(statusXMLString);
+                ExecuteResponse currentResponse = JobFileUtil.unmarshallExecuteResponse(statusXMLString);
 
                 LOGGER.info("Unmarshalled XML for jobId [" + jobId + "]");
                 LOGGER.info(statusXMLString);
@@ -145,7 +145,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
                         currentResponse.setStatus(currentStatus);
                     }
 
-                    responseBody = StatusHelper.createResponseXmlDocument(currentResponse);
+                    responseBody = JobFileUtil.createXmlDocument(currentResponse);
                 } else {
                     //  Return unaltered status XML
                     responseBody = statusXMLString;
