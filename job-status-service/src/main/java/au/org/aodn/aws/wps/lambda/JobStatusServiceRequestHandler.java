@@ -156,7 +156,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
                 if (requestedStatusFormat.equals(JobStatusFormatEnum.HTML)) {
 
                     LOGGER.info("HTML output format requested.  Running transform.");
-                    responseBody = generateHTML(currentResponse);
+                    responseBody = generateHTML(currentResponse, jobId);
                 }
 
 
@@ -317,7 +317,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
     }
 
 
-    private String generateHTML(ExecuteResponse status) {
+    private String generateHTML(ExecuteResponse status, String jobId) {
         // Create Transformer
         TransformerFactory tf = TransformerFactory.newInstance();
         String xslString;
@@ -332,6 +332,15 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
             StreamSource xslt = new StreamSource(xslInputStream);
 
             Transformer transformer = tf.newTransformer(xslt);
+
+            //  Pass in the jobId
+            if(jobId != null) {
+                //  Pass the job ID
+                transformer.setParameter("jobid", jobId);
+                //  TODO:  pass in text description of the state of the job (ie: Download Available, Job Submitted, etc)
+                //  TODO:  can be calculated based on the parts of status.getStatus() which are populated.
+                //  TODO:  the parameter named can be referred to in the XSL stylesheet + the value will be passed.
+            }
 
             // Source
             JAXBContext jc = JAXBContext.newInstance(ExecuteResponse.class);

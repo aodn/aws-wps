@@ -1,16 +1,18 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <xsl:stylesheet version="1.0"
-                xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+                xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ns3="http://www.opengis.net/wps/1.0.0">
     <xsl:output method="html" version="1.0" encoding="UTF-8" indent="yes"/>
-    <xsl:template match="/">
 
+    <xsl:template match="/">
+        <xsl:param name="jobid" />
+        <xsl:variable name="status"><xsl:value-of select="ns3:ExecuteResponse/@statusLocation"/></xsl:variable>
         <xsl:text disable-output-escaping='yes'>&lt;!DOCTYPE html&gt;</xsl:text>
 <html>
     <head>
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css"/>
         <link rel="stylesheet" type="text/css" href="/css/AODNTheme.css?v="/>
         
-        <title>IMOS download - bdba1751-aa01-4c88-af95-43687eae8363</title>
+        <title>IMOS download - <xsl:value-of select="$jobid"/></title>
     </head>
     <body>
         <div class="portalheader">
@@ -30,12 +32,10 @@
 </dt>
 <dd>
     
-        <a href="https://portal.aodn.org.au/proxy?url=http%3A%2F%2Fgeoserver-wps.aodn.org.au%2Fgeoserver%2Fows%3Fservice%3DWPS%26version%3D1.0.0%26request%3DGetExecutionResult%26executionId%3Dbdba1751-aa01-4c88-af95-43687eae8363%26outputId%3Dresult.nc%26mimetype%3Dapplication%252Fx-netcdf&amp;proxyContentType=true">
-    
+        <a href="{$status}">
 
-            bdba1751-aa01-4c88-af95-43687eae8363
+            <xsl:value-of select="$jobid" />
 
-    
         </a>
     
 </dd>
@@ -72,7 +72,7 @@
     
 
             
-                  Download ready
+                  Need to calculate/pass in
                 
 
     
@@ -86,7 +86,7 @@
     
 
             
-                    <a href="https://portal.aodn.org.au/proxy?url=http%3A%2F%2Fgeoserver-wps.aodn.org.au%2Fgeoserver%2Fows%3Fservice%3DWPS%26version%3D1.0.0%26request%3DGetExecutionResult%26executionId%3Dbdba1751-aa01-4c88-af95-43687eae8363%26outputId%3Dresult.nc%26mimetype%3Dapplication%252Fx-netcdf&amp;proxyContentType=true">IMOS download - bdba1751-aa01-4c88-af95-43687eae8363</a>
+                    <a href="{$status}">IMOS download - <xsl:value-of select="$jobid"/></a>
                 
 
     
