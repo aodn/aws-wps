@@ -1,9 +1,8 @@
 package au.org.aodn.aws.wps.operation;
 
-import au.org.aodn.aws.wps.status.EnumStatus;
-import au.org.aodn.aws.wps.status.ExecuteStatusBuilder;
-import au.org.aodn.aws.wps.status.S3StatusUpdater;
-import au.org.aodn.aws.wps.status.WpsConfig;
+import au.org.aodn.aws.util.EmailService;
+import au.org.aodn.aws.util.JobFileUtil;
+import au.org.aodn.aws.wps.status.*;
 import com.amazonaws.services.batch.AWSBatch;
 import com.amazonaws.services.batch.AWSBatchClientBuilder;
 import com.amazonaws.services.batch.model.SubmitJobRequest;
@@ -13,7 +12,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.UnsupportedEncodingException;
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import static au.org.aodn.aws.wps.status.WpsConfig.*;
 
@@ -40,6 +40,7 @@ public class ExecuteOperation implements Operation {
         //      status location
         String statusS3BucketName = WpsConfig.getConfig(STATUS_S3_BUCKET_CONFIG_KEY);
         String statusFileName = WpsConfig.getConfig(STATUS_S3_FILENAME_CONFIG_KEY);
+        String requestFileName = WpsConfig.getConfig(REQUEST_S3_FILENAME_CONFIG_KEY);
         String jobName = WpsConfig.getConfig(AWS_BATCH_JOB_NAME_CONFIG_KEY);
         String jobQueueName = WpsConfig.getConfig(AWS_BATCH_JOB_QUEUE_NAME_CONFIG_KEY);
         String awsRegion = WpsConfig.getConfig(AWS_REGION_CONFIG_KEY);
@@ -75,18 +76,32 @@ public class ExecuteOperation implements Operation {
         String jobId = result.getJobId();
 
         LOGGER.info("Job submitted.  Job ID : " + jobId);
+        LOGGER.info("Writing job request to S3");
+        S3JobFileUpdater s3JobFileUpdater = new S3JobFileUpdater(statusS3BucketName, statusFileName, requestFileName);
+        try {
+            s3JobFileUpdater.writeRequest(JobFileUtil.createXmlDocument(executeRequest), jobId);
+        } catch (UnsupportedEncodingException e) {
+            LOGGER.error(e.getMessage(), e);
+        }
 
         String statusDocument;
         ExecuteStatusBuilder statusBuilder = new ExecuteStatusBuilder(jobId, statusS3BucketName, statusFileName);
 
-        S3StatusUpdater statusUpdater = new S3StatusUpdater(statusS3BucketName, statusFileName);
         try {
             statusDocument = statusBuilder.createResponseDocument(EnumStatus.ACCEPTED, null, null, null);
-            statusUpdater.updateStatus(statusDocument, jobId);
+            s3JobFileUpdater.updateStatus(statusDocument, jobId);
+
+            EmailService emailService = new EmailService();
+            String callbackParams = parameterMap.get("callbackParams");
+            String email = callbackParams.substring(callbackParams.indexOf("=") + 1);
+            emailService.sendRegisteredJobEmail(email, jobId, "Job Report URL (Service not yet implemented)");
         } catch (UnsupportedEncodingException e) {
             LOGGER.error(e.getMessage(), e);
             //  Form failed status document
             statusDocument = statusBuilder.createResponseDocument(EnumStatus.FAILED, "Failed to create status file : " + e.getMessage(), "StatusFileError", null);
+        } catch (Exception e) {
+            LOGGER.error(e.getMessage(), e);
+            statusDocument = statusBuilder.createResponseDocument(EnumStatus.FAILED, e.getMessage(), "EmailError", null);
         }
 
         return statusDocument;

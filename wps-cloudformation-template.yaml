@@ -5,6 +5,9 @@ Parameters:
   s3configKey:
     Type: String
     Default: 'config/'
+  s3jobKey:
+    Type: String
+    Default: 'jobs/'
   s3LambdaCodeFilename:
     Type: String
     Description: "Lambda code file name ex: request-handler-0.01-lambda-package.zip"
@@ -23,6 +26,12 @@ Parameters:
   templatesURL:
     Type: String
     Default: 'https://raw.githubusercontent.com/aodn/aws-wps/master/wps-common/src/main/resources/config/templates.xml'
+  provenanceTemplateGriddedURL:
+    Type: String
+    Default: 'https://raw.githubusercontent.com/aodn/aws-wps/master/wps-common/src/main/resources/config/provenance_template_gridded.ftl'
+  provenanceTemplateNonGriddedURL:
+    Type: String
+    Default: 'https://raw.githubusercontent.com/aodn/aws-wps/master/wps-common/src/main/resources/config/provenance_template_non_gridded.ftl'
   jobName:
     Type: String
     Default: 'javaduck'
@@ -32,16 +41,17 @@ Parameters:
   jobMemory:
     Type: String
     Default: '2000'
+  jobExpirationInDays:
+    Type: Number
+    Default: 7
   maxVCPUs:
     Type: String
     Default: '4'
   geoserver:
     Type: String
+    Description: Geoserver from which to source files to aggregate
   dockerImage:
     Type: String
-  geoserverWpsEndpoint:
-    Type: String
-    Default: 'http://geoserver-wps.aodn.org.au/geoserver/wps'
   chunkSize:
     Type: String
     Default: '1024'
@@ -60,6 +70,24 @@ Parameters:
   workerRetryIntervalMs:
     Type: String
     Default: '60000'
+  acmCertificate:
+    Type: String
+    Default: ''
+    Description: An Amazon Certificate Manager Certificate ARN located in US-East-1 region.
+  hostedZoneName:
+    Type: String
+    Default: ''
+    Description: A Route53 Hosted Zone name, without the trailing dot. To be used for the API Gateway endpoint
+  domainName:
+    Type: String
+    Default: ''
+    Description: The API Gateway endpoint's domain name, exluding the hostedZoneName section
+  geonetworkCatalogueURL:
+    Type: String
+    Default: 'https://catalogue-imos.aodn.org.au/geonetwork'
+  geonetworkLayerSearchField:
+    Type: String
+    Default: 'layer'
   environment:
     Type: String
     Default: dev
@@ -95,10 +123,13 @@ Mappings:
     Filename:
       outputWithoutExtension: "output"
       status: "status.xml"
+      request: "request.xml"
       templates: "templates.xml"
       getCapabilities: "GetCapabilities.ftl"
       gogoduck: "GoGoDuck.xml"
       netcdf: "NetcdfOutput.xml"
+      provenanceTemplateGridded: "provenance_template_gridded.ftl"
+      provenanceTemplateNonGridded: "provenance_template_non_gridded.ftl"
   production:
     ap-southeast-2:
       vpc: vpc-7302ee16
@@ -124,6 +155,7 @@ Conditions:
   CreatePersistentBucket: !And
     - !Equals [!Ref createPersistentBucket, true]
     - !Not [!Condition CreateEphemeralBucket]
+  CreateCustomDomainName: !Not [ !Equals [!Ref domainName, '']]
 Resources:
   PersistentS3Bucket:
     Type: "AWS::S3::Bucket"
@@ -131,12 +163,36 @@ Resources:
     DeletionPolicy: "Retain"
     Properties:
       BucketName: !FindInMap [EnvironmentMap, !Ref environment, BucketName]
+      LifecycleConfiguration:
+        Rules:
+          - Id: "JobExpirationInDays"
+            Prefix: !Ref s3jobKey
+            Status: Enabled
+            ExpirationInDays: !Ref jobExpirationInDays
   EphemeralS3Bucket:
     Type: "AWS::S3::Bucket"
     Condition: CreateEphemeralBucket
     DeletionPolicy: "Delete"
     Properties:
       BucketName: !Join ["-", [!FindInMap [EnvironmentMap, !Ref environment, BucketName], !Ref 'AWS::StackName']]
+      LifecycleConfiguration:
+        Rules:
+          - Id: "JobExpirationInDays"
+            Prefix: !Ref s3jobKey
+            Status: Enabled
+            ExpirationInDays: !Ref jobExpirationInDays
+  S3BucketPolicy:
+    Type: "AWS::S3::BucketPolicy"
+    Properties:
+      Bucket: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
+      PolicyDocument:
+        Statement:
+          -
+            Action:
+              - "s3:GetObject"
+            Effect: "Allow"
+            Resource: !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]],"/", !Ref s3jobKey,"*"]]
+            Principal: "*"
   BatchServiceRole:
     Type: 'AWS::IAM::Role'
     Properties:
@@ -245,6 +301,9 @@ Resources:
             Name: "STATUS_S3_FILENAME"
             Value: !FindInMap [ConfigurationFileMap, "Filename", "status"]
           -
+            Name: "REQUEST_S3_FILENAME"
+            Value: !FindInMap [ConfigurationFileMap, "Filename", "request"]
+          -
             Name: "AWS_REGION"
             Value: !Ref "AWS::Region"
           -
@@ -277,6 +336,21 @@ Resources:
           -
             Name: "RETRY_INTERVAL_MS"
             Value: !Ref workerRetryIntervalMs
+          -
+            Name: "GEONETWORK_CATALOGUE_URL"
+            Value: !Ref geonetworkCatalogueURL
+          -
+            Name: "GEONETWORK_LAYER_SEARCH_FIELD"
+            Value: !Ref geonetworkLayerSearchField
+          -
+            Name: "PROVENANCE_TEMPLATE_S3_KEY"
+            Value: !Join [ "", [ !Ref s3configKey,  !FindInMap [ConfigurationFileMap, "Filename", "provenanceTemplateGridded"]] ]
+          -
+            Name: "JOB_EXPIRATION_IN_DAYS"
+            Value: !Ref jobExpirationInDays
+          -
+            Name: "JOB_S3_KEY"
+            Value: !Ref s3jobKey
       RetryStrategy:
         Attempts: 2
     DependsOn:  JobInstanceRole
@@ -329,7 +403,7 @@ Resources:
       Name: !Join ["",["WPS API-",!Ref  "AWS::StackName" ]]
       Description: API used for WPS requests
       FailOnWarnings: true
-  LambdaPermission:
+  LambdaRequestHandlerPermission:
     Type: AWS::Lambda::Permission
     Properties:
       Action: lambda:invokeFunction
@@ -339,6 +413,8 @@ Resources:
   WPSApiStage:
     DependsOn:
       - ApiGatewayAccount
+      - ApiDeployment
+      - WPSApi
     Type: AWS::ApiGateway::Stage
     Properties:
       DeploymentId: !Ref ApiDeployment
@@ -350,6 +426,30 @@ Resources:
           ResourcePath: /*
       RestApiId: !Ref WPSApi
       StageName: LATEST
+  WPSApiDomainName:
+    Type: 'AWS::ApiGateway::DomainName'
+    Condition: CreateCustomDomainName
+    Properties:
+      CertificateArn: !Ref acmCertificate
+      DomainName: !Join ['.', [!Ref domainName,!Ref hostedZoneName]]
+  DomainToAPIMapping:
+    Type: 'AWS::ApiGateway::BasePathMapping'
+    Condition: CreateCustomDomainName
+    Properties:
+      DomainName: !Ref WPSApiDomainName
+      RestApiId: !Ref WPSApi
+      Stage: LATEST
+  Route53RecordSet:
+    Type: 'AWS::Route53::RecordSet'
+    Condition: CreateCustomDomainName
+    Properties:
+      AliasTarget:
+        DNSName:
+          Fn::GetAtt: [ 'WPSApiDomainName', 'DistributionDomainName' ]
+        HostedZoneId: 'Z2FDTNDATAQYW2'
+      HostedZoneName: !Join ['', [!Ref hostedZoneName, '.']]
+      Name: !Join ['.', [!Ref domainName, !Ref hostedZoneName]]
+      Type: "A"
   ApiGatewayCloudWatchLogsRole:
     Type: AWS::IAM::Role
     Properties:
@@ -396,7 +496,7 @@ Resources:
       ParentId: !GetAtt WPSApi.RootResourceId
       PathPart: wps
   WPSRequest:
-    DependsOn: LambdaPermission
+    DependsOn: LambdaRequestHandlerPermission
     Type: AWS::ApiGateway::Method
     Properties:
       AuthorizationType: NONE
@@ -420,7 +520,7 @@ Resources:
       FunctionName: !Sub 'wps-request-handler-${AWS::StackName}'
       Handler: 'au.org.aodn.aws.wps.lambda.WpsLambdaRequestHandler'
       MemorySize: 512
-      Role: !GetAtt LambdaExecutionRole.Arn
+      Role: !GetAtt LambdaRequestHandlerExecutionRole.Arn
       Runtime: java8
       Timeout: 60
       Code:
@@ -433,13 +533,16 @@ Resources:
           AWS_BATCH_JOB_DEFINITION_NAME: !Select [1, !Split ["/", !Ref JobDefinition]]
           STATUS_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
           STATUS_S3_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "status"]
+          REQUEST_S3_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "request"]
           GET_CAPABILITIES_TEMPLATE_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
           GET_CAPABILITIES_TEMPLATE_S3_KEY: !Join [ "", [ !Ref s3configKey, !FindInMap [ConfigurationFileMap, "Filename", "getCapabilities"] ] ]
           DESCRIBE_PROCESS_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
           DESCRIBE_PROCESS_S3_KEY_PREFIX: !Ref s3configKey
-          GEOSERVER_WPS_ENDPOINT_URL: !Ref geoserverWpsEndpoint
+          GEOSERVER_WPS_ENDPOINT_URL: !If [CreateCustomDomainName, !Join ['', ['https://', !Ref domainName, '.', !Ref hostedZoneName,'/wps']], !Join ['', ['https://', !Ref WPSApi, '.execute-api.',!Ref "AWS::Region",'.amazonaws.com','/LATEST/wps']]]
+          AWS_REGION_SES: !Ref awsRegionSes
+          JOB_S3_KEY: !Ref s3jobKey
     DependsOn: S3PutConfigurationFiles
-  LambdaExecutionRole:
+  LambdaRequestHandlerExecutionRole:
     Type: 'AWS::IAM::Role'
     Properties:
       AssumeRolePolicyDocument:
@@ -474,6 +577,14 @@ Resources:
                   !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]]],
                   !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]],"/*"]]
                 ]
+              -
+                Effect: "Allow"
+                Action: ["ses:SendEmail"]
+                Resource: ["*"]
+              -
+                Effect: "Allow"
+                Action: ["ses:SendRawEmail"]
+                Resource: ["*"]
   S3PutObjectFunctionRole:
     Type: 'AWS::IAM::Role'
     Properties:
@@ -608,6 +719,10 @@ Resources:
           HTTP_FILE_NETCDF_OUTPUT_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "netcdf"]
           HTTP_FILE_TEMPLATES: !Ref templatesURL
           HTTP_FILE_TEMPLATES_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "templates"]
+          HTTP_FILE_PROVENANCE_TEMPLATE_GRIDDED: !Ref provenanceTemplateGriddedURL
+          HTTP_FILE_PROVENANCE_TEMPLATE_GRIDDED_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "provenanceTemplateGridded"]
+          HTTP_FILE_PROVENANCE_TEMPLATE_NON_GRIDDED: !Ref provenanceTemplateNonGriddedURL
+          HTTP_FILE_PROVENANCE_TEMPLATE_NON_GRIDDED_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "provenanceTemplateNonGridded"]
           HTTP_FILE_WPS_REQUEST_HANDLER: !Ref s3LambdaCodeURL
           HTTP_FILE_WPS_REQUEST_HANDLER_FILENAME: !Ref s3LambdaCodeFilename
   S3PutConfigurationFiles:
@@ -615,6 +730,8 @@ Resources:
     Properties:
       ServiceToken: !GetAtt S3PutObjectFunction.Arn
 Outputs:
+  GatewayApiUrl:
+    Value: !If [CreateCustomDomainName, !Join ['', ['https://', !Ref domainName, '.', !Ref hostedZoneName,'/wps']], !Join ['', ['https://', !Ref WPSApi, '.execute-api.',!Ref "AWS::Region",'.amazonaws.com','/LATEST/wps']]]
   ComputeEnvironmentArn:
     Value: !Ref ComputeEnvironment
   JobQueueArn:

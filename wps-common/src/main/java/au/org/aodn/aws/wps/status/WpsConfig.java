@@ -26,6 +26,7 @@ public class WpsConfig {
     public static final String AWS_REGION_SES_CONFIG_KEY = "AWS_REGION_SES";
     public static final String STATUS_S3_BUCKET_CONFIG_KEY = "STATUS_S3_BUCKET";
     public static final String STATUS_S3_FILENAME_CONFIG_KEY = "STATUS_S3_FILENAME";
+    public static final String REQUEST_S3_FILENAME_CONFIG_KEY = "REQUEST_S3_FILENAME";
     public static final String OUTPUT_S3_BUCKET_CONFIG_KEY = "OUTPUT_S3_BUCKET";
     public static final String OUTPUT_S3_FILENAME_CONFIG_KEY = "OUTPUT_S3_FILENAME";
 
@@ -39,6 +40,8 @@ public class WpsConfig {
     public static final String AWS_BATCH_JOB_ID_CONFIG_KEY = "AWS_BATCH_JOB_ID";
     public static final String AWS_BATCH_CE_NAME_CONFIG_KEY = "AWS_BATCH_CE_NAME";
     public static final String AWS_BATCH_JQ_NAME_CONFIG_KEY = "AWS_BATCH_JQ_NAME";
+    public static final String AWS_BATCH_JOB_S3_KEY = "JOB_S3_KEY";
+    private static final String AWS_BATCH_JOB_EXPIRATION_IN_DAYS = "JOB_EXPIRATION_IN_DAYS";
 
     public static final String GET_CAPABILITIES_TEMPLATE_S3_BUCKET_CONFIG_KEY = "GET_CAPABILITIES_TEMPLATE_S3_BUCKET";
     public static final String GET_CAPABILITIES_TEMPLATE_S3_KEY_CONFIG_KEY = "GET_CAPABILITIES_TEMPLATE_S3_KEY";
@@ -72,6 +75,8 @@ public class WpsConfig {
     private static final String COMPLETED_JOB_EMAIL_KEY = "jobCompleteEmail";
     private static final String FAILED_JOB_EMAIL_SUBJECT_KEY = "jobFailedEmailSubject";
     private static final String FAILED_JOB_EMAIL_KEY = "jobFailedEmail";
+    private static final String REGISTERED_JOB_EMAIL_SUBJECT_KEY = "jobRegisteredEmailSubject";
+    private static final String REGISTERED_JOB_EMAIL_KEY = "jobRegisteredEmail";
 
     public static final String APPLICATION_PROPERTIES = "application.properties";
     private static Properties properties = null;
@@ -101,11 +106,14 @@ public class WpsConfig {
             setProperty(properties, AWS_REGION_SES_CONFIG_KEY);
             setProperty(properties, STATUS_S3_BUCKET_CONFIG_KEY);
             setProperty(properties, STATUS_S3_FILENAME_CONFIG_KEY);
+            setProperty(properties, REQUEST_S3_FILENAME_CONFIG_KEY);
             setProperty(properties, OUTPUT_S3_BUCKET_CONFIG_KEY);
             setProperty(properties, OUTPUT_S3_FILENAME_CONFIG_KEY);
             setProperty(properties, AWS_BATCH_JOB_ID_CONFIG_KEY);
             setProperty(properties, AWS_BATCH_CE_NAME_CONFIG_KEY);
             setProperty(properties, AWS_BATCH_JQ_NAME_CONFIG_KEY);
+            setProperty(properties, AWS_BATCH_JOB_EXPIRATION_IN_DAYS);
+            setProperty(properties, AWS_BATCH_JOB_S3_KEY);
 
             setProperty(properties, GET_CAPABILITIES_TEMPLATE_S3_BUCKET_CONFIG_KEY);
             setProperty(properties, GET_CAPABILITIES_TEMPLATE_S3_KEY_CONFIG_KEY);
@@ -141,6 +149,18 @@ public class WpsConfig {
 
     public static String getConfig(String configName) {
         return getProperties().getProperty(configName);
+    }
+
+    public static String getJobExpiration() {
+        return String.format("%s days", getConfig(AWS_BATCH_JOB_EXPIRATION_IN_DAYS));
+    }
+
+    public static String getRegisteredJobEmailSubjectTemplate() {
+        return String.format("%s/%s", getConfig(EMAIL_TEMPLATES_LOCATION_KEY), getConfig(REGISTERED_JOB_EMAIL_SUBJECT_KEY));
+    }
+
+    public static String getRegisteredJobEmailTemplate() {
+        return String.format("%s/%s", getConfig(EMAIL_TEMPLATES_LOCATION_KEY), getConfig(REGISTERED_JOB_EMAIL_KEY));
     }
 
     public static String getCompletedJobEmailSubjectTemplate() {

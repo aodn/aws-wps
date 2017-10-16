@@ -1,5 +1,6 @@
 package au.org.aodn.aws.wps.status;
 
+import au.org.aodn.aws.util.JobFileUtil;
 import net.opengis.ows._1.CodeType;
 import net.opengis.wps._1_0.*;
 import org.slf4j.Logger;
@@ -11,6 +12,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
+
+import static au.org.aodn.aws.wps.status.WpsConfig.AWS_BATCH_JOB_S3_KEY;
 
 public class ExecuteStatusBuilder {
 
@@ -24,7 +27,8 @@ public class ExecuteStatusBuilder {
     private static final  Logger LOGGER = LoggerFactory.getLogger(ExecuteStatusBuilder.class);
 
     public ExecuteStatusBuilder(String jobId, String s3Bucket, String filename) {
-        this.location = WpsConfig.getS3ExternalURL(s3Bucket, jobId + "/" + filename);;
+        String jobPrefix = WpsConfig.getConfig(AWS_BATCH_JOB_S3_KEY);
+        this.location = WpsConfig.getS3ExternalURL(s3Bucket, jobPrefix + jobId + "/" + filename);
         this.jobId = jobId;
         this.s3Bucket = s3Bucket;
         this.filename = filename;
@@ -54,7 +58,7 @@ public class ExecuteStatusBuilder {
         StatusType status = new StatusType();
 
         try {
-            status.setCreationTime(StatusHelper.getCreationDate());
+            status.setCreationTime(JobFileUtil.getCreationDate());
         } catch (DatatypeConfigurationException e) {
             throw new RuntimeException(e);
         }
@@ -83,12 +87,12 @@ public class ExecuteStatusBuilder {
         response.setStatus(status);
 
 
-        return StatusHelper.createResponseXmlDocument(response);
+        return JobFileUtil.createXmlDocument(response);
     }
 
     private ProcessFailedType getProcessFailedType(String message, String code) {
         ProcessFailedType failed = new ProcessFailedType();
-        failed.setExceptionReport(StatusHelper.getExceptionReport(message, code));
+        failed.setExceptionReport(JobFileUtil.getExceptionReport(message, code));
         return failed;
     }
 
