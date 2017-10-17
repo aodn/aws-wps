@@ -14,6 +14,18 @@ Parameters:
   requestHandlerCodeURL:
     Type: String
     Default: "http://imos-binary.s3-website-ap-southeast-2.amazonaws.com/jobs/aws_wps_prod/aws_wps_prod-latest.zip" # Need to update the default value
+  requestHandlerApiPath:
+    Type: String
+    Default: 'wps'
+  jobStatusApiPath:
+    Type: String
+    Default: 'jobStatus'
+  requestHandlerApiStage:
+    Type: String
+    Default: 'LATEST'
+  jobStatusApiStage:
+    Type: String
+    Default: 'LATEST'
   jobStatusFilename:
     Type: String
     Description: "Lambda code file name ex: job-status-service-0.01-lambda-package.zip"
@@ -433,7 +445,7 @@ Resources:
           LoggingLevel: INFO
           ResourcePath: /*
       RestApiId: !Ref RequestHandlerRestApi
-      StageName: LATEST
+      StageName: !Ref requestHandlerApiStage
   RequestHandlerDomainName:
     Type: 'AWS::ApiGateway::DomainName'
     Condition: CreateRequestHandlerDomainName
@@ -446,7 +458,7 @@ Resources:
     Properties:
       DomainName: !Ref RequestHandlerDomainName
       RestApiId: !Ref RequestHandlerRestApi
-      Stage: LATEST
+      Stage: !Ref requestHandlerApiStage
   RequestHandlerRoute53RecordSet:
     Type: 'AWS::Route53::RecordSet'
     Condition: CreateRequestHandlerDomainName
@@ -501,7 +513,7 @@ Resources:
     Properties:
       RestApiId: !Ref RequestHandlerRestApi
       ParentId: !GetAtt RequestHandlerRestApi.RootResourceId
-      PathPart: wps
+      PathPart: !Ref requestHandlerApiPath
   RequestHandlerApiGatewayRequest:
     DependsOn: RequestHandlerLambdaPermission
     Type: AWS::ApiGateway::Method
@@ -552,7 +564,7 @@ Resources:
           GET_CAPABILITIES_TEMPLATE_S3_KEY: !Join [ "", [ !Ref s3configKey, !FindInMap [ConfigurationFileMap, "Filename", "getCapabilities"] ] ]
           DESCRIBE_PROCESS_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
           DESCRIBE_PROCESS_S3_KEY_PREFIX: !Ref s3configKey
-          GEOSERVER_WPS_ENDPOINT_URL: !If [CreateRequestHandlerDomainName, !Join ['', ['https://', !Ref requestHandlerDomainName, '.', !Ref hostedZoneName,'/wps']], !Join ['', ['https://', !Ref RequestHandlerRestApi, '.execute-api.',!Ref "AWS::Region",'.amazonaws.com','/LATEST/wps']]]
+          GEOSERVER_WPS_ENDPOINT_URL: !If [CreateRequestHandlerDomainName, !Join ['', ['https://', !Ref requestHandlerDomainName, '.', !Ref hostedZoneName,'/wps']], !Join ['', ['https://', !Ref RequestHandlerRestApi, '.execute-api.',!Ref "AWS::Region",'.amazonaws.com','/', !Ref requestHandlerApiStage,'/', !Ref requestHandlerApiPath]]]
           AWS_REGION_SES: !Ref awsRegionSes
           JOB_S3_KEY: !Ref s3jobKey
     DependsOn: S3PutConfigurationFiles
@@ -769,7 +781,7 @@ Resources:
           LoggingLevel: INFO
           ResourcePath: /*
       RestApiId: !Ref JobStatusRestApi
-      StageName: LATEST
+      StageName: !Ref jobStatusApiStage
   JobStatusDomainName:
     Type: AWS::ApiGateway::DomainName
     Condition: CreateJobStatusDomainName
@@ -782,7 +794,7 @@ Resources:
     Properties:
       DomainName: !Ref JobStatusDomainName
       RestApiId: !Ref JobStatusRestApi
-      Stage: LATEST
+      Stage: !Ref jobStatusApiStage
   JobStatusRoute53RecordSet:
     Type: AWS::Route53::RecordSet
     Condition: CreateJobStatusDomainName
@@ -805,7 +817,7 @@ Resources:
     Properties:
       RestApiId: !Ref JobStatusRestApi
       ParentId: !GetAtt JobStatusRestApi.RootResourceId
-      PathPart: jobStatus
+      PathPart: !Ref jobStatusApiPath
   JobStatusApiGatewayRequest:
     DependsOn: JobStatusLambdaPermission
     Type: AWS::ApiGateway::Method
@@ -889,9 +901,9 @@ Resources:
                 ]
 Outputs:
   RequestHandlerApiGatewayUrl:
-    Value: !If [CreateRequestHandlerDomainName, !Join ['', ['https://', !Ref requestHandlerDomainName, '.', !Ref hostedZoneName,'/wps']], !Join ['', ['https://', !Ref RequestHandlerRestApi, '.execute-api.',!Ref "AWS::Region",'.amazonaws.com','/LATEST/wps']]]
+    Value: !If [CreateRequestHandlerDomainName, !Join ['', ['https://', !Ref requestHandlerDomainName, '.', !Ref hostedZoneName,'/', !Ref requestHandlerApiPath]], !Join ['', ['https://', !Ref RequestHandlerRestApi, '.execute-api.',!Ref "AWS::Region",'.amazonaws.com','/', !Ref requestHandlerApiStage,'/', !Ref requestHandlerApiPath]]]
   JobStatusApiGatewayUrl:
-    Value: !If [CreateJobStatusDomainName, !Join ['', ['https://', !Ref jobStatusDomainName, '.', !Ref hostedZoneName,'/wps']], !Join ['', ['https://', !Ref JobStatusRestApi, '.execute-api.',!Ref "AWS::Region",'.amazonaws.com','/LATEST/jobStatus']]]
+    Value: !If [CreateJobStatusDomainName, !Join ['', ['https://', !Ref jobStatusDomainName, '.', !Ref hostedZoneName,'/', !Ref jobStatusApiPath]], !Join ['', ['https://', !Ref JobStatusRestApi, '.execute-api.',!Ref "AWS::Region",'.amazonaws.com','/', !Ref jobStatusApiStage,'/', !Ref jobStatusApiPath]]]
   ComputeEnvironmentArn:
     Value: !Ref ComputeEnvironment
   JobQueueArn:
