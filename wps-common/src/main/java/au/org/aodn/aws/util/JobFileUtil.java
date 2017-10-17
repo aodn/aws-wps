@@ -22,7 +22,7 @@ import java.util.TimeZone;
 
 public class JobFileUtil {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(StatusHelper.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(JobFileUtil.class);
 
     /**
      * Generate an XML string from a XML type object.

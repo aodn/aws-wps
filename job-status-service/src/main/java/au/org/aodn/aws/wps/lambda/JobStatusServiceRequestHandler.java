@@ -160,10 +160,9 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
                 }
 
 
-                //  Execute the request
+                //  Build the response
                 responseBuilder.isBase64Encoded(false);
-                //  TODO: Headers?
-                //responseBuilder.header();
+                responseBuilder.header("Content-Type", requestedStatusFormat.mimeType());
                 responseBuilder.statusCode(HttpStatus.SC_OK);
                 responseBuilder.body(responseBody);
 
