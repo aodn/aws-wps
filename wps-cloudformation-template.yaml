@@ -591,6 +591,7 @@ Resources:
     Properties:
       Code:
         ZipFile: |
+          import os
           import boto3
           import cfnresponse
 
@@ -599,18 +600,12 @@ Resources:
                    if event['RequestType'] == 'Delete':
                        s3 = boto3.resource('s3')
                        bucket = s3.Bucket(os.getenv('BUCKET'))
-                       deleteBatch = []
                        print "Deleting"
-                       for obj in bucket.objects.all():
-                           deleteBatch.append({'Key': obj.key})
-                           if len(deleteBatch) >= 999:
-                               bucket.delete_objects(Delete={'Objects': deleteBatch})
-                               deleteBatch = []
-                       bucket.delete_objects(Delete={'Objects': deleteBatch})
+                       bucket.objects.all().delete()
                    cfnresponse.send(event, context, cfnresponse.SUCCESS, {'Data': 'OK'}, 'EmptyBucketLambdaFunction')
                except Exception as e:
-                 print(e)
-                 return cfnresponse.send(event, context, cfnresponse.FAILED, {'Data': 'OK'}, 'EmptyBucketLambdaFunction')
+                  print(e)
+                  cfnresponse.send(event, context, cfnresponse.FAILED, {'Data': 'OK'}, 'EmptyBucketLambdaFunction')
       Description: "Used to put objects into S3."
       FunctionName: !Sub 'EmptyBucket-${AWS::StackName}'
       Handler: 'index.handler'
