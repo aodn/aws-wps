@@ -2,7 +2,7 @@ package au.org.aodn.aws.wps.lambda;
 
 import au.org.aodn.aws.util.JobFileUtil;
 import au.org.aodn.aws.util.S3Utils;
-import au.org.aodn.aws.wps.JobStatusFormatEnum;
+import au.org.aodn.aws.wps.status.JobStatusFormatEnum;
 import au.org.aodn.aws.wps.JobStatusRequest;
 import au.org.aodn.aws.wps.JobStatusRequestParameterParser;
 import au.org.aodn.aws.wps.JobStatusResponse;

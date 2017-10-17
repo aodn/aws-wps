@@ -1,4 +1,4 @@
-package au.org.aodn.aws.wps;
+package au.org.aodn.aws.wps.status;
 
 public enum JobStatusFormatEnum {
     XML("application/xml"),

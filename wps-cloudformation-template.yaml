@@ -380,6 +380,9 @@ Resources:
           -
             Name: "JOB_S3_KEY"
             Value: !Ref s3jobKey
+          -
+            Name: "STATUS_SERVICE_ENDPOINT"
+            Value: !If [CreateJobStatusDomainName, !Join ['', ['https://', !Ref jobStatusDomainName, '.', !Ref hostedZoneName,'/', !Ref jobStatusApiPath]], !Join ['', ['https://', !Ref JobStatusRestApi, '.execute-api.',!Ref "AWS::Region",'.amazonaws.com','/', !Ref jobStatusApiStage,'/', !Ref jobStatusApiPath]]]
       RetryStrategy:
         Attempts: 2
     DependsOn:  JobInstanceRole
@@ -569,6 +572,7 @@ Resources:
           GEOSERVER_WPS_ENDPOINT_URL: !If [CreateRequestHandlerDomainName, !Join ['', ['https://', !Ref requestHandlerDomainName, '.', !Ref hostedZoneName,'/wps']], !Join ['', ['https://', !Ref RequestHandlerRestApi, '.execute-api.',!Ref "AWS::Region",'.amazonaws.com','/', !Ref requestHandlerApiStage,'/', !Ref requestHandlerApiPath]]]
           AWS_REGION_SES: !Ref awsRegionSes
           JOB_S3_KEY: !Ref s3jobKey
+          STATUS_SERVICE_ENDPOINT: !If [CreateJobStatusDomainName, !Join ['', ['https://', !Ref jobStatusDomainName, '.', !Ref hostedZoneName,'/', !Ref jobStatusApiPath]], !Join ['', ['https://', !Ref JobStatusRestApi, '.execute-api.',!Ref "AWS::Region",'.amazonaws.com','/', !Ref jobStatusApiStage,'/', !Ref jobStatusApiPath]]]
     DependsOn: S3PutConfigurationFiles
   RequestHandlerLambdaExecutionRole:
     Type: 'AWS::IAM::Role'
