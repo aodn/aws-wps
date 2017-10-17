@@ -585,47 +585,47 @@ Resources:
                 Effect: "Allow"
                 Action: ["ses:SendRawEmail"]
                 Resource: ["*"]
-  LambdaClearBucketFunction:
+  EmptyBucketLambdaFunction:
     Type: "AWS::Lambda::Function"
     Condition: CreateEphemeralBucket
     Properties:
       Code:
         ZipFile: |
-          import json
           import boto3
-          import os
           import cfnresponse
 
           def handler(event, context):
-               print event
-               print context
                try:
-
-                 if event['RequestType'] == 'Delete':
-                   s3 = boto3.resource('s3')
-                   bucket = s3.Bucket(os.getenv('BUCKET'))
-                   for obj in bucket.objects.all():
-                     obj.delete()
-                 cfnresponse.send(event, context, cfnresponse.SUCCESS, {'Data': 'OK'}, 'CustomResourcePhysicalID')
+                   if event['RequestType'] == 'Delete':
+                       s3 = boto3.resource('s3')
+                       bucket = s3.Bucket(os.getenv('BUCKET'))
+                       deleteBatch = []
+                       print "Deleting"
+                       for obj in bucket.objects.all():
+                           deleteBatch.append({'Key': obj.key})
+                           if len(deleteBatch) >= 999:
+                               bucket.delete_objects(Delete={'Objects': deleteBatch})
+                               deleteBatch = []
+                       bucket.delete_objects(Delete={'Objects': deleteBatch})
+                   cfnresponse.send(event, context, cfnresponse.SUCCESS, {'Data': 'OK'}, 'EmptyBucketLambdaFunction')
                except Exception as e:
                  print(e)
-                 return cfnresponse.send(event, context, cfnresponse.FAILED, {'Data': 'OK'}, 'CustomResourcePhysicalID')
-
+                 return cfnresponse.send(event, context, cfnresponse.FAILED, {'Data': 'OK'}, 'EmptyBucketLambdaFunction')
       Description: "Used to put objects into S3."
-      FunctionName: !Sub 'ClearBucket-${AWS::StackName}'
+      FunctionName: !Sub 'EmptyBucket-${AWS::StackName}'
       Handler: 'index.handler'
-      Role: !GetAtt LambdaClearBucketFunctionRole.Arn
+      Role: !GetAtt EmptyBucketLambdaFunctionRole.Arn
       Runtime: python2.7
       Timeout: 60
       Environment:
         Variables:
           BUCKET: !Ref EphemeralS3Bucket
-  ClearBucket:
-    Type: "Custom::ClearBucket"
+  EmptyBucket:
+    Type: "Custom::EmptyBucket"
     Condition: CreateEphemeralBucket
     Properties:
-      ServiceToken: !GetAtt LambdaClearBucketFunction.Arn
-  LambdaClearBucketFunctionRole:
+      ServiceToken: !GetAtt EmptyBucketLambdaFunction.Arn
+  EmptyBucketLambdaFunctionRole:
       Type: 'AWS::IAM::Role'
       Condition: CreateEphemeralBucket
       Properties:
@@ -655,7 +655,10 @@ Resources:
               Version: 2012-10-17
               Statement:
                 - Effect: "Allow"
-                  Action: "s3:*"
+                  Action: [
+                    "s3:Delete*",
+                    "s3:List*"
+                  ]
                   Resource: [
                     !Join ["", ["arn:aws:s3:::", !Ref EphemeralS3Bucket]],
                     !Join ["", ["arn:aws:s3:::", !Ref EphemeralS3Bucket, "/*"]]
@@ -689,7 +692,7 @@ Resources:
             Version: 2012-10-17
             Statement:
               - Effect: "Allow"
-                Action: "s3:*"
+                Action: "s3:Put*"
                 Resource: [
                   !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]]],
                   !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]], "/*"]]
@@ -715,7 +718,7 @@ Resources:
 
           def handler(event, context):
              try:
-                 if event['RequestType'] == 'Create':
+                 if event['RequestType'] == 'Create' or event['RequestType'] == 'Update':
                      for env_var in os.environ:
                          env_var_value = os.getenv(env_var)
                          print('Environment Variable {} : {}'.format(env_var, env_var_value))
@@ -725,13 +728,10 @@ Resources:
                          filename = os.getenv('{}_{}'.format(env_var, filename_suffix))
                          if env_var.startswith(http_prefix) and not env_var.endswith(filename_suffix) and env_var_value != http_prefix:
                              put(filename, env_var_value)
-
-                     print(event)
-                     print(context)
-                 return cfnresponse.send(event, context, cfnresponse.SUCCESS, responseData, 'CustomResourcePhysicalID')
+                 return cfnresponse.send(event, context, cfnresponse.SUCCESS, responseData, 'S3PutObjectFunction')
              except Exception as e:
                print(e)
-               return cfnresponse.send(event, context, cfnresponse.FAILED, responseData, 'CustomResourcePhysicalID')
+               return cfnresponse.send(event, context, cfnresponse.FAILED, responseData, 'S3PutObjectFunction')
 
 
           def put(filename, url):
