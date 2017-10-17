@@ -11,6 +11,7 @@ Parameters:
   requestHandlerFilename:
     Type: String
     Description: "Lambda code file name ex: request-handler-0.01-lambda-package.zip"
+    Default: "request-handler-lambda-package.zip"
   requestHandlerCodeURL:
     Type: String
     Default: "http://imos-binary.s3-website-ap-southeast-2.amazonaws.com/jobs/aws_wps_prod/aws_wps_prod-latest.zip" # Need to update the default value
@@ -29,6 +30,7 @@ Parameters:
   jobStatusFilename:
     Type: String
     Description: "Lambda code file name ex: job-status-service-0.01-lambda-package.zip"
+    Default: "job-status-service-lambda-package.zip"
   jobStatusCodeURL:
     Type: String
     Default: "http://imos-binary.s3-website-ap-southeast-2.amazonaws.com/jobs/aws_wps_prod/aws_wps_prod-latest.zip" # Need to update the default value
