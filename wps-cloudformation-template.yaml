@@ -374,7 +374,11 @@ Resources:
             Value: !Ref s3jobKey
           -
             Name: "STATUS_SERVICE_ENDPOINT"
-            Value: !If [CreateWpsApiGatewayDomainName, !Join ['', ['https://', !Ref wpsDomainName, '.', !Ref hostedZoneName,'/', !Join ['/', [!Ref requestHandlerApiPath, !Ref jobStatusApiPath]]]], !Join ['', ['https://', !Ref WPSRestApi, '.execute-api.',!Ref "AWS::Region",'.amazonaws.com','/', !Ref wpsApiStage,'/', !Join ['/', [!Ref requestHandlerApiPath, !Ref jobStatusApiPath]]]]]
+            Value: !If [
+              CreateWpsApiGatewayDomainName,
+              !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}/${jobStatusApiPath}',
+              !Sub 'https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}/${jobStatusApiPath}'
+            ]
       RetryStrategy:
         Attempts: 2
     DependsOn:  JobInstanceRole
@@ -561,10 +565,18 @@ Resources:
           GET_CAPABILITIES_TEMPLATE_S3_KEY: !Join [ "", [ !Ref s3configKey, !FindInMap [ConfigurationFileMap, "Filename", "getCapabilities"] ] ]
           DESCRIBE_PROCESS_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
           DESCRIBE_PROCESS_S3_KEY_PREFIX: !Ref s3configKey
-          GEOSERVER_WPS_ENDPOINT_URL: !If [CreateWpsApiGatewayDomainName, !Join ['', ['https://', !Ref wpsDomainName, '.', !Ref hostedZoneName,'/wps']], !Join ['', ['https://', !Ref WPSRestApi, '.execute-api.',!Ref "AWS::Region",'.amazonaws.com','/', !Ref wpsApiStage,'/', !Ref requestHandlerApiPath]]]
+          GEOSERVER_WPS_ENDPOINT_URL: !If [
+            CreateWpsApiGatewayDomainName,
+            !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}',
+            !Sub 'https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}'
+          ]
           AWS_REGION_SES: !Ref awsRegionSes
           JOB_S3_KEY: !Ref s3jobKey
-          STATUS_SERVICE_ENDPOINT: !If [CreateWpsApiGatewayDomainName, !Join ['', ['https://', !Ref wpsDomainName, '.', !Ref hostedZoneName,'/', !Join ['/', [!Ref requestHandlerApiPath, !Ref jobStatusApiPath]]]], !Join ['', ['https://', !Ref WPSRestApi, '.execute-api.',!Ref "AWS::Region",'.amazonaws.com','/', !Ref wpsApiStage,'/', !Join ['/', [!Ref requestHandlerApiPath, !Ref jobStatusApiPath]]]]]
+          STATUS_SERVICE_ENDPOINT: !If [
+            CreateWpsApiGatewayDomainName,
+            !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}/${jobStatusApiPath}',
+            !Sub 'https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}/${jobStatusApiPath}'
+          ]
     DependsOn: S3PutConfigurationFiles
   RequestHandlerLambdaExecutionRole:
     Type: 'AWS::IAM::Role'
@@ -849,9 +861,17 @@ Resources:
       ServiceToken: !GetAtt S3PutObjectLambdaFunction.Arn
 Outputs:
   RequestHandlerApiGatewayUrl:
-    Value: !If [CreateWpsApiGatewayDomainName, !Join ['', ['https://', !Ref wpsDomainName, '.', !Ref hostedZoneName,'/', !Ref requestHandlerApiPath]], !Join ['', ['https://', !Ref WPSRestApi, '.execute-api.',!Ref "AWS::Region",'.amazonaws.com','/', !Ref wpsApiStage,'/', !Ref requestHandlerApiPath]]]
+    Value: !If [
+      CreateWpsApiGatewayDomainName,
+      !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}',
+      !Sub 'https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}'
+    ]
   JobStatusApiGatewayUrl:
-    Value: !If [CreateWpsApiGatewayDomainName, !Join ['', ['https://', !Ref wpsDomainName, '.', !Ref hostedZoneName,'/', !Join ['/', [!Ref requestHandlerApiPath, !Ref jobStatusApiPath]]]], !Join ['', ['https://', !Ref WPSRestApi, '.execute-api.',!Ref "AWS::Region",'.amazonaws.com','/', !Ref wpsApiStage,'/', !Join ['/', [!Ref requestHandlerApiPath, !Ref jobStatusApiPath]]]]]
+    Value: !If [
+      CreateWpsApiGatewayDomainName,
+      !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}/${jobStatusApiPath}',
+      !Sub 'https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}/${jobStatusApiPath}'
+    ]
   ComputeEnvironmentArn:
     Value: !Ref ComputeEnvironment
   JobQueueArn:
