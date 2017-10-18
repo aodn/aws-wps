@@ -8,12 +8,32 @@ Parameters:
   s3jobKey:
     Type: String
     Default: 'jobs/'
-  s3LambdaCodeFilename:
+  requestHandlerFilename:
     Type: String
     Description: "Lambda code file name ex: request-handler-0.01-lambda-package.zip"
-  s3LambdaCodeURL:
+    Default: "request-handler-lambda-package.zip"
+  requestHandlerCodeURL:
     Type: String
-    Default: "http://imos-binary.s3-website-ap-southeast-2.amazonaws.com/jobs/aws_wps_prod/aws_wps_prod-latest.zip"
+    Default: "http://imos-binary.s3-website-ap-southeast-2.amazonaws.com/jobs/aws_wps_prod/aws_wps_prod-latest.zip" # Need to update the default value
+  requestHandlerApiPath:
+    Type: String
+    Default: 'wps'
+  jobStatusApiPath:
+    Type: String
+    Default: 'jobStatus'
+  wpsApiStage:
+    Type: String
+    Default: 'LATEST'
+  jobStatusFilename:
+    Type: String
+    Description: "Lambda code file name ex: job-status-service-0.01-lambda-package.zip"
+    Default: "job-status-service-lambda-package.zip"
+  jobStatusCodeURL:
+    Type: String
+    Default: "http://imos-binary.s3-website-ap-southeast-2.amazonaws.com/jobs/aws_wps_prod/aws_wps_prod-latest.zip" # Need to update the default value
+  jobStatusHtmlTransformURL:
+    Type: String
+    Default: 'https://raw.githubusercontent.com/aodn/aws-wps/master/wps-common/src/main/resources/job_status_html_transform.xsl'
   getCapabilitiesURL:
     Type: String
     Default: 'https://raw.githubusercontent.com/aodn/aws-wps/master/wps-common/src/main/resources/config/GetCapabilities.ftl'
@@ -36,40 +56,40 @@ Parameters:
     Type: String
     Default: 'javaduck'
   jobVCPUs:
-    Type: String
-    Default: '1'
+    Type: Number
+    Default: 1
   jobMemory:
-    Type: String
-    Default: '2000'
+    Type: Number
+    Default: 2000
   jobExpirationInDays:
     Type: Number
     Default: 7
   maxVCPUs:
-    Type: String
-    Default: '4'
+    Type: Number
+    Default: 4
   geoserver:
     Type: String
     Description: Geoserver from which to source files to aggregate
   dockerImage:
     Type: String
   chunkSize:
-    Type: String
-    Default: '1024'
+    Type: Number
+    Default: 1024
   workerDownloadAttempts:
-    Type: String
-    Default: '4'
+    Type: Number
+    Default: 4
   workerDownloadDirectory:
     Type: String
     Default: '/tmp'
   workerLocalStorageLimitBytes:
-    Type: String
-    Default: '104857600'
+    Type: Number
+    Default: 104857600
   workerPoolSize:
-    Type: String
-    Default: '8'
+    Type: Number
+    Default: 8
   workerRetryIntervalMs:
-    Type: String
-    Default: '60000'
+    Type: Number
+    Default: 60000
   acmCertificate:
     Type: String
     Default: ''
@@ -78,10 +98,10 @@ Parameters:
     Type: String
     Default: ''
     Description: A Route53 Hosted Zone name, without the trailing dot. To be used for the API Gateway endpoint
-  domainName:
+  wpsDomainName:
     Type: String
     Default: ''
-    Description: The API Gateway endpoint's domain name, exluding the hostedZoneName section
+    Description: The WPS API Gateway endpoint's domain name, exluding the hostedZoneName section
   geonetworkCatalogueURL:
     Type: String
     Default: 'https://catalogue-imos.aodn.org.au/geonetwork'
@@ -123,6 +143,7 @@ Mappings:
     Filename:
       outputWithoutExtension: "output"
       status: "status.xml"
+      statusTransform: "job_status_html_transform.xsl"
       request: "request.xml"
       templates: "templates.xml"
       getCapabilities: "GetCapabilities.ftl"
@@ -155,7 +176,7 @@ Conditions:
   CreatePersistentBucket: !And
     - !Equals [!Ref createPersistentBucket, true]
     - !Not [!Condition CreateEphemeralBucket]
-  CreateCustomDomainName: !Not [ !Equals [!Ref domainName, '']]
+  CreateWpsApiGatewayDomainName: !Not [ !Equals [!Ref wpsDomainName, '']]
 Resources:
   PersistentS3Bucket:
     Type: "AWS::S3::Bucket"
@@ -351,6 +372,13 @@ Resources:
           -
             Name: "JOB_S3_KEY"
             Value: !Ref s3jobKey
+          -
+            Name: "STATUS_SERVICE_ENDPOINT"
+            Value: !If [
+              CreateWpsApiGatewayDomainName,
+              !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}/${jobStatusApiPath}',
+              !Sub 'https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}/${jobStatusApiPath}'
+            ]
       RetryStrategy:
         Attempts: 2
     DependsOn:  JobInstanceRole
@@ -397,60 +425,52 @@ Resources:
         FromPort: '-1'
         ToPort: '-1'
         CidrIp: 0.0.0.0/0
-  WPSApi:
+  WPSRestApi:
     Type: AWS::ApiGateway::RestApi
     Properties:
       Name: !Join ["",["WPS API-",!Ref  "AWS::StackName" ]]
       Description: API used for WPS requests
       FailOnWarnings: true
-  LambdaRequestHandlerPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      Action: lambda:invokeFunction
-      FunctionName: !GetAtt LambdaRequestHandler.Arn
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Join ["", ["arn:aws:execute-api:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":", !Ref WPSApi, "/*"]]
-  WPSApiStage:
+  WpsApiGatewayStage:
     DependsOn:
-      - ApiGatewayAccount
-      - ApiDeployment
-      - WPSApi
+      - WpsApiGatewayAccount
+      - WpsApiGatewayDeployment
+      - WPSRestApi
     Type: AWS::ApiGateway::Stage
     Properties:
-      DeploymentId: !Ref ApiDeployment
+      DeploymentId: !Ref WpsApiGatewayDeployment
       MethodSettings:
         -
           DataTraceEnabled: true
           HttpMethod: GET
           LoggingLevel: INFO
           ResourcePath: /*
-      RestApiId: !Ref WPSApi
-      StageName: LATEST
-  WPSApiDomainName:
+      RestApiId: !Ref WPSRestApi
+      StageName: !Ref wpsApiStage    
+  WpsApiGatewayDomainName:
     Type: 'AWS::ApiGateway::DomainName'
-    Condition: CreateCustomDomainName
+    Condition: CreateWpsApiGatewayDomainName
     Properties:
       CertificateArn: !Ref acmCertificate
-      DomainName: !Join ['.', [!Ref domainName,!Ref hostedZoneName]]
-  DomainToAPIMapping:
+      DomainName: !Join ['.', [!Ref wpsDomainName,!Ref hostedZoneName]]
+  WpsDomainToAPIMapping:
     Type: 'AWS::ApiGateway::BasePathMapping'
-    Condition: CreateCustomDomainName
+    Condition: CreateWpsApiGatewayDomainName
     Properties:
-      DomainName: !Ref WPSApiDomainName
-      RestApiId: !Ref WPSApi
-      Stage: LATEST
-  Route53RecordSet:
+      DomainName: !Ref WpsApiGatewayDomainName
+      RestApiId: !Ref WPSRestApi
+      Stage: !Ref wpsApiStage
+  WpsRoute53RecordSet:
     Type: 'AWS::Route53::RecordSet'
-    Condition: CreateCustomDomainName
+    Condition: CreateWpsApiGatewayDomainName
     Properties:
       AliasTarget:
-        DNSName:
-          Fn::GetAtt: [ 'WPSApiDomainName', 'DistributionDomainName' ]
+        DNSName: !GetAtt WpsApiGatewayDomainName.DistributionDomainName
         HostedZoneId: 'Z2FDTNDATAQYW2'
       HostedZoneName: !Join ['', [!Ref hostedZoneName, '.']]
-      Name: !Join ['.', [!Ref domainName, !Ref hostedZoneName]]
+      Name: !Join ['.', [!Ref wpsDomainName, !Ref hostedZoneName]]
       Type: "A"
-  ApiGatewayCloudWatchLogsRole:
+  WpsApiGatewayCloudWatchLogsRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -478,25 +498,25 @@ Resources:
                 - 'logs:GetLogEvents'
                 - 'logs:FilterLogEvent'
               Resource: '*'
-  ApiGatewayAccount:
+  WpsApiGatewayAccount:
     Type: AWS::ApiGateway::Account
     Properties:
-      CloudWatchRoleArn: !GetAtt ApiGatewayCloudWatchLogsRole.Arn
-  ApiDeployment:
+      CloudWatchRoleArn: !GetAtt WpsApiGatewayCloudWatchLogsRole.Arn
+  WpsApiGatewayDeployment:
     Type: AWS::ApiGateway::Deployment
     DependsOn:
-      - WPSRequest
+      - RequestHandlerApiGatewayRequest
+      - JobStatusApiGatewayRequest
     Properties:
-      RestApiId: !Ref WPSApi
-      StageName: DummyStage
-  WPSResource:
+      RestApiId: !Ref WPSRestApi
+  RequestHandlerApiGatewayResource:
     Type: AWS::ApiGateway::Resource
     Properties:
-      RestApiId: !Ref WPSApi
-      ParentId: !GetAtt WPSApi.RootResourceId
-      PathPart: wps
-  WPSRequest:
-    DependsOn: LambdaRequestHandlerPermission
+      RestApiId: !Ref WPSRestApi
+      ParentId: !GetAtt WPSRestApi.RootResourceId
+      PathPart: !Ref requestHandlerApiPath
+  RequestHandlerApiGatewayRequest:
+    DependsOn: RequestHandlerLambdaPermission
     Type: AWS::ApiGateway::Method
     Properties:
       AuthorizationType: NONE
@@ -505,27 +525,34 @@ Resources:
         Type: AWS_PROXY
         IntegrationHttpMethod: POST
         Uri: !Join ["",
-          ["arn:aws:apigateway:", !Ref "AWS::Region", ":lambda:path/2015-03-31/functions/", !GetAtt LambdaRequestHandler.Arn, "/invocations"]
+          ["arn:aws:apigateway:", !Ref "AWS::Region", ":lambda:path/2015-03-31/functions/", !GetAtt RequestHandlerLambdaFunction.Arn, "/invocations"]
         ]
         IntegrationResponses:
           - StatusCode: 200
-      ResourceId: !Ref WPSResource
-      RestApiId: !Ref WPSApi
+      ResourceId: !Ref RequestHandlerApiGatewayResource
+      RestApiId: !Ref WPSRestApi
       MethodResponses:
         - StatusCode: 200
-  LambdaRequestHandler:
+  RequestHandlerLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:invokeFunction
+      FunctionName: !GetAtt RequestHandlerLambdaFunction.Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join ["", ["arn:aws:execute-api:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":", !Ref WPSRestApi, "/*"]]
+  RequestHandlerLambdaFunction:
     Type: 'AWS::Lambda::Function'
     Properties:
       Description: Make a wps request
       FunctionName: !Sub 'wps-request-handler-${AWS::StackName}'
       Handler: 'au.org.aodn.aws.wps.lambda.WpsLambdaRequestHandler'
       MemorySize: 512
-      Role: !GetAtt LambdaRequestHandlerExecutionRole.Arn
+      Role: !GetAtt RequestHandlerLambdaExecutionRole.Arn
       Runtime: java8
       Timeout: 60
       Code:
         S3Bucket: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
-        S3Key: !Join [ "", [ !Ref s3configKey,  !Ref s3LambdaCodeFilename] ]
+        S3Key: !Join [ "", [ !Ref s3configKey,  !Ref requestHandlerFilename] ]
       Environment:
         Variables:
           AWS_BATCH_JOB_NAME: !Ref jobName
@@ -538,11 +565,20 @@ Resources:
           GET_CAPABILITIES_TEMPLATE_S3_KEY: !Join [ "", [ !Ref s3configKey, !FindInMap [ConfigurationFileMap, "Filename", "getCapabilities"] ] ]
           DESCRIBE_PROCESS_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
           DESCRIBE_PROCESS_S3_KEY_PREFIX: !Ref s3configKey
-          GEOSERVER_WPS_ENDPOINT_URL: !If [CreateCustomDomainName, !Join ['', ['https://', !Ref domainName, '.', !Ref hostedZoneName,'/wps']], !Join ['', ['https://', !Ref WPSApi, '.execute-api.',!Ref "AWS::Region",'.amazonaws.com','/LATEST/wps']]]
+          GEOSERVER_WPS_ENDPOINT_URL: !If [
+            CreateWpsApiGatewayDomainName,
+            !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}',
+            !Sub 'https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}'
+          ]
           AWS_REGION_SES: !Ref awsRegionSes
           JOB_S3_KEY: !Ref s3jobKey
+          STATUS_SERVICE_ENDPOINT: !If [
+            CreateWpsApiGatewayDomainName,
+            !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}/${jobStatusApiPath}',
+            !Sub 'https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}/${jobStatusApiPath}'
+          ]
     DependsOn: S3PutConfigurationFiles
-  LambdaRequestHandlerExecutionRole:
+  RequestHandlerLambdaExecutionRole:
     Type: 'AWS::IAM::Role'
     Properties:
       AssumeRolePolicyDocument:
@@ -585,7 +621,96 @@ Resources:
                 Effect: "Allow"
                 Action: ["ses:SendRawEmail"]
                 Resource: ["*"]
-  S3PutObjectFunctionRole:
+  JobStatusApiGatewayResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref WPSRestApi
+      ParentId: !Ref RequestHandlerApiGatewayResource
+      PathPart: !Ref jobStatusApiPath
+  JobStatusApiGatewayRequest:
+    DependsOn:
+      - JobStatusLambdaPermission
+      - RequestHandlerApiGatewayRequest
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: ANY
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Join ["",
+          ["arn:aws:apigateway:", !Ref "AWS::Region", ":lambda:path/2015-03-31/functions/", !GetAtt JobStatusLambdaFunction.Arn, "/invocations"]
+        ]
+        IntegrationResponses:
+          - StatusCode: 200
+      ResourceId: !Ref JobStatusApiGatewayResource
+      RestApiId: !Ref WPSRestApi
+      MethodResponses:
+        - StatusCode: 200
+  JobStatusLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:invokeFunction
+      FunctionName: !GetAtt JobStatusLambdaFunction.Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join ["", ["arn:aws:execute-api:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":", !Ref WPSRestApi, "/*"]]
+  JobStatusLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: Return wps job status
+      FunctionName: !Sub 'wps-job-status-${AWS::StackName}'
+      Handler: 'au.org.aodn.aws.wps.lambda.JobStatusServiceRequestHandler'
+      MemorySize: 512
+      Role: !GetAtt JobStatusLambdaExecutionRole.Arn
+      Runtime: java8
+      Timeout: 60
+      Code:
+        S3Bucket: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
+        S3Key: !Join [ "", [ !Ref s3configKey,  !Ref jobStatusFilename] ]
+      Environment:
+        Variables:
+          STATUS_HTML_XSL_S3_KEY: !Join ['', [!Ref s3configKey, !FindInMap [ConfigurationFileMap, "Filename", "statusTransform"]]]
+          STATUS_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
+          STATUS_S3_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "status"]
+          STATUS_SERVICE_CONFIG_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
+          JOB_S3_KEY: !Ref s3jobKey
+    DependsOn: S3PutConfigurationFiles
+  JobStatusLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+        - 'arn:aws:iam::aws:policy/AWSBatchFullAccess'
+      Policies:
+        - PolicyName: PublishVersion
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'lambda:PublishVersion'
+                Resource: '*'
+        - PolicyName: S3Access
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: "Allow"
+                Action: "s3:*"
+                Resource: [
+                  !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]]],
+                  !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]],"/*"]]
+                ]                
+  S3PutObjectLambdaFunctionRole:
     Type: 'AWS::IAM::Role'
     Properties:
       AssumeRolePolicyDocument:
@@ -619,7 +744,7 @@ Resources:
                   !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]]],
                   !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]], "/*"]]
                 ]
-  S3PutObjectFunction:
+  S3PutObjectLambdaFunction:
     Type: "AWS::Lambda::Function"
     Properties:
       Code:
@@ -702,8 +827,9 @@ Resources:
       Description: "Used to put objects into S3."
       FunctionName: !Sub 'S3PutObject-${AWS::StackName}'
       Handler: 'index.handler'
-      Role: !GetAtt S3PutObjectFunctionRole.Arn
+      Role: !GetAtt S3PutObjectLambdaFunctionRole.Arn
       Runtime: python2.7
+      MemorySize: 256
       Timeout: 60
       Environment:
         Variables:
@@ -723,15 +849,29 @@ Resources:
           HTTP_FILE_PROVENANCE_TEMPLATE_GRIDDED_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "provenanceTemplateGridded"]
           HTTP_FILE_PROVENANCE_TEMPLATE_NON_GRIDDED: !Ref provenanceTemplateNonGriddedURL
           HTTP_FILE_PROVENANCE_TEMPLATE_NON_GRIDDED_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "provenanceTemplateNonGridded"]
-          HTTP_FILE_WPS_REQUEST_HANDLER: !Ref s3LambdaCodeURL
-          HTTP_FILE_WPS_REQUEST_HANDLER_FILENAME: !Ref s3LambdaCodeFilename
+          HTTP_FILE_WPS_REQUEST_HANDLER: !Ref requestHandlerCodeURL
+          HTTP_FILE_WPS_REQUEST_HANDLER_FILENAME: !Ref requestHandlerFilename
+          HTTP_FILE_WPS_JOB_STATUS: !Ref jobStatusCodeURL
+          HTTP_FILE_WPS_JOB_STATUS_FILENAME: !Ref jobStatusFilename
+          HTTP_FILE_JOB_STATUS_TRANSFORM: !Ref jobStatusHtmlTransformURL
+          HTTP_FILE_JOB_STATUS_TRANSFORM_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "statusTransform"]
   S3PutConfigurationFiles:
     Type: "Custom::S3PutObject"
     Properties:
-      ServiceToken: !GetAtt S3PutObjectFunction.Arn
+      ServiceToken: !GetAtt S3PutObjectLambdaFunction.Arn
 Outputs:
-  GatewayApiUrl:
-    Value: !If [CreateCustomDomainName, !Join ['', ['https://', !Ref domainName, '.', !Ref hostedZoneName,'/wps']], !Join ['', ['https://', !Ref WPSApi, '.execute-api.',!Ref "AWS::Region",'.amazonaws.com','/LATEST/wps']]]
+  RequestHandlerApiGatewayUrl:
+    Value: !If [
+      CreateWpsApiGatewayDomainName,
+      !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}',
+      !Sub 'https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}'
+    ]
+  JobStatusApiGatewayUrl:
+    Value: !If [
+      CreateWpsApiGatewayDomainName,
+      !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}/${jobStatusApiPath}',
+      !Sub 'https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}/${jobStatusApiPath}'
+    ]
   ComputeEnvironmentArn:
     Value: !Ref ComputeEnvironment
   JobQueueArn:

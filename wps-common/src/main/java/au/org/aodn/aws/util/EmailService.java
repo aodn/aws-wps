@@ -67,25 +67,25 @@ public class EmailService {
         }
     }
 
-    public void sendRegisteredJobEmail(String to, String uuid, String jobReportUrl) throws EmailException {
+    public void sendRegisteredJobEmail(String to, String uuid) throws EmailException {
         String subject = templateManager.getRegisteredJobSubject(uuid);
-        String textBody = templateManager.getRegisteredEmailContent(uuid, jobReportUrl);
+        String textBody = templateManager.getRegisteredEmailContent(uuid);
         String from = WpsConfig.getConfig(FROM_EMAIL);
 
         sendEmail(to, from, subject, null, textBody);
     }
 
-    public void sendCompletedJobEmail(String to, String uuid, String jobReportUrl, String expirationPeriod) throws EmailException {
+    public void sendCompletedJobEmail(String to, String uuid, String outputFileLocation, String expirationPeriod) throws EmailException {
         String subject = templateManager.getCompletedJobSubject(uuid);
-        String textBody = templateManager.getCompletedEmailContent(uuid, jobReportUrl, expirationPeriod);
+        String textBody = templateManager.getCompletedEmailContent(uuid, expirationPeriod, outputFileLocation);
         String from = WpsConfig.getConfig(FROM_EMAIL);
 
         sendEmail(to, from, subject, null, textBody);
     }
 
-    public void sendFailedJobEmail(String to, String uuid, String jobReportUrl) throws EmailException {
+    public void sendFailedJobEmail(String to, String uuid) throws EmailException {
         String subject = templateManager.getFailedJobSubject(uuid);
-        String textBody = templateManager.getFailedEmailContent(uuid, jobReportUrl);
+        String textBody = templateManager.getFailedEmailContent(uuid);
         String from = WpsConfig.getConfig(FROM_EMAIL);
 
         sendEmail(to, from, subject, null, textBody);

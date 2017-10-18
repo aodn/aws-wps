@@ -2,7 +2,7 @@ package au.org.aodn.aws.wps.lambda;
 
 import au.org.aodn.aws.util.JobFileUtil;
 import au.org.aodn.aws.util.S3Utils;
-import au.org.aodn.aws.wps.JobStatusFormatEnum;
+import au.org.aodn.aws.wps.status.JobStatusFormatEnum;
 import au.org.aodn.aws.wps.JobStatusRequest;
 import au.org.aodn.aws.wps.JobStatusRequestParameterParser;
 import au.org.aodn.aws.wps.JobStatusResponse;
@@ -92,9 +92,10 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
         try {
 
             String statusFilename = WpsConfig.getConfig(WpsConfig.STATUS_S3_FILENAME_CONFIG_KEY);
+            String jobPrefix = WpsConfig.getConfig(WpsConfig.AWS_BATCH_JOB_S3_KEY);
             String statusS3Bucket = WpsConfig.getConfig(WpsConfig.STATUS_S3_BUCKET_CONFIG_KEY);
 
-            String s3Key = jobId + "/" + statusFilename;
+            String s3Key = jobPrefix + jobId + "/" + statusFilename;
 
             //  Check for the existence of the status document
             AmazonS3 s3Client = AmazonS3ClientBuilder.defaultClient();

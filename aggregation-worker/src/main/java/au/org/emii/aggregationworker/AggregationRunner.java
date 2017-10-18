@@ -266,7 +266,7 @@ public class AggregationRunner implements CommandLineRunner {
 
             if (emailService != null) {
                 try {
-                    emailService.sendFailedJobEmail(email, batchJobId, "Job Report URL (Service not yet implemented)");
+                    emailService.sendFailedJobEmail(email, batchJobId);
                 } catch (EmailException ex) {
                     logger.error(ex.getMessage(), ex);
                 }

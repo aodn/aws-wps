@@ -4,7 +4,6 @@ import com.amazonaws.util.StringInputStream;
 import net.opengis.ows._1.ExceptionReport;
 import net.opengis.ows._1.ExceptionType;
 import net.opengis.wps._1_0.ExecuteResponse;
-import net.opengis.wps._1_0.ResponseBaseType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

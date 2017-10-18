@@ -62,8 +62,11 @@ public class WpsConfig {
 
     public static final String PROVENANCE_TEMPLATE_S3_KEY_CONFIG_KEY = "PROVENANCE_TEMPLATE_S3_KEY";
 
+    public static final String STATUS_SERVICE_JOB_ID_PARAMETER_NAME = "jobId";
+    public static final String STATUS_SERVICE_FORMAT_PARAMETER_NAME = "format";
     public static final String STATUS_SERVICE_CONFIG_S3_BUCKET_CONFIG_KEY = "STATUS_SERVICE_CONFIG_S3_BUCKET";
     public static final String STATUS_HTML_XSL_S3_KEY_CONFIG_KEY = "STATUS_HTML_XSL_S3_KEY";
+    public static final String STATUS_SERVICE_ENDPOINT_KEY = "STATUS_SERVICE_ENDPOINT";
 
     public static final String SITE_ACRONYM = "siteAcronym";
     public static final String EMAIL_SIGNATURE = "emailSignature";
@@ -135,6 +138,7 @@ public class WpsConfig {
             setProperty(properties, RETRY_INTERVAL_CONFIG_KEY);
             setProperty(properties, STATUS_SERVICE_CONFIG_S3_BUCKET_CONFIG_KEY);
             setProperty(properties, STATUS_HTML_XSL_S3_KEY_CONFIG_KEY);
+            setProperty(properties, STATUS_SERVICE_ENDPOINT_KEY);
         }
 
         return properties;
@@ -149,6 +153,19 @@ public class WpsConfig {
 
     public static String getConfig(String configName) {
         return getProperties().getProperty(configName);
+    }
+
+    public static String getStatusServiceHtmlEndpoint(String jobUuid) {
+        return getStatusServiceEndpoint(jobUuid, JobStatusFormatEnum.HTML.toString());
+    }
+
+    public static String getStatusServiceXmlEndpoint(String jobUuid) {
+        return getStatusServiceEndpoint(jobUuid, JobStatusFormatEnum.XML.toString());
+    }
+
+    public static String getStatusServiceEndpoint(String jobUuid, String format) {
+        String statusServiceEndpoint = getConfig(STATUS_SERVICE_ENDPOINT_KEY);
+        return String.format("%s?%s=%s&%s=%s", statusServiceEndpoint, STATUS_SERVICE_JOB_ID_PARAMETER_NAME, jobUuid, STATUS_SERVICE_FORMAT_PARAMETER_NAME, format);
     }
 
     public static String getJobExpiration() {

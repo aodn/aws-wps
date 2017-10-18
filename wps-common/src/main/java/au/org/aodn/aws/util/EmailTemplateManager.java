@@ -63,13 +63,13 @@ public class EmailTemplateManager {
         }
     }
 
-    public String getRegisteredEmailContent(String uuid, String jobReportUrl) throws EmailException {
+    public String getRegisteredEmailContent(String uuid) throws EmailException {
         try {
             Template t = velocityEngine.getTemplate(WpsConfig.getRegisteredJobEmailTemplate());
             VelocityContext context = new VelocityContext();
             context.put(UUID, uuid);
             context.put(SITE_ACRONYM, WpsConfig.getConfig(WpsConfig.SITE_ACRONYM));
-            context.put(JOB_REPORT_URL, jobReportUrl);
+            context.put(JOB_REPORT_URL, WpsConfig.getStatusServiceHtmlEndpoint(uuid));
             context.put(EMAIL_SIGNATURE, WpsConfig.getConfig(WpsConfig.EMAIL_SIGNATURE));
             context.put(CONTACT_EMAIL, WpsConfig.getConfig(WpsConfig.CONTACT_EMAIL));
             context.put(EMAIL_FOOTER, WpsConfig.getConfig(WpsConfig.EMAIL_FOOTER));
@@ -85,13 +85,13 @@ public class EmailTemplateManager {
         }
     }
 
-    public String getCompletedEmailContent(String uuid, String jobReportUrl, String expirationPeriod) throws EmailException {
+    public String getCompletedEmailContent(String uuid, String expirationPeriod, String outputFileLocation) throws EmailException {
         try {
             Template t = velocityEngine.getTemplate(WpsConfig.getCompletedJobEmailTemplate());
             VelocityContext context = new VelocityContext();
             context.put(UUID, uuid);
             context.put(SITE_ACRONYM, WpsConfig.getConfig(WpsConfig.SITE_ACRONYM));
-            context.put(JOB_REPORT_URL, jobReportUrl);
+            context.put(JOB_REPORT_URL, outputFileLocation);
             context.put(EXPIRATION_PERIOD, expirationPeriod);
             context.put(EMAIL_SIGNATURE, WpsConfig.getConfig(WpsConfig.EMAIL_SIGNATURE));
             context.put(CONTACT_EMAIL, WpsConfig.getConfig(WpsConfig.CONTACT_EMAIL));
@@ -108,12 +108,12 @@ public class EmailTemplateManager {
         }
     }
 
-    public String getFailedEmailContent(String uuid, String jobReportUrl) throws EmailException {
+    public String getFailedEmailContent(String uuid) throws EmailException {
         try {
             Template t = velocityEngine.getTemplate(WpsConfig.getFailedJobEmailTemplate());
             VelocityContext context = new VelocityContext();
             context.put(UUID, uuid);
-            context.put(JOB_REPORT_URL, jobReportUrl);
+            context.put(JOB_REPORT_URL, WpsConfig.getStatusServiceHtmlEndpoint(uuid));
             context.put(EMAIL_SIGNATURE, WpsConfig.getConfig(WpsConfig.EMAIL_SIGNATURE));
             context.put(CONTACT_EMAIL, WpsConfig.getConfig(WpsConfig.CONTACT_EMAIL));
             context.put(EMAIL_FOOTER, WpsConfig.getConfig(WpsConfig.EMAIL_FOOTER));

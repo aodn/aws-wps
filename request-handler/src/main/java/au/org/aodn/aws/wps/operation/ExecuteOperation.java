@@ -94,7 +94,7 @@ public class ExecuteOperation implements Operation {
             EmailService emailService = new EmailService();
             String callbackParams = parameterMap.get("callbackParams");
             String email = callbackParams.substring(callbackParams.indexOf("=") + 1);
-            emailService.sendRegisteredJobEmail(email, jobId, "Job Report URL (Service not yet implemented)");
+            emailService.sendRegisteredJobEmail(email, jobId);
         } catch (UnsupportedEncodingException e) {
             LOGGER.error(e.getMessage(), e);
             //  Form failed status document
