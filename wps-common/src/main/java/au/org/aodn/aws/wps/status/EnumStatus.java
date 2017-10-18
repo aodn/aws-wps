@@ -5,5 +5,5 @@ public enum EnumStatus {
     STARTED,
     PAUSED,
     SUCCEEDED,
-    FAILED;
+    FAILED
 }
