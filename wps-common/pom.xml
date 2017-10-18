@@ -77,9 +77,10 @@
                 </executions>
                 <configuration>
                     <sources>
-                        <source>src/main/xsd/wps/1.0.0/wpsAll.xsd</source>
-                        <source>src/main/xsd/aggregator/template_config.xsd</source>
+                        <source>src/main/resources/xsd/www.opengis.net/wps/1.0.0/wpsAll.xsd</source>
+                        <source>src/main/resources/xsd/aggregator/template_config.xsd</source>
                     </sources>
+                    <catalog>src/main/resources/xsd/catalog.xml</catalog>
                 </configuration>
             </plugin>
             <plugin>
