@@ -181,6 +181,9 @@ Resources:
             Prefix: !Ref s3jobKey
             Status: Enabled
             ExpirationInDays: !Ref jobExpirationInDays
+      Tags:
+        - Key: "EphemeralBucket"
+          Value: "true"
   S3BucketPolicy:
     Type: "AWS::S3::BucketPolicy"
     Properties:
@@ -600,6 +603,12 @@ Resources:
                    if event['RequestType'] == 'Delete':
                        s3 = boto3.resource('s3')
                        bucket = s3.Bucket(os.getenv('BUCKET'))
+                       # bool to check if bucket is flagged as ephemeral before touching it
+                       is_ephemeral = any([l for l in bucket.Tagging().tag_set if l['Key'] == 'EphemeralBucket' and l['Value'] == 'true'])
+
+                       if not is_ephemeral:
+                           raise Exception('Bucket is not ephemeral, will not delete')
+
                        print "Deleting"
                        bucket.objects.all().delete()
                    cfnresponse.send(event, context, cfnresponse.SUCCESS, {'Data': 'OK'}, 'EmptyBucketLambdaFunction')
@@ -652,7 +661,8 @@ Resources:
                 - Effect: "Allow"
                   Action: [
                     "s3:Delete*",
-                    "s3:List*"
+                    "s3:List*",
+                    "s3:Get*"
                   ]
                   Resource: [
                     !Join ["", ["arn:aws:s3:::", !Ref EphemeralS3Bucket]],
