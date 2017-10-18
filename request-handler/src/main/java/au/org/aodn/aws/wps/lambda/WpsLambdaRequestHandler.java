@@ -2,12 +2,18 @@ package au.org.aodn.aws.wps.lambda;
 
 import au.org.aodn.aws.wps.AwsApiRequest;
 import au.org.aodn.aws.wps.AwsApiResponse;
-import au.org.aodn.aws.wps.WpsRequestHandler;
+import au.org.aodn.aws.wps.AwsApiResponse.ResponseBuilder;
+import au.org.aodn.aws.wps.RequestParser;
+import au.org.aodn.aws.wps.RequestParserFactory;
 import au.org.aodn.aws.util.JobFileUtil;
+import au.org.aodn.aws.wps.operation.Operation;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
+import net.opengis.wps._1_0.ExecuteResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.xml.bind.JAXBContext;
 
 public class WpsLambdaRequestHandler implements RequestHandler<AwsApiRequest, AwsApiResponse> {
 
@@ -17,24 +23,45 @@ public class WpsLambdaRequestHandler implements RequestHandler<AwsApiRequest, Aw
     @Override
     public AwsApiResponse handleRequest(AwsApiRequest request, Context context) {
 
-        WpsRequestHandler handler = new WpsRequestHandler();
-        AwsApiResponse response;
+        ResponseBuilder responseBuilder = new ResponseBuilder();
 
         try {
-            //  Execute the request
-            response = handler.handleRequest(request);
+            JAXBContext jaxbContext = JAXBContext.newInstance(ExecuteResponse.class);
+            RequestParserFactory requestParserFactory = new RequestParserFactory(jaxbContext);
+            RequestParser requestParser = requestParserFactory.getRequestParser(request);
 
-        } catch (Exception ex) {
-            String message = "Exception running WPS Lambda function: " + ex.getMessage();
-            //  Bad stuff happened
-            LOGGER.info(message);
-            //  Send caller a WPS error response
-            AwsApiResponse.ResponseBuilder responseBuilder = new AwsApiResponse.ResponseBuilder();
+            if(requestParser != null) {
+                Operation operation = requestParser.getOperation();
+                if(operation != null) {
+                    LOGGER.info("Operation : " + operation.getClass());
+                    String result = operation.execute();
+                    LOGGER.info("Executed");
+                    responseBuilder.body(result);
+                }
+                else
+                {
+                    LOGGER.error("Operation : NULL.");
+                    responseBuilder.statusCode(500);
+                    String exceptionReportString = JobFileUtil.getExceptionReportString("No operation found.", "ExecutionError");
+                    responseBuilder.body(exceptionReportString);
+                }
+            }
+            else
+            {
+                LOGGER.error("Request parser is NULL.");
+                responseBuilder.statusCode(500);
+                String exceptionReportString = JobFileUtil.getExceptionReportString("Unable to build request parser.", "ExecutionError");
+                responseBuilder.body(exceptionReportString);
+            }
+        } catch (Exception e) {
+            LOGGER.error("Exception : " + e.getMessage(), e);
             responseBuilder.statusCode(500);
-            responseBuilder.body(JobFileUtil.getExceptionReportString(message, "WPSError"));
-            response = responseBuilder.build();
+            String exceptionReportString = JobFileUtil.getExceptionReportString(e.getMessage(), "ExecutionError");
+            responseBuilder.body(exceptionReportString);
         }
 
-        return response;
+        responseBuilder.header("Content-Type", "application/xml");
+
+        return responseBuilder.build();
     }
 }
