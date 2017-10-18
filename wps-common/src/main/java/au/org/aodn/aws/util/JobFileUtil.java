@@ -56,21 +56,29 @@ public class JobFileUtil {
         return DatatypeFactory.newInstance().newXMLGregorianCalendar(currentTime);
     }
 
-
     public static ExceptionReport getExceptionReport(String message, String code) {
+        return getExceptionReport(message, code, null);
+    }
+
+    public static ExceptionReport getExceptionReport(String message, String code, String locator) {
         ExceptionReport report = new ExceptionReport();
         ExceptionType type = new ExceptionType();
         //  TODO: externalise?
         report.setVersion("1.0.0");
         type.getExceptionText().add(message);
         type.setExceptionCode(code);
+        type.setLocator(locator);
         report.getException().add(type);
         return report;
     }
 
 
     public static String getExceptionReportString(String message, String code) {
-        ExceptionReport report = getExceptionReport(message, code);
+        return getExceptionReportString(message, code, null);
+    }
+
+    public static String getExceptionReportString(String message, String code, String locator) {
+        ExceptionReport report = getExceptionReport(message, code, locator);
         String responseDoc = null;
 
         JAXBContext context;
@@ -87,7 +95,6 @@ public class JobFileUtil {
         }
         return responseDoc;
     }
-
 
     /**
      * Create an ExecuteResponse object from a XML string
@@ -108,4 +115,5 @@ public class JobFileUtil {
             return null;
         }
     }
+
 }

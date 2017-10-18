@@ -75,6 +75,11 @@ public class DescribeProcessOperation implements Operation {
                 Region region = Region.getRegion(Regions.fromName(s3RegionName));
                 s3Client.setRegion(region);
 
+                if (!s3Client.doesObjectExist(processDescriptionsS3Bucket, xmlDocumentS3Key)) {
+                    return JobFileUtil.getExceptionReportString("No such process '" + processName + "'",
+                        "InvalidParameterValue", "identifier");
+                }
+
                 S3Object documentObject = s3Client.getObject(processDescriptionsS3Bucket, xmlDocumentS3Key);
                 S3ObjectInputStream contentStream = documentObject.getObjectContent();
 
