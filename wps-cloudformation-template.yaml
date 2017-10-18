@@ -610,7 +610,8 @@ Resources:
                            raise Exception('Bucket is not ephemeral, will not delete')
 
                        print "Deleting"
-                       bucket.objects.all().delete()
+                       bucket.objects.filter(Prefix=os.getenv('JOBS_KEY')).delete()
+                       bucket.objects.filter(Prefix=os.getenv('CONFIG_KEY')).delete()
                    cfnresponse.send(event, context, cfnresponse.SUCCESS, {'Data': 'OK'}, 'EmptyBucketLambdaFunction')
                except Exception as e:
                   print(e)
@@ -624,6 +625,8 @@ Resources:
       Environment:
         Variables:
           BUCKET: !Ref EphemeralS3Bucket
+          CONFIG_KEY: !Ref s3configKey
+          JOBS_KEY: !Ref s3jobKey
   EmptyBucket:
     Type: "Custom::EmptyBucket"
     Condition: CreateEphemeralBucket
