@@ -133,6 +133,7 @@ Mappings:
   EnvironmentMap:
     production:
       BucketName: "aws-wps-production"
+      AccountId: 104044260116
     systest:
       BucketName: "aws-wps-systest"
     sandbox:
@@ -172,7 +173,9 @@ Mappings:
         - subnet-eab65ea3
         - subnet-19956d7e
 Conditions:
-  CreateEphemeralBucket: !Equals [ !Ref environment, dev ]
+  CreateEphemeralBucket: !And
+    - !Equals [ !Ref environment, dev ]
+    - !Not [!Equals [!Ref 'AWS::AccountId', !FindInMap [EnvironmentMap, production, AccountId]]]
   CreatePersistentBucket: !And
     - !Equals [!Ref createPersistentBucket, true]
     - !Not [!Condition CreateEphemeralBucket]
@@ -208,7 +211,7 @@ Resources:
   S3BucketPolicy:
     Type: "AWS::S3::BucketPolicy"
     Properties:
-      Bucket: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
+      Bucket: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !If [CreatePersistentBucket, !Ref PersistentS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]]
       PolicyDocument:
         Statement:
           -
@@ -883,7 +886,7 @@ Resources:
       Timeout: 60
       Environment:
         Variables:
-          BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
+          BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !If [CreatePersistentBucket, !Ref PersistentS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]]
           CONFIG_LOCATION: !Ref s3configKey
           FILENAME_SUFFIX: 'FILENAME'
           HTTP_FILE_PREFIX: 'HTTP_FILE'
