@@ -53,7 +53,7 @@ public class DescribeProcessOperation implements Operation {
             ProcessDescriptions outputProcessDescriptions = new ProcessDescriptions();
             outputProcessDescriptions.setVersion("1.0.0");
             outputProcessDescriptions.setLang("en-US");
-            outputProcessDescriptions.setService("wps");
+            outputProcessDescriptions.setService("WPS");
 
             for (CodeType identifier : identifiers) {
                 //  The identifier passed will be prefixed with 'gs:' - ie: gs:GoGoDuck
