@@ -2,6 +2,7 @@ package au.org.aodn.aws.wps.operation;
 
 import au.org.aodn.aws.util.Utils;
 import au.org.aodn.aws.util.JobFileUtil;
+import au.org.aodn.aws.wps.exception.OGCException;
 import au.org.aodn.aws.wps.status.WpsConfig;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
@@ -39,8 +40,7 @@ public class DescribeProcessOperation implements Operation {
     }
 
     @Override
-    public String execute()
-    {
+    public String execute() throws OGCException {
         String processDescriptionsS3Bucket = WpsConfig.getConfig(WpsConfig.DESCRIBE_PROCESS_S3_BUCKET_CONFIG_KEY);
         String S3KeyPrefix = WpsConfig.getConfig(WpsConfig.DESCRIBE_PROCESS_S3_KEY_PREFIX_CONFIG_KEY);
         String s3RegionName = WpsConfig.getConfig(WpsConfig.AWS_REGION_CONFIG_KEY);
@@ -75,6 +75,11 @@ public class DescribeProcessOperation implements Operation {
                 Region region = Region.getRegion(Regions.fromName(s3RegionName));
                 s3Client.setRegion(region);
 
+                if (!s3Client.doesObjectExist(processDescriptionsS3Bucket, xmlDocumentS3Key)) {
+                    throw new OGCException("InvalidParameterValue", "identifier",
+                        "No such process '" + processName + "'");
+                }
+
                 S3Object documentObject = s3Client.getObject(processDescriptionsS3Bucket, xmlDocumentS3Key);
                 S3ObjectInputStream contentStream = documentObject.getObjectContent();
 
@@ -96,7 +101,7 @@ public class DescribeProcessOperation implements Operation {
                 } catch (Exception ex) {
                     //  Bad stuff - blow up!
                     LOGGER.error("Problem reading XML document for [" + identifier + "]", ex);
-                    return JobFileUtil.getExceptionReportString("Error retrieving process description: " + ex.getMessage(), "ProcessingError");
+                    throw new OGCException("ProcessingError", "Error retrieving process description: " + ex.getMessage());
                 }
             }
 
@@ -111,7 +116,7 @@ public class DescribeProcessOperation implements Operation {
             catch(Exception ex)
             {
                 LOGGER.error("Error forming process descriptions XML: " + ex.getMessage(), ex);
-                return JobFileUtil.getExceptionReportString("Error forming process descriptions XML: " + ex.getMessage(), "ProcessingError");
+                throw new OGCException("ProcessingError", "Error forming process descriptions XML: " + ex.getMessage());
             }
         }
 
