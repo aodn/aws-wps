@@ -449,7 +449,7 @@ Resources:
           LoggingLevel: INFO
           ResourcePath: /*
       RestApiId: !Ref WPSRestApi
-      StageName: !Ref wpsApiStage    
+      StageName: !Ref wpsApiStage
   WpsApiGatewayDomainName:
     Type: 'AWS::ApiGateway::DomainName'
     Condition: CreateWpsApiGatewayDomainName
@@ -462,7 +462,6 @@ Resources:
     Properties:
       DomainName: !Ref WpsApiGatewayDomainName
       RestApiId: !Ref WPSRestApi
-      Stage: !Ref wpsApiStage
   WpsRoute53RecordSet:
     Type: 'AWS::Route53::RecordSet'
     Condition: CreateWpsApiGatewayDomainName
