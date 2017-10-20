@@ -57,24 +57,6 @@
     <build>
         <plugins>
             <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>jaxb2-maven-plugin</artifactId>
-                <version>2.2</version>
-                <executions>
-                    <execution>
-                        <id>xjc</id>
-                        <goals>
-                            <goal>xjc</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <sources>
-                        <source>src/main/xsd/wps/1.0.0/wpsAll.xsd</source>
-                    </sources>
-                </configuration>
-            </plugin>
-            <plugin>
                 <!--  Note: Normally, this plugin would be run using
                 "mvn compile assembly:single" but the execution
                 clause below binds it to the normal 'package' lifecycle phase
