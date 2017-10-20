@@ -501,7 +501,7 @@ Resources:
                 - 'logs:DescribeLogStreams'
                 - 'logs:PutLogEvents'
                 - 'logs:GetLogEvents'
-                - 'logs:FilterLogEvent'
+                - 'logs:FilterLogEvents'
               Resource: '*'
   WpsApiGatewayAccount:
     Type: AWS::ApiGateway::Account
