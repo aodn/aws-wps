@@ -10,7 +10,7 @@ import au.org.aodn.aws.util.JobFileUtil;
 import au.org.aodn.aws.wps.operation.Operation;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
-import net.opengis.wps._1_0.ExecuteResponse;
+import net.opengis.wps.v_1_0_0.ExecuteResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -2,7 +2,7 @@ package au.org.aodn.aws.wps.operation;
 
 import au.org.aodn.aws.util.JobFileUtil;
 import au.org.aodn.aws.wps.status.WpsConfig;
-import net.opengis.wps._1_0.GetCapabilities;
+import net.opengis.wps.v_1_0_0.GetCapabilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

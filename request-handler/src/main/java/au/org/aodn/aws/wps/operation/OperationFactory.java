@@ -1,8 +1,8 @@
 package au.org.aodn.aws.wps.operation;
 
-import net.opengis.wps._1_0.DescribeProcess;
-import net.opengis.wps._1_0.Execute;
-import net.opengis.wps._1_0.GetCapabilities;
+import net.opengis.wps.v_1_0_0.DescribeProcess;
+import net.opengis.wps.v_1_0_0.Execute;
+import net.opengis.wps.v_1_0_0.GetCapabilities;
 
 public class OperationFactory {
     public static Operation getInstance(Object request) {
