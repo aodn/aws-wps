@@ -7,7 +7,12 @@ import com.amazonaws.services.batch.AWSBatch;
 import com.amazonaws.services.batch.AWSBatchClientBuilder;
 import com.amazonaws.services.batch.model.SubmitJobRequest;
 import com.amazonaws.services.batch.model.SubmitJobResult;
-import net.opengis.wps._1_0.*;
+import net.opengis.wps.v_1_0_0.DataInputsType;
+import net.opengis.wps.v_1_0_0.DataType;
+import net.opengis.wps.v_1_0_0.Execute;
+import net.opengis.wps.v_1_0_0.InputType;
+import net.opengis.wps.v_1_0_0.OutputDefinitionType;
+import net.opengis.wps.v_1_0_0.ResponseFormType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

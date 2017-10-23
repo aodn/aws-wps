@@ -1,7 +1,6 @@
 package au.org.aodn.aws.wps.operation;
 
 import au.org.aodn.aws.util.Utils;
-import au.org.aodn.aws.util.JobFileUtil;
 import au.org.aodn.aws.wps.exception.OGCException;
 import au.org.aodn.aws.wps.status.WpsConfig;
 import com.amazonaws.regions.Region;
@@ -10,10 +9,10 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import com.amazonaws.util.StringInputStream;
-import net.opengis.ows._1.CodeType;
-import net.opengis.wps._1_0.DescribeProcess;
-import net.opengis.wps._1_0.ProcessDescriptionType;
-import net.opengis.wps._1_0.ProcessDescriptions;
+import net.opengis.ows.v_1_1_0.CodeType;
+import net.opengis.wps.v_1_0_0.DescribeProcess;
+import net.opengis.wps.v_1_0_0.ProcessDescriptionType;
+import net.opengis.wps.v_1_0_0.ProcessDescriptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,9 +50,7 @@ public class DescribeProcessOperation implements Operation {
 
         if(identifiers != null) {
             ProcessDescriptions outputProcessDescriptions = new ProcessDescriptions();
-            outputProcessDescriptions.setVersion("1.0.0");
             outputProcessDescriptions.setLang("en-US");
-            outputProcessDescriptions.setService("WPS");
 
             for (CodeType identifier : identifiers) {
                 //  The identifier passed will be prefixed with 'gs:' - ie: gs:GoGoDuck

@@ -1,8 +1,15 @@
 package au.org.aodn.aws.wps.status;
 
 import au.org.aodn.aws.util.JobFileUtil;
-import net.opengis.ows._1.CodeType;
-import net.opengis.wps._1_0.*;
+import net.opengis.ows.v_1_1_0.CodeType;
+import net.opengis.wps.v_1_0_0.DataType;
+import net.opengis.wps.v_1_0_0.ExecuteResponse;
+import net.opengis.wps.v_1_0_0.LiteralDataType;
+import net.opengis.wps.v_1_0_0.OutputDataType;
+import net.opengis.wps.v_1_0_0.OutputReferenceType;
+import net.opengis.wps.v_1_0_0.ProcessFailedType;
+import net.opengis.wps.v_1_0_0.ProcessStartedType;
+import net.opengis.wps.v_1_0_0.StatusType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

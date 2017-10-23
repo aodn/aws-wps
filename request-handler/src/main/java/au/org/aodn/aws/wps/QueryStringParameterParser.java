@@ -4,10 +4,10 @@ import au.org.aodn.aws.wps.operation.DescribeProcessOperation;
 import au.org.aodn.aws.wps.operation.GetCapabilitiesOperation;
 import au.org.aodn.aws.wps.operation.Operation;
 import au.org.aodn.aws.wps.operation.OperationFactory;
-import net.opengis.ows._1.AcceptVersionsType;
-import net.opengis.ows._1.CodeType;
-import net.opengis.wps._1_0.DescribeProcess;
-import net.opengis.wps._1_0.GetCapabilities;
+import net.opengis.ows.v_1_1_0.AcceptVersionsType;
+import net.opengis.ows.v_1_1_0.CodeType;
+import net.opengis.wps.v_1_0_0.DescribeProcess;
+import net.opengis.wps.v_1_0_0.GetCapabilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,8 +52,6 @@ public class QueryStringParameterParser implements RequestParser {
                 DescribeProcessOperation describeOperation = (DescribeProcessOperation) operation;
 
                 DescribeProcess describeRequest = describeOperation.getRequest();
-                describeRequest.setVersion(getMapValueIgnoreCase(VERSION_REQUEST_PARAMETER_NAME,queryParameters));
-                describeRequest.setService(getMapValueIgnoreCase(SERVICE_REQUEST_PARAMETER_NAME,queryParameters));
                 describeRequest.setLanguage(DEFAULT_LANGUAGE);
 
                 String identifierParamValue = getMapValueIgnoreCase(IDENTIFIER_REQUEST_PARAMETER_NAME, queryParameters);
