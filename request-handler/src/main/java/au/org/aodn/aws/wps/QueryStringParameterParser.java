@@ -4,6 +4,7 @@ import au.org.aodn.aws.wps.operation.DescribeProcessOperation;
 import au.org.aodn.aws.wps.operation.GetCapabilitiesOperation;
 import au.org.aodn.aws.wps.operation.Operation;
 import au.org.aodn.aws.wps.operation.OperationFactory;
+import au.org.aodn.aws.wps.status.WpsConfig;
 import net.opengis.ows.v_1_1_0.AcceptVersionsType;
 import net.opengis.ows.v_1_1_0.CodeType;
 import net.opengis.wps.v_1_0_0.DescribeProcess;
@@ -21,13 +22,9 @@ public class QueryStringParameterParser implements RequestParser {
 
     private final Map<String, String> queryParameters;
 
-    private final String SERVICE_REQUEST_PARAMETER_NAME = "service";
     private final String REQUEST_NAME_PARAMETER_NAME = "request";
     private final String VERSION_REQUEST_PARAMETER_NAME = "version";
     private final String IDENTIFIER_REQUEST_PARAMETER_NAME = "identifier";
-
-    public static final String DEFAULT_LANGUAGE = "en-US";
-
 
     public QueryStringParameterParser(AwsApiRequest request) {
         this.queryParameters = request.getQueryStringParameters();
@@ -52,7 +49,7 @@ public class QueryStringParameterParser implements RequestParser {
                 DescribeProcessOperation describeOperation = (DescribeProcessOperation) operation;
 
                 DescribeProcess describeRequest = describeOperation.getRequest();
-                describeRequest.setLanguage(DEFAULT_LANGUAGE);
+                describeRequest.setLanguage(WpsConfig.getConfig(WpsConfig.LANGUAGE_KEY));
 
                 String identifierParamValue = getMapValueIgnoreCase(IDENTIFIER_REQUEST_PARAMETER_NAME, queryParameters);
                 LOGGER.info("New Identifier param: " + identifierParamValue);
@@ -85,7 +82,7 @@ public class QueryStringParameterParser implements RequestParser {
             {
                 GetCapabilitiesOperation capabilitiesOperation = (GetCapabilitiesOperation) operation;
                 GetCapabilities capabilitiesRequest = capabilitiesOperation.getRequest();
-                capabilitiesRequest.setLanguage(DEFAULT_LANGUAGE);
+                capabilitiesRequest.setLanguage(WpsConfig.getConfig(WpsConfig.LANGUAGE_KEY));
                 AcceptVersionsType acceptedVersions = new AcceptVersionsType();
                 acceptedVersions.getVersion().add(getMapValueIgnoreCase(VERSION_REQUEST_PARAMETER_NAME,queryParameters));
                 capabilitiesRequest.setAcceptVersions(acceptedVersions);
