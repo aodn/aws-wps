@@ -49,6 +49,7 @@ public class ExecuteOperation implements Operation {
         String jobName = WpsConfig.getConfig(AWS_BATCH_JOB_NAME_CONFIG_KEY);
         String jobQueueName = WpsConfig.getConfig(AWS_BATCH_JOB_QUEUE_NAME_CONFIG_KEY);
         String awsRegion = WpsConfig.getConfig(AWS_REGION_CONFIG_KEY);
+        String wpsEndpointUrl = WpsConfig.getConfig(WPS_ENDPOINT_URL_CONFIG_KEY);
 
         LOGGER.info("statusS3BucketName: " + statusS3BucketName);
         LOGGER.info("statusFileName: " + statusFileName);
@@ -90,7 +91,7 @@ public class ExecuteOperation implements Operation {
         }
 
         String statusDocument;
-        ExecuteStatusBuilder statusBuilder = new ExecuteStatusBuilder(jobId, statusS3BucketName, statusFileName);
+        ExecuteStatusBuilder statusBuilder = new ExecuteStatusBuilder(wpsEndpointUrl, jobId, statusS3BucketName, statusFileName);
 
         try {
             statusDocument = statusBuilder.createResponseDocument(EnumStatus.ACCEPTED, null, null, null);

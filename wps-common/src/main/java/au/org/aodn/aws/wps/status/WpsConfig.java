@@ -47,9 +47,9 @@ public class WpsConfig {
     public static final String GET_CAPABILITIES_TEMPLATE_S3_KEY_CONFIG_KEY = "GET_CAPABILITIES_TEMPLATE_S3_KEY";
     public static final String DESCRIBE_PROCESS_S3_BUCKET_CONFIG_KEY = "DESCRIBE_PROCESS_S3_BUCKET";
     public static final String DESCRIBE_PROCESS_S3_KEY_PREFIX_CONFIG_KEY = "DESCRIBE_PROCESS_S3_KEY_PREFIX";
-    public static final String GEOSERVER_WPS_ENDPOINT_URL_CONFIG_KEY = "GEOSERVER_WPS_ENDPOINT_URL";
+    public static final String WPS_ENDPOINT_URL_CONFIG_KEY = "GEOSERVER_WPS_ENDPOINT_URL";
     public static final String GEOSERVER_CATALOGUE_ENDPOINT_URL_CONFIG_KEY = "GEOSERVER_CATALOGUE_ENDPOINT_URL";
-    public static final String GEOSERVER_WPS_ENDPOINT_TEMPLATE_KEY = "geoserverWPSEndpointURL";
+    public static final String WPS_ENDPOINT_TEMPLATE_KEY = "wpsEndpointURL";
 
     public static final String AGGREGATOR_CONFIG_S3_BUCKET_CONFIG_KEY = "AGGREGATOR_CONFIG_S3_BUCKET";
     public static final String AGGREGATOR_TEMPLATE_FILE_S3_KEY_CONFIG_KEY = "AGGREGATOR_TEMPLATE_FILE_S3_KEY";
@@ -122,7 +122,7 @@ public class WpsConfig {
             setProperty(properties, GET_CAPABILITIES_TEMPLATE_S3_KEY_CONFIG_KEY);
             setProperty(properties, DESCRIBE_PROCESS_S3_BUCKET_CONFIG_KEY);
             setProperty(properties, DESCRIBE_PROCESS_S3_KEY_PREFIX_CONFIG_KEY);
-            setProperty(properties, GEOSERVER_WPS_ENDPOINT_URL_CONFIG_KEY);
+            setProperty(properties, WPS_ENDPOINT_URL_CONFIG_KEY);
             setProperty(properties, AGGREGATOR_CONFIG_S3_BUCKET_CONFIG_KEY);
             setProperty(properties, AGGREGATOR_TEMPLATE_FILE_S3_KEY_CONFIG_KEY);
 
