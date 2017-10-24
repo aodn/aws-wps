@@ -104,7 +104,9 @@ public class AggregationRunner implements CommandLineRunner {
 
             //  TODO:  null check and act on null configuration
             //  TODO : validate configuration
-            statusBuilder = new ExecuteStatusBuilder(batchJobId, statusS3Bucket, statusFilename);
+            String wpsEndpointUrl = WpsConfig.getConfig(WPS_ENDPOINT_URL_CONFIG_KEY);
+
+            statusBuilder = new ExecuteStatusBuilder(wpsEndpointUrl, batchJobId, statusS3Bucket, statusFilename);
             String statusDocument = statusBuilder.createResponseDocument(EnumStatus.STARTED, null, null, null);
 
             //  Update status document to indicate job has started

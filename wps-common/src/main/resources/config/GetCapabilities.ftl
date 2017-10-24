@@ -4,13 +4,13 @@
                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xml:lang="en" service="WPS" version="1.0.0"
                   xsi:schemaLocation="http://www.opengis.net/wps/1.0.0 http://schemas.opengis.net/wps/1.0.0/wpsAll.xsd">
     <ows:ServiceIdentification>
-        <ows:Title>Prototype GeoServer WPS</ows:Title>
+        <ows:Title>IMOS WPS Service</ows:Title>
         <ows:Abstract/>
         <ows:ServiceType>WPS</ows:ServiceType>
         <ows:ServiceTypeVersion>1.0.0</ows:ServiceTypeVersion>
     </ows:ServiceIdentification>
     <ows:ServiceProvider>
-        <ows:ProviderName>GeoServer</ows:ProviderName>
+        <ows:ProviderName>Intgerated Marine Observing System (IMOS)</ows:ProviderName>
         <ows:ProviderSite/>
         <ows:ServiceContact/>
     </ows:ServiceProvider>
@@ -18,23 +18,23 @@
         <ows:Operation name="GetCapabilities">
             <ows:DCP>
                 <ows:HTTP>
-                    <ows:Get xlink:href="${geoserverWPSEndpointURL}"/>
-                    <ows:Post xlink:href="${geoserverWPSEndpointURL}"/>
+                    <ows:Get xlink:href="${wpsEndpointURL}"/>
+                    <ows:Post xlink:href="${wpsEndpointURL}"/>
                 </ows:HTTP>
             </ows:DCP>
         </ows:Operation>
         <ows:Operation name="DescribeProcess">
             <ows:DCP>
                 <ows:HTTP>
-                    <ows:Get xlink:href="${geoserverWPSEndpointURL}"/>
-                    <ows:Post xlink:href="${geoserverWPSEndpointURL}"/>
+                    <ows:Get xlink:href="${wpsEndpointURL}"/>
+                    <ows:Post xlink:href="${wpsEndpointURL}"/>
                 </ows:HTTP>
             </ows:DCP>
         </ows:Operation>
         <ows:Operation name="Execute">
             <ows:DCP>
                 <ows:HTTP>
-                    <ows:Post xlink:href="${geoserverWPSEndpointURL}"/>
+                    <ows:Post xlink:href="${wpsEndpointURL}"/>
                 </ows:HTTP>
             </ows:DCP>
         </ows:Operation>

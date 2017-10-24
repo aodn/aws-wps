@@ -26,6 +26,7 @@ public class ExecuteStatusBuilder {
 
     private static int CHUNK_SIZE = 512;
 
+    private String wpsEndpointUrl;
     private String location;
     private String jobId;
     private String s3Bucket;
@@ -33,8 +34,9 @@ public class ExecuteStatusBuilder {
 
     private static final  Logger LOGGER = LoggerFactory.getLogger(ExecuteStatusBuilder.class);
 
-    public ExecuteStatusBuilder(String jobId, String s3Bucket, String filename) {
+    public ExecuteStatusBuilder(String wpsEndpointUrl, String jobId, String s3Bucket, String filename) {
         String jobPrefix = WpsConfig.getConfig(AWS_BATCH_JOB_S3_KEY);
+        this.wpsEndpointUrl = wpsEndpointUrl;
         this.location = WpsConfig.getS3ExternalURL(s3Bucket, jobPrefix + jobId + "/" + filename);
         this.jobId = jobId;
         this.s3Bucket = s3Bucket;
@@ -60,6 +62,7 @@ public class ExecuteStatusBuilder {
     public String createResponseDocument(EnumStatus jobStatus, String failedMessage, String failedCode, HashMap<String, String> outputs) {
 
         ExecuteResponse response = new ExecuteResponse();
+        response.setServiceInstance(wpsEndpointUrl);
         response.setStatusLocation(getStatusLocation());
 
         StatusType status = new StatusType();
