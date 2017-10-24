@@ -5,7 +5,6 @@ import org.w3c.dom.ls.LSInput;
 import org.w3c.dom.ls.LSResourceResolver;
 
 import java.io.InputStream;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -38,9 +37,10 @@ public class ClasspathResourceResolver implements LSResourceResolver {
             resourcePath = SYSTEM_ID_MAPPING.get(systemId);
         } else if (baseURI != null) {
             String baseURIPath = baseURI.replaceFirst("file://", "");
-            resourcePath = Paths.get(baseURIPath).getParent().resolve(systemId).toString();
+            final String parentFolder = Classpath.getParentFolder(baseURIPath);
+            resourcePath = Classpath.get(parentFolder, systemId);
         } else {
-            resourcePath = Paths.get(basePath, systemId).toString();
+            resourcePath = Classpath.get(basePath, systemId);
         }
 
         InputStream resourceAsStream = this.getClass().getResourceAsStream(resourcePath);

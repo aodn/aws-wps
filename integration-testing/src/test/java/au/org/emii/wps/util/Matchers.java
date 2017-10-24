@@ -10,15 +10,10 @@ public class Matchers {
     // Requires the use of a Classpath Resource resolver to resolve referenced
     // resources from the classpath
     public static XmlXsdMatcher validateWith(String schema) {
-        String basePath = getParentFolder(schema);
+        String basePath = Classpath.getParentFolder(schema);
 
         return matchesXsdInClasspath(schema)
             .using(new ClasspathResourceResolver(basePath));
-    }
-
-    private static String getParentFolder(String schema) {
-        int lastSlashPos = schema.lastIndexOf("/");
-        return lastSlashPos>=0 ? schema.substring(0, lastSlashPos) : "";
     }
 
 }
