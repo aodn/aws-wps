@@ -66,7 +66,7 @@ public class ExecuteIT {
             .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"));
     }
 
-    @Test @Ignore // Runs indefinitely - TODO:Fix problem and enable test
+    @Test
     public void testSrsSubset() {
         Execute request = new ExecuteRequestBuilder()
             .identifer("gs:GoGoDuck")

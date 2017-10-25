@@ -74,7 +74,7 @@ Parameters:
     Type: String
   chunkSize:
     Type: Number
-    Default: 1024
+    Default: 10000000
   workerDownloadAttempts:
     Type: Number
     Default: 4
