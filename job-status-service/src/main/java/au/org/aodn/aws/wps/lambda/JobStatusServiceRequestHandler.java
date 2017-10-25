@@ -12,6 +12,7 @@ import com.amazonaws.services.batch.AWSBatch;
 import com.amazonaws.services.batch.AWSBatchClientBuilder;
 import com.amazonaws.services.batch.model.DescribeJobsRequest;
 import com.amazonaws.services.batch.model.DescribeJobsResult;
+import com.amazonaws.services.batch.model.JobDetail;
 import com.amazonaws.services.batch.model.JobStatus;
 import com.amazonaws.services.batch.model.JobSummary;
 import com.amazonaws.services.batch.model.ListJobsRequest;
@@ -22,10 +23,11 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.util.StringInputStream;
 import net.opengis.wps.v_1_0_0.ExecuteResponse;
-import net.opengis.wps.v_1_0_0.ProcessFailedType;
-import net.opengis.wps.v_1_0_0.ProcessStartedType;
 import net.opengis.wps.v_1_0_0.StatusType;
 import org.apache.http.HttpStatus;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+import org.joda.time.LocalDate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,11 +42,25 @@ import javax.xml.transform.stream.StreamSource;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
+import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Date;
 
 public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusRequest, JobStatusResponse> {
 
     private static final JobStatusFormatEnum DEFAULT_FORMAT = JobStatusFormatEnum.XML;
+
+    private static final String ACCEPTED_STATUS_DESCRIPTION = "Job accepted";
+    private static final String FAILED_STATUS_DESCRIPTION = "Job failed";
+    private static final String STARTED_STATUS_DESCRIPTION = "Job processing started";
+    private static final String SUCCEEDED_STATUS_DESCRIPTION = "Download ready";
+    private static final String PAUSED_STATUS_DESCRIPTION = "Job processing paused";
+    private static final String UNKNOWN_STATUS_DESCRIPTION = "Job status unknown";
 
     private Logger LOGGER = LoggerFactory.getLogger(JobStatusServiceRequestHandler.class);
 
@@ -120,24 +136,18 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
                 //  If the ExecuteResponse indicates that the job has been accepted but not
                 //  started, completed or failed - then we will update the position indicator.
                 StatusType currentStatus = currentResponse.getStatus();
-                String processAccepted = currentStatus.getProcessAccepted();
-                ProcessFailedType processFailed = currentStatus.getProcessFailed();
-                ProcessStartedType processPaused = currentStatus.getProcessPaused();
-                ProcessStartedType processStarted = currentStatus.getProcessStarted();
-                String processSucceeded = currentStatus.getProcessSucceeded();
+                AWSBatch batchClient = AWSBatchClientBuilder.defaultClient();
+                JobDetail jobDetail = getJobDetail(batchClient, jobId);
 
-                if (processAccepted != null &&
-                        (processFailed == null &&
-                                processPaused == null &&
-                                processStarted == null &&
-                                processSucceeded == null)) {
+
+                if(isJobWaiting(currentStatus)) {
 
                     LOGGER.info("Updating XML with progress description for jobId [" + jobId + "]");
 
                     //  Perform a queue position lookup + insert the position information into the XML
                     //  All we have to do is setProcessAccepted to a string that includes some queue
                     //  position information.
-                    String jobProgressDescription = getProgressDescription(jobId);
+                    String jobProgressDescription = getProgressDescription(batchClient, jobDetail);
 
                     LOGGER.info("Progress description: " + jobProgressDescription);
 
@@ -157,7 +167,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
                 if (requestedStatusFormat.equals(JobStatusFormatEnum.HTML)) {
 
                     LOGGER.info("HTML output format requested.  Running transform.");
-                    responseBody = generateHTML(currentResponse, jobId);
+                    responseBody = generateHTML(currentResponse, jobDetail);
                 }
 
 
@@ -200,23 +210,22 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
      * job in the processing queue in the form
      * 'Queue position <POSITION_OF_THE_JOB> of <TOTAL_NUMBER_OF_JOBS_QUEUED>'
      *
-     * @param jobId
+     * @param jobDetail
      * @return
      */
-    private String getProgressDescription(String jobId) {
+    private String getProgressDescription(AWSBatch batchClient, JobDetail jobDetail) {
 
         String description = null;
 
-        if (jobId != null) {
-            AWSBatch batchClient = AWSBatchClientBuilder.defaultClient();
+        if (jobDetail != null && jobDetail.getJobId() != null) {
 
             //  Determine the queue that the job has been assigned to
-            String queueName = getQueueName(batchClient, jobId);
-            LOGGER.info("Queue name for jobId [" + jobId + "] = " + queueName);
+            String queueName = jobDetail.getJobQueue();
+            LOGGER.info("Queue name for jobId [" + jobDetail.getJobId() + "] = " + queueName);
 
             if (queueName != null) {
                 //  Determine the position of the job in the queue
-                QueuePosition queuePosition = getQueuePosition(batchClient, jobId, queueName);
+                QueuePosition queuePosition = getQueuePosition(batchClient, jobDetail);
 
                 if (queuePosition != null) {
                     description = "Queue position " + queuePosition.getPosition() + " of " + queuePosition.getNumberInQueue();
@@ -228,16 +237,18 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
     }
 
     /**
-     * @param jobId
+     *
+     * @param batchClient
+     * @param jobDetail
      * @return
      */
-    private QueuePosition getQueuePosition(AWSBatch batchClient, String jobId, String queueName) {
+    private QueuePosition getQueuePosition(AWSBatch batchClient, JobDetail jobDetail) {
 
         ArrayList<JobSummary> allJobs = new ArrayList<>();
 
         ListJobsRequest submittedJobsRequest = new ListJobsRequest();
         submittedJobsRequest.setJobStatus(JobStatus.SUBMITTED);
-        submittedJobsRequest.setJobQueue(queueName);
+        submittedJobsRequest.setJobQueue(jobDetail.getJobQueue());
 
         ListJobsResult submittedJobsResult = batchClient.listJobs(submittedJobsRequest);
         LOGGER.info("# SUBMITTED jobs: " + submittedJobsResult.getJobSummaryList().size());
@@ -246,7 +257,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
 
         ListJobsRequest pendingJobsRequest = new ListJobsRequest();
         pendingJobsRequest.setJobStatus(JobStatus.PENDING);
-        pendingJobsRequest.setJobQueue(queueName);
+        pendingJobsRequest.setJobQueue(jobDetail.getJobQueue());
 
         ListJobsResult pendingJobsResult = batchClient.listJobs(pendingJobsRequest);
         LOGGER.info("# PENDING jobs: " + pendingJobsResult.getJobSummaryList().size());
@@ -255,7 +266,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
 
         ListJobsRequest runnableJobsRequest = new ListJobsRequest();
         runnableJobsRequest.setJobStatus(JobStatus.RUNNABLE);
-        runnableJobsRequest.setJobQueue(queueName);
+        runnableJobsRequest.setJobQueue(jobDetail.getJobQueue());
 
         ListJobsResult runnableJobsResult = batchClient.listJobs(runnableJobsRequest);
         LOGGER.info("# RUNNABLE jobs: " + runnableJobsResult.getJobSummaryList().size());
@@ -263,7 +274,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
 
         ListJobsRequest startingJobsRequest = new ListJobsRequest();
         startingJobsRequest.setJobStatus(JobStatus.STARTING);
-        startingJobsRequest.setJobQueue(queueName);
+        startingJobsRequest.setJobQueue(jobDetail.getJobQueue());
 
         ListJobsResult startingJobsResult = batchClient.listJobs(startingJobsRequest);
         LOGGER.info("# STARTING jobs: " + startingJobsResult.getJobSummaryList().size());
@@ -275,9 +286,9 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
         JobSummary[] jobSummaries = new JobSummary[allJobs.size()];
         jobSummaries = allJobs.toArray(jobSummaries);
         for (int index = 0; index <= jobSummaries.length - 1; index++) {
-            LOGGER.info("Search queue : jobId [" + jobSummaries[index].getJobId() + "], Match? [" + jobSummaries[index].getJobId().equalsIgnoreCase(jobId) + "]");
+            LOGGER.info("Search queue : jobId [" + jobSummaries[index].getJobId() + "], Match? [" + jobSummaries[index].getJobId().equalsIgnoreCase(jobDetail.getJobId()) + "]");
 
-            if (jobSummaries[index].getJobId().equalsIgnoreCase(jobId)) {
+            if (jobSummaries[index].getJobId().equalsIgnoreCase(jobDetail.getJobId())) {
                 jobIndex = index;
                 LOGGER.info("Found Job at index [" + jobIndex + "] in queue");
             }
@@ -292,7 +303,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
     }
 
 
-    private String getQueueName(AWSBatch batchClient, String jobId) {
+    private JobDetail getJobDetail(AWSBatch batchClient, String jobId) {
 
         if (batchClient != null && jobId != null) {
 
@@ -306,7 +317,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
                 DescribeJobsResult describeResult = batchClient.describeJobs(describeRequest);
 
                 if (describeResult != null && describeResult.getJobs().size() > 0) {
-                    return describeResult.getJobs().get(0).getJobQueue();
+                    return describeResult.getJobs().get(0);
                 }
             } catch (Exception ex) {
                 LOGGER.error("Unable to determine the queue for jobId [" + jobId + "]", ex);
@@ -317,13 +328,15 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
     }
 
 
-    private String generateHTML(ExecuteResponse status, String jobId) {
+    private String generateHTML(ExecuteResponse status, JobDetail jobDetail) {
         // Create Transformer
         TransformerFactory tf = TransformerFactory.newInstance();
         String xslString;
 
         String configS3Bucket = WpsConfig.getConfig(WpsConfig.STATUS_SERVICE_CONFIG_S3_BUCKET_CONFIG_KEY);
         String xslS3Key = WpsConfig.getConfig(WpsConfig.STATUS_HTML_XSL_S3_KEY_CONFIG_KEY);
+
+        //  TODO: cater for ExceptionReport responses
 
         try {
             //  Read XSL from S3
@@ -334,12 +347,26 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
             Transformer transformer = tf.newTransformer(xslt);
 
             //  Pass in the jobId
-            if(jobId != null) {
+            if(jobDetail != null && jobDetail.getJobId() != null) {
+                //  Get a friendly description of the status
+                String statusDescription = getStatusDescription(status);
+
+                final DateTimeFormatter formatter =
+                        DateTimeFormatter.ofPattern("EE dd MMM yyyy HH:mm:ss Z (zzz)");
+
+                final long unixTime = jobDetail.getCreatedAt();
+
+                Instant instant = Instant.ofEpochSecond(unixTime/1000);
+                ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(instant, ZoneId.of("UTC"));
+                final String formattedDtm = formatter.format(zonedDateTime);
+                System.out.println("formattedTime = " + formattedDtm);
+
                 //  Pass the job ID
-                transformer.setParameter("jobid", jobId);
-                //  TODO:  pass in text description of the state of the job (ie: Download Available, Job Submitted, etc)
-                //  TODO:  can be calculated based on the parts of status.getStatus() which are populated.
-                //  TODO:  the parameter named can be referred to in the XSL stylesheet + the value will be passed.
+                transformer.setParameter("jobid", jobDetail.getJobId());
+                transformer.setParameter("statusDescription", statusDescription);
+                transformer.setParameter("submittedTime", formattedDtm);
+                //  TODO:  pass in text description of the state of the job (ie: Download Available, Job Submitted, etc) can be calculated based
+                //  on the parts of status.getStatus() which are populated the parameter named can be referred to in the XSL stylesheet + the value will be passed.
             }
 
             // Source
@@ -365,4 +392,34 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
         return null;
     }
 
+
+    private boolean isJobWaiting(StatusType currentStatus) {
+        //  WPS status will be ProcessAccepted from the time the job is submitted & when it is
+        //  picked up for processing.
+        if (currentStatus.isSetProcessAccepted() &&
+                (!currentStatus.isSetProcessFailed() && !currentStatus.isSetProcessStarted() && !currentStatus.isSetProcessSucceeded())) {
+            return true;
+        }
+        return false;
+    }
+
+
+    private String getStatusDescription(ExecuteResponse status) {
+        StatusType currentStatus = status.getStatus();
+
+        if(status != null) {
+            if (currentStatus.isSetProcessAccepted()) {
+                return ACCEPTED_STATUS_DESCRIPTION;
+            } else if (currentStatus.isSetProcessStarted()) {
+                return STARTED_STATUS_DESCRIPTION;
+            } else if (currentStatus.isSetProcessSucceeded()) {
+                return SUCCEEDED_STATUS_DESCRIPTION;
+            } else if (currentStatus.isSetProcessFailed()) {
+                return FAILED_STATUS_DESCRIPTION;
+            } else if (currentStatus.isSetProcessPaused()) {
+                return PAUSED_STATUS_DESCRIPTION;
+            }
+        }
+        return UNKNOWN_STATUS_DESCRIPTION;
+    }
 }
