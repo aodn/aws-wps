@@ -956,22 +956,54 @@ Resources:
         Path: /
         ManagedPolicyArns:
           - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
-  SumoLogicLambdaPermission:
+  BatchJobLogsLambdaPermission:
     Type: AWS::Lambda::Permission
     Condition: IsProdEnvironment
     Properties:
       Action: lambda:invokeFunction
       FunctionName: !GetAtt SumoLogicLambdaFunction.Arn
       Principal: !Sub 'logs.${AWS::Region}.amazonaws.com'
-      SourceArn: !Join ["", ["arn:aws:logs:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":log-group:/aws/batch/job:log-stream:", !Ref JobDefinition,"*"]]
+      SourceArn: !Join ["", ["arn:aws:logs:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":log-group:/aws/batch/job:*"]]
   BatchJobLogsSubscriptionFilter:
     Type: "AWS::Logs::SubscriptionFilter"
     Condition: IsProdEnvironment
-    DependsOn: SumoLogicLambdaPermission
+    DependsOn: BatchJobLogsLambdaPermission
     Properties:
       DestinationArn: !GetAtt SumoLogicLambdaFunction.Arn
-      FilterPattern: "" # Will need to update the filter pattern or create a log stream
+      FilterPattern: "" # Will need to update the filter pattern or create a log stream. Currently all the batch job logs will be fetched.
       LogGroupName: "/aws/batch/job"
+  RequestHandlerLogsLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Condition: IsProdEnvironment
+    Properties:
+      Action: lambda:invokeFunction
+      FunctionName: !GetAtt SumoLogicLambdaFunction.Arn
+      Principal: !Sub 'logs.${AWS::Region}.amazonaws.com'
+      SourceArn: !Join ["", ["arn:aws:logs:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":log-group:/aws/lambda/", !Ref RequestHandlerLambdaFunction,":*"]]
+  RequestHandlerLambdaLogsSubscriptionFilter:
+    Type: "AWS::Logs::SubscriptionFilter"
+    Condition: IsProdEnvironment
+    DependsOn: RequestHandlerLogsLambdaPermission
+    Properties:
+      DestinationArn: !GetAtt SumoLogicLambdaFunction.Arn
+      FilterPattern: ""
+      LogGroupName: !Join ["", ["/aws/lambda/", !Ref RequestHandlerLambdaFunction]]
+  JobStatusLogsLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Condition: IsProdEnvironment
+    Properties:
+      Action: lambda:invokeFunction
+      FunctionName: !GetAtt SumoLogicLambdaFunction.Arn
+      Principal: !Sub 'logs.${AWS::Region}.amazonaws.com'
+      SourceArn: !Join ["", ["arn:aws:logs:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":log-group:/aws/lambda/", !Ref JobStatusLambdaFunction,":*"]]
+  JobStatusLambdaLogsSubscriptionFilter:
+    Type: "AWS::Logs::SubscriptionFilter"
+    Condition: IsProdEnvironment
+    DependsOn: JobStatusLogsLambdaPermission
+    Properties:
+      DestinationArn: !GetAtt SumoLogicLambdaFunction.Arn
+      FilterPattern: ""
+      LogGroupName: !Join ["", ["/aws/lambda/", !Ref JobStatusLambdaFunction]]
 Outputs:
   RequestHandlerApiGatewayUrl:
     Value: !If [
