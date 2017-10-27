@@ -80,7 +80,7 @@ Parameters:
     Type: String
   chunkSize:
     Type: Number
-    Default: 1024
+    Default: 10000000
   workerDownloadAttempts:
     Type: Number
     Default: 4
@@ -560,7 +560,7 @@ Resources:
       Description: Make a wps request
       FunctionName: !Sub 'wps-request-handler-${AWS::StackName}'
       Handler: 'au.org.aodn.aws.wps.lambda.WpsLambdaRequestHandler'
-      MemorySize: 512
+      MemorySize: 1536
       Role: !GetAtt RequestHandlerLambdaExecutionRole.Arn
       Runtime: java8
       Timeout: 60
@@ -674,7 +674,7 @@ Resources:
       Description: Return wps job status
       FunctionName: !Sub 'wps-job-status-${AWS::StackName}'
       Handler: 'au.org.aodn.aws.wps.lambda.JobStatusServiceRequestHandler'
-      MemorySize: 512
+      MemorySize: 1536
       Role: !GetAtt JobStatusLambdaExecutionRole.Arn
       Runtime: java8
       Timeout: 60
