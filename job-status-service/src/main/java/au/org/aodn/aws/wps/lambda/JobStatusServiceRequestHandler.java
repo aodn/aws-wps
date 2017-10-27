@@ -342,6 +342,10 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
                 //  TODO:  the parameter named can be referred to in the XSL stylesheet + the value will be passed.
             }
 
+            transformer.setParameter("bootstrapCssLocation", WpsConfig.getBootstrapCssS3ExternalURL());
+            transformer.setParameter("aodnCssLocation", WpsConfig.getAodnCssS3ExternalURL());
+            transformer.setParameter("aodnLogoLocation", WpsConfig.getAodnLogoS3ExternalURL());
+
             // Source
             JAXBContext jc = JAXBContext.newInstance(ExecuteResponse.class);
             JAXBSource source = new JAXBSource(jc, status);
