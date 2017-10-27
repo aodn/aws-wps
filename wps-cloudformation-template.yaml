@@ -58,6 +58,15 @@ Parameters:
   sumologicLambdaCodeURL:
     Type: String
     Default: 'https://github.com/aodn/aws-wps/raw/master/wps-common/src/main/resources/index.zip'
+  bootstrapCssURL:
+    Type: String
+    Default: 'https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css'
+  aodnCssURL:
+    Type: String
+    Default: 'https://raw.githubusercontent.com/aodn/aodn-portal/master/web-app/css/AODNTheme.css'
+  aodnLogoURL:
+    Type: String
+    Default: 'https://raw.githubusercontent.com/aodn/aodn-portal/master/web-app/images/AODN/AODN_logo_fullText.png'
   jobName:
     Type: String
     Default: 'javaduck'
@@ -158,6 +167,9 @@ Mappings:
       netcdf: "NetcdfOutput.xml"
       provenanceTemplateGridded: "provenance_template_gridded.ftl"
       provenanceTemplateNonGridded: "provenance_template_non_gridded.ftl"
+      bootstrapCss: "bootstrap.min.css"
+      aodnCss: "AODNTheme.css"
+      aodnLogo: "AODN_logo_fullText.png"
   production:
     ap-southeast-2:
       vpc: vpc-7302ee16
@@ -688,6 +700,10 @@ Resources:
           STATUS_S3_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "status"]
           STATUS_SERVICE_CONFIG_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
           JOB_S3_KEY: !Ref s3jobKey
+          CONFIG_S3_KEY: !Ref s3configKey
+          BOOTSTRAP_CSS_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "bootstrapCss"]
+          AODN_CSS_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "aodnCss"]
+          AODN_LOGO_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "aodnLogo"]
     DependsOn: S3PutConfigurationFiles
   JobStatusLambdaExecutionRole:
     Type: AWS::IAM::Role
@@ -765,6 +781,7 @@ Resources:
         ZipFile: |
           import os
           import boto3
+          import mimetypes
           from urllib2 import urlopen, Request
           import cfnresponse
 
@@ -801,7 +818,11 @@ Resources:
               response = urlopen(request)
 
               file_contents = response.read()
-              s3c.put_object(Bucket=target_bucket, Key='{}{}'.format(config_location, filename), Body=file_contents)
+              fileType,fileEncoding = mimetypes.guess_type(filename)
+              if fileType:
+                  s3c.put_object(Bucket=target_bucket, ContentType=fileType, ACL='public-read', Key='{}{}'.format(config_location, filename), Body=file_contents)
+              else:
+                  s3c.put_object(Bucket=target_bucket, ACL='public-read', Key='{}{}'.format(config_location, filename), Body=file_contents)
               print('Downloaded url : {}'.format(url))
       Description: "Used to put objects into S3."
       FunctionName: !Sub 'S3PutObject-${AWS::StackName}'
@@ -836,6 +857,12 @@ Resources:
           HTTP_FILE_JOB_STATUS_TRANSFORM_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "statusTransform"]
           HTTP_FILE_SUMOLOGIC_LAMBDA: !Ref sumologicLambdaCodeURL
           HTTP_FILE_SUMOLOGIC_LAMBDA_FILENAME: !Ref sumologicLambdaCodeFilename
+          HTTP_FILE_BOOTSTRAP_CSS: !Ref bootstrapCssURL
+          HTTP_FILE_BOOTSTRAP_CSS_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "bootstrapCss"]
+          HTTP_FILE_AODN_CSS: !Ref aodnCssURL
+          HTTP_FILE_AODN_CSS_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "aodnCss"]
+          HTTP_FILE_AODN_LOGO: !Ref aodnLogoURL
+          HTTP_FILE_AODN_LOGO_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "aodnLogo"]
   S3PutConfigurationFiles:
     Type: "Custom::S3PutObject"
     Properties:
