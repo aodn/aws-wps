@@ -461,7 +461,6 @@ Resources:
   WpsApiGatewayStage:
     DependsOn:
       - WpsApiGatewayAccount
-      - WpsApiGatewayDeployment
       - WPSRestApi
     Type: AWS::ApiGateway::Stage
     Properties:
@@ -483,9 +482,13 @@ Resources:
   WpsDomainToAPIMapping:
     Type: 'AWS::ApiGateway::BasePathMapping'
     Condition: CreateWpsApiGatewayDomainName
+    DependsOn:
+    - WpsApiGatewayStage
+    - WpsRoute53RecordSet
     Properties:
       DomainName: !Ref WpsApiGatewayDomainName
       RestApiId: !Ref WPSRestApi
+      Stage: !Ref wpsApiStage
   WpsRoute53RecordSet:
     Type: 'AWS::Route53::RecordSet'
     Condition: CreateWpsApiGatewayDomainName
