@@ -5,6 +5,10 @@
 
     <xsl:template match="/">
         <xsl:param name="jobid"/>
+        <xsl:param name="bootstrapCssLocation"/>
+        <xsl:param name="aodnCssLocation"/>
+        <xsl:param name="aodnLogoLocation"/>
+
         <xsl:variable name="statusLocation">
             <xsl:value-of select="ns3:ExecuteResponse/@statusLocation"/>
         </xsl:variable>
@@ -26,8 +30,8 @@
         <xsl:text disable-output-escaping='yes'>&lt;!DOCTYPE html&gt;</xsl:text>
         <html>
             <head>
-                <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css"/>
-                <link rel="stylesheet" type="text/css" href="https://portal.aodn.org.au/css/AODNTheme.css?v="/>
+                <link rel="stylesheet" href="{$bootstrapCssLocation}"/>
+                <link rel="stylesheet" type="text/css" href="{$aodnCssLocation}"/>
 
                 <title>IMOS download -
                     <xsl:value-of select="$jobid"/>
@@ -37,7 +41,7 @@
                 <div class="portalheader">
                     <div class="container">
                         <a class="btn" role="button" href="https://portal.aodn.org.au">
-                            <img src="https://portal.aodn.org.au/images/AODN/AODN_logo_fullText.png" alt="Portal logo"/>
+                            <img src="{$aodnLogoLocation}" alt="Portal logo"/>
                         </a>
                     </div>
                 </div>
