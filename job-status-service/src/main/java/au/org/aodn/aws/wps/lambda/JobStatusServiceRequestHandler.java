@@ -51,12 +51,13 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
 
     private Logger LOGGER = LoggerFactory.getLogger(JobStatusServiceRequestHandler.class);
 
-    String statusFilename = WpsConfig.getConfig(WpsConfig.STATUS_S3_FILENAME_CONFIG_KEY);
-    String jobPrefix = WpsConfig.getConfig(WpsConfig.AWS_BATCH_JOB_S3_KEY);
-    String statusS3Bucket = WpsConfig.getConfig(WpsConfig.STATUS_S3_BUCKET_CONFIG_KEY);
-    String configS3Bucket = WpsConfig.getConfig(WpsConfig.STATUS_SERVICE_CONFIG_S3_BUCKET_CONFIG_KEY);
-    String xslS3Key = WpsConfig.getConfig(WpsConfig.STATUS_HTML_XSL_S3_KEY_CONFIG_KEY);
-    String requestFilename = WpsConfig.getConfig(WpsConfig.REQUEST_S3_FILENAME_CONFIG_KEY);
+    private String statusFilename = WpsConfig.getConfig(WpsConfig.STATUS_S3_FILENAME_CONFIG_KEY);
+    private String jobPrefix = WpsConfig.getConfig(WpsConfig.AWS_BATCH_JOB_S3_KEY);
+    private String statusS3Bucket = WpsConfig.getConfig(WpsConfig.STATUS_S3_BUCKET_CONFIG_KEY);
+    private String configS3Bucket = WpsConfig.getConfig(WpsConfig.STATUS_SERVICE_CONFIG_S3_BUCKET_CONFIG_KEY);
+    private String xslS3Key = WpsConfig.getConfig(WpsConfig.STATUS_HTML_XSL_S3_KEY_CONFIG_KEY);
+    private String requestFilename = WpsConfig.getConfig(WpsConfig.REQUEST_S3_FILENAME_CONFIG_KEY);
+
 
     @Override
     public JobStatusResponse handleRequest(JobStatusRequest request, Context context) {
@@ -71,11 +72,10 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
 
         LOGGER.info("Parameters passed: JOBID [" + jobId + "], FORMAT [" + format + "]");
 
+
         //  Determine the format to send the response in
-        JobStatusFormatEnum requestedStatusFormat = null;
-
+        JobStatusFormatEnum requestedStatusFormat;
         if (format != null) {
-
             try {
                 requestedStatusFormat = JobStatusFormatEnum.valueOf(format.toUpperCase());
                 LOGGER.info("Valid job status format requested : " + requestedStatusFormat.name());
@@ -98,8 +98,8 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
         }
 
 
+
         ExecuteResponse executeResponse = null;
-        AWSBatch batchClient = AWSBatchClientBuilder.defaultClient();
         int httpStatus;
         String statusDescription = null;
 
@@ -129,13 +129,21 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
                 LOGGER.info("Unmarshalled XML for jobId [" + jobId + "]");
                 LOGGER.info(statusXMLString);
 
-                //  If the ExecuteResponse indicates that the job has been accepted but not
-                //  started, completed or failed - then we will update the position indicator.
                 StatusType currentStatus = executeResponse.getStatus();
                 //  Get a friendly description of the status
                 statusDescription = getStatusDescription(currentStatus);
 
+                /**  PARKED UNTIL WE CAN RELIABLY DETERMINE THE QUEUE POSITION OF
+                 *   THE JOB USING THE BATCH API.
+                 *   CURRENTLY THE AWS QUEUES SEEM TO BE NON-FIFO : SO IMPOSSIBLE TO
+                 *   DETERMINE THE ORDER IN WHICH QUEUED JOBS WILL EXECUTE!!
+                 *
+                //  If the ExecuteResponse indicates that the job has been accepted but not
+                //  started, completed or failed - then we will update the position indicator.
+
+
                 if(isJobWaiting(currentStatus)) {
+                    AWSBatch batchClient = AWSBatchClientBuilder.defaultClient();
 
                     LOGGER.info("Updating XML with progress description for jobId [" + jobId + "]");
 
@@ -156,6 +164,8 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
                     //  Return unaltered status XML
                     responseBody = statusXMLString;
                 }
+                 **/
+                responseBody = statusXMLString;
 
                 httpStatus = HttpStatus.SC_OK;
             } else {
@@ -178,9 +188,8 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
 
         //  If requested output format is HTML - perform a transform on the XML
         if (requestedStatusFormat.equals(JobStatusFormatEnum.HTML)) {
-
             LOGGER.info("HTML output format requested.  Running transform.");
-            responseBody = generateHTML(executeResponse, statusDescription, batchClient, jobId);
+            responseBody = generateHTML(executeResponse, statusDescription, jobId);
         }
 
         //  Build the response
@@ -230,12 +239,11 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
 
 
 
-    private String generateHTML(ExecuteResponse xmlStatus, String statusDescription, AWSBatch batchClient, String jobId) {
+    private String generateHTML(ExecuteResponse xmlStatus, String statusDescription, String jobId) {
         // Create Transformer
         TransformerFactory tf = TransformerFactory.newInstance();
         String xslString;
 
-        //  TODO: cater for ExceptionReport responses?
         try {
             //  Read XSL from S3
             xslString = S3Utils.readS3ObjectAsString(configS3Bucket, xslS3Key, null);
@@ -247,7 +255,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
             //  If we can't determine the submission timestamp pass a -1.
             //  The javascript generated by the XSLT will recognise this as an
             // unknown timestamp.
-            long unixTimestamp = -1;
+            long unixTimestampSeconds = -1;
 
             try {
                 //  Use the request.xml we write to S3 on accepting a job to determine the
@@ -258,10 +266,8 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
 
                 if (requestS3Object != null) {
                     long lastModifiedTimestamp = requestS3Object.getObjectMetadata().getLastModified().getTime();
-                    unixTimestamp = lastModifiedTimestamp / 1000;
-                    Instant instant = Instant.ofEpochSecond(unixTimestamp / 1000);
-                    LOGGER.info("Request xml file timestamp = " + unixTimestamp);
-                    LOGGER.info("Instant of submission = " + instant.toString());
+                    unixTimestampSeconds = lastModifiedTimestamp / 1000;
+                    LOGGER.info("Request xml file timestamp = " + unixTimestampSeconds);
                 }
             } catch(Exception ex) {
                 LOGGER.error("Unable to determine submission time for job [" + jobId + "]: " + ex.getMessage(), ex);
@@ -272,7 +278,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
             transformer.setParameter("statusDescription", statusDescription);
             //  Pass the unix timestamp to the XSLT - which will render the date in the
             //  locale of the browser.  Passed as seconds since epoch.
-            transformer.setParameter("submittedTime", "" + unixTimestamp);
+            transformer.setParameter("submittedTime", "" + unixTimestampSeconds);
 
             // Source
             JAXBContext jc = JAXBContext.newInstance(ExecuteResponse.class);
