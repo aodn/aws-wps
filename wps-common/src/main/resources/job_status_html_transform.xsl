@@ -64,7 +64,19 @@
                 <dt>Job Id :</dt>
                 <dd><xsl:value-of select="$jobid" /></dd>
                 <dt>Submitted :</dt>
-                <dd><xsl:value-of select="$submittedTime" /></dd>
+                <dd>
+                    <script type="text/javascript">
+                        var timeParamValue = <xsl:value-of select="$submittedTime"/>;
+                        if(timeParamValue != -1) {
+                            var submitTime = new Date(0);
+                            submitTime.setUTCSeconds(timeParamValue);
+                            document.write( submitTime.toString() );
+                        } else {
+                            document.write("Unknown");
+                        }
+                    </script>
+                </dd>
+                <!--<dd><xsl:value-of select="$submittedTime" /></dd>-->
                 <dt>Status :</dt>
                 <dd><xsl:value-of select="$statusDescription" /></dd>
                 <xsl:for-each select="ns3:ExecuteResponse/ns3:ProcessOutputs">

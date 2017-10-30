@@ -25,9 +25,6 @@ import com.amazonaws.util.StringInputStream;
 import net.opengis.wps.v_1_0_0.ExecuteResponse;
 import net.opengis.wps.v_1_0_0.StatusType;
 import org.apache.http.HttpStatus;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
-import org.joda.time.LocalDate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,14 +39,8 @@ import javax.xml.transform.stream.StreamSource;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
-import java.text.SimpleDateFormat;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Date;
 
 public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusRequest, JobStatusResponse> {
 
@@ -137,7 +128,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
                 //  started, completed or failed - then we will update the position indicator.
                 StatusType currentStatus = currentResponse.getStatus();
                 AWSBatch batchClient = AWSBatchClientBuilder.defaultClient();
-                JobDetail jobDetail = getJobDetail(batchClient, jobId);
+
 
 
                 if(isJobWaiting(currentStatus)) {
@@ -147,7 +138,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
                     //  Perform a queue position lookup + insert the position information into the XML
                     //  All we have to do is setProcessAccepted to a string that includes some queue
                     //  position information.
-                    String jobProgressDescription = getProgressDescription(batchClient, jobDetail);
+                    String jobProgressDescription = getProgressDescription(batchClient, jobId);
 
                     LOGGER.info("Progress description: " + jobProgressDescription);
 
@@ -167,7 +158,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
                 if (requestedStatusFormat.equals(JobStatusFormatEnum.HTML)) {
 
                     LOGGER.info("HTML output format requested.  Running transform.");
-                    responseBody = generateHTML(currentResponse, jobDetail);
+                    responseBody = generateHTML(currentResponse, batchClient, jobId);
                 }
 
 
@@ -210,12 +201,14 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
      * job in the processing queue in the form
      * 'Queue position <POSITION_OF_THE_JOB> of <TOTAL_NUMBER_OF_JOBS_QUEUED>'
      *
-     * @param jobDetail
+     * @param jobId
+     * @param batchClient
      * @return
      */
-    private String getProgressDescription(AWSBatch batchClient, JobDetail jobDetail) {
+    private String getProgressDescription(AWSBatch batchClient, String jobId) {
 
         String description = null;
+        JobDetail jobDetail = getJobDetail(batchClient, jobId);
 
         if (jobDetail != null && jobDetail.getJobId() != null) {
 
@@ -328,7 +321,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
     }
 
 
-    private String generateHTML(ExecuteResponse status, JobDetail jobDetail) {
+    private String generateHTML(ExecuteResponse status, AWSBatch batchClient, String jobId) {
         // Create Transformer
         TransformerFactory tf = TransformerFactory.newInstance();
         String xslString;
@@ -346,28 +339,33 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
 
             Transformer transformer = tf.newTransformer(xslt);
 
+            //  Get a friendly description of the status
+            String statusDescription = getStatusDescription(status);
+            long unixTimestamp;
+            JobDetail jobDetail = getJobDetail(batchClient, jobId);
+
             //  Pass in the jobId
             if(jobDetail != null && jobDetail.getJobId() != null) {
-                //  Get a friendly description of the status
-                String statusDescription = getStatusDescription(status);
-
-                final DateTimeFormatter formatter =
-                        DateTimeFormatter.ofPattern("EE dd MMM yyyy HH:mm:ss Z (zzz)");
-
-                final long unixTime = jobDetail.getCreatedAt();
-
-                Instant instant = Instant.ofEpochSecond(unixTime/1000);
-                ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(instant, ZoneId.of("UTC"));
-                final String formattedDtm = formatter.format(zonedDateTime);
-                System.out.println("formattedTime = " + formattedDtm);
-
-                //  Pass the job ID
-                transformer.setParameter("jobid", jobDetail.getJobId());
-                transformer.setParameter("statusDescription", statusDescription);
-                transformer.setParameter("submittedTime", formattedDtm);
-                //  TODO:  pass in text description of the state of the job (ie: Download Available, Job Submitted, etc) can be calculated based
-                //  on the parts of status.getStatus() which are populated the parameter named can be referred to in the XSL stylesheet + the value will be passed.
+                //  Get the timestamp from the AWS batch API
+                //  getCreateAt returns milliseconds - we want to pass the seconds since epoch
+                unixTimestamp = jobDetail.getCreatedAt() / 1000;
+                jobId = jobDetail.getJobId();
+                Instant instant = Instant.ofEpochSecond(unixTimestamp/1000);
+                LOGGER.info("Unix timestamp = " + unixTimestamp);
+                LOGGER.info("Instant of submission = " + instant.toString());
+            } else {
+                //  Pass a -1 to indicate that we don't know the submit
+                //  time.  The javascript generated by the XSLT will
+                //  recognise this as an unknown timestamp.
+                unixTimestamp = -1;
             }
+
+            //  Pass the job ID & status description
+            transformer.setParameter("jobid", jobId);
+            transformer.setParameter("statusDescription", statusDescription);
+            //  Pass the unix timestamp to the XSLT - which will render the date in the
+            //  locale of the browser.  Passed as seconds since epoch.
+            transformer.setParameter("submittedTime", "" + unixTimestamp);
 
             // Source
             JAXBContext jc = JAXBContext.newInstance(ExecuteResponse.class);
