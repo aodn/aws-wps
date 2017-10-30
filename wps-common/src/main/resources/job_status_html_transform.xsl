@@ -28,11 +28,33 @@
         <div class="container">
         <h2>WPS status</h2>
 
-        <xsl:call-template name="response">
-            <xsl:with-param name="jobid" />
-            <xsl:with-param name="statusDescription" />
-            <xsl:with-param name="submittedTime" />
-        </xsl:call-template>
+        <dl>
+            <dt>Job Id :</dt>
+            <dd><xsl:value-of select="$jobid" /></dd>
+            <dt>Submitted :</dt>
+            <dd>
+                <script type="text/javascript">
+                    var timeParamValue = <xsl:value-of select="$submittedTime"/>;
+                    if(timeParamValue != -1) {
+                    var submitTime = new Date(0);
+                    submitTime.setUTCSeconds(timeParamValue);
+                    document.write( submitTime.toString() );
+                    } else {
+                    document.write("Unknown");
+                    }
+                </script>
+            </dd>
+            <dt>Status :</dt>
+            <dd><xsl:value-of select="$statusDescription" /></dd>
+            <xsl:for-each select="ns3:ExecuteResponse/ns3:ProcessOutputs">
+                <dt>Download :</dt>
+                <xsl:for-each select="ns3:Output">
+                    <xsl:variable name="downloadLink"><xsl:value-of select="ns3:Reference/@href"/></xsl:variable>
+                    <xsl:variable name="outputName"><xsl:value-of select="ns1:Identifier"/></xsl:variable>
+                    <dd>Download [<xsl:value-of select="$outputName"/>] : <a href="{$downloadLink}"><xsl:value-of select="$jobid"/></a></dd>
+                </xsl:for-each>
+            </xsl:for-each>
+        </dl>
 
         </div>
             <div class="jumbotronFooter voffset5">
@@ -56,39 +78,5 @@
         </body>
         </html>
     </xsl:template>
-
-    <xsl:template match="ns3:ExecuteResponse" name="response">
-        <xsl:variable name="statusLocation"><xsl:value-of select="@statusLocation"/></xsl:variable>
-
-            <dl>
-                <dt>Job Id :</dt>
-                <dd><xsl:value-of select="$jobid" /></dd>
-                <dt>Submitted :</dt>
-                <dd>
-                    <script type="text/javascript">
-                        var timeParamValue = <xsl:value-of select="$submittedTime"/>;
-                        if(timeParamValue != -1) {
-                            var submitTime = new Date(0);
-                            submitTime.setUTCSeconds(timeParamValue);
-                            document.write( submitTime.toString() );
-                        } else {
-                            document.write("Unknown");
-                        }
-                    </script>
-                </dd>
-                <!--<dd><xsl:value-of select="$submittedTime" /></dd>-->
-                <dt>Status :</dt>
-                <dd><xsl:value-of select="$statusDescription" /></dd>
-                <xsl:for-each select="ns3:ExecuteResponse/ns3:ProcessOutputs">
-                    <dt>Download :</dt>
-                    <xsl:for-each select="ns3:Output">
-                        <xsl:variable name="downloadLink"><xsl:value-of select="ns3:Reference/@href"/></xsl:variable>
-                        <xsl:variable name="outputName"><xsl:value-of select="ns1:Identifier"/></xsl:variable>
-                        <dd>Download [<xsl:value-of select="$outputName"/>] : <a href="{$downloadLink}"><xsl:value-of select="$jobid"/></a></dd>
-                    </xsl:for-each>
-                </xsl:for-each>
-            </dl>
-    </xsl:template>
-
 
 </xsl:stylesheet>

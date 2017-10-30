@@ -1,5 +1,6 @@
 package au.org.aodn.aws.wps.lambda;
 
+import au.org.aodn.aws.util.AWSBatchUtil;
 import au.org.aodn.aws.util.JobFileUtil;
 import au.org.aodn.aws.util.S3Utils;
 import au.org.aodn.aws.wps.status.JobStatusFormatEnum;
@@ -10,17 +11,12 @@ import au.org.aodn.aws.wps.status.QueuePosition;
 import au.org.aodn.aws.wps.status.WpsConfig;
 import com.amazonaws.services.batch.AWSBatch;
 import com.amazonaws.services.batch.AWSBatchClientBuilder;
-import com.amazonaws.services.batch.model.DescribeJobsRequest;
-import com.amazonaws.services.batch.model.DescribeJobsResult;
 import com.amazonaws.services.batch.model.JobDetail;
-import com.amazonaws.services.batch.model.JobStatus;
-import com.amazonaws.services.batch.model.JobSummary;
-import com.amazonaws.services.batch.model.ListJobsRequest;
-import com.amazonaws.services.batch.model.ListJobsResult;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.util.StringInputStream;
 import net.opengis.wps.v_1_0_0.ExecuteResponse;
 import net.opengis.wps.v_1_0_0.StatusType;
@@ -40,7 +36,7 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.time.Instant;
-import java.util.ArrayList;
+
 
 public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusRequest, JobStatusResponse> {
 
@@ -55,12 +51,19 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
 
     private Logger LOGGER = LoggerFactory.getLogger(JobStatusServiceRequestHandler.class);
 
+    String statusFilename = WpsConfig.getConfig(WpsConfig.STATUS_S3_FILENAME_CONFIG_KEY);
+    String jobPrefix = WpsConfig.getConfig(WpsConfig.AWS_BATCH_JOB_S3_KEY);
+    String statusS3Bucket = WpsConfig.getConfig(WpsConfig.STATUS_S3_BUCKET_CONFIG_KEY);
+    String configS3Bucket = WpsConfig.getConfig(WpsConfig.STATUS_SERVICE_CONFIG_S3_BUCKET_CONFIG_KEY);
+    String xslS3Key = WpsConfig.getConfig(WpsConfig.STATUS_HTML_XSL_S3_KEY_CONFIG_KEY);
+    String requestFilename = WpsConfig.getConfig(WpsConfig.REQUEST_S3_FILENAME_CONFIG_KEY);
+
     @Override
     public JobStatusResponse handleRequest(JobStatusRequest request, Context context) {
 
         JobStatusResponse response;
         JobStatusResponse.ResponseBuilder responseBuilder = new JobStatusResponse.ResponseBuilder();
-        String responseBody;
+        String responseBody = null;
 
         JobStatusRequestParameterParser parameterParser = new JobStatusRequestParameterParser(request);
         String jobId = parameterParser.getJobId();
@@ -95,18 +98,20 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
         }
 
 
+        ExecuteResponse executeResponse = null;
+        AWSBatch batchClient = AWSBatchClientBuilder.defaultClient();
+        int httpStatus;
+        String statusDescription = null;
+
         //  Read the status file for the jobId passed (if it exists)
         try {
-
-            String statusFilename = WpsConfig.getConfig(WpsConfig.STATUS_S3_FILENAME_CONFIG_KEY);
-            String jobPrefix = WpsConfig.getConfig(WpsConfig.AWS_BATCH_JOB_S3_KEY);
-            String statusS3Bucket = WpsConfig.getConfig(WpsConfig.STATUS_S3_BUCKET_CONFIG_KEY);
 
             String s3Key = jobPrefix + jobId + "/" + statusFilename;
 
             //  Check for the existence of the status document
             AmazonS3 s3Client = AmazonS3ClientBuilder.defaultClient();
             boolean statusExists = s3Client.doesObjectExist(statusS3Bucket, s3Key);
+
 
             LOGGER.info("Status file exists for jobId [" + jobId + "]? " + statusExists);
 
@@ -119,17 +124,16 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
                 String statusXMLString = S3Utils.readS3ObjectAsString(statusS3Bucket, s3Key, null);
 
                 //  Read the status document
-                ExecuteResponse currentResponse = JobFileUtil.unmarshallExecuteResponse(statusXMLString);
+                executeResponse = JobFileUtil.unmarshallExecuteResponse(statusXMLString);
 
                 LOGGER.info("Unmarshalled XML for jobId [" + jobId + "]");
                 LOGGER.info(statusXMLString);
 
                 //  If the ExecuteResponse indicates that the job has been accepted but not
                 //  started, completed or failed - then we will update the position indicator.
-                StatusType currentStatus = currentResponse.getStatus();
-                AWSBatch batchClient = AWSBatchClientBuilder.defaultClient();
-
-
+                StatusType currentStatus = executeResponse.getStatus();
+                //  Get a friendly description of the status
+                statusDescription = getStatusDescription(currentStatus);
 
                 if(isJobWaiting(currentStatus)) {
 
@@ -144,50 +148,45 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
 
                     if(jobProgressDescription != null) {
                         currentStatus.setProcessAccepted(currentStatus.getProcessAccepted() + " " + jobProgressDescription);
-                        currentResponse.setStatus(currentStatus);
+                        executeResponse.setStatus(currentStatus);
                     }
 
-                    responseBody = JobFileUtil.createXmlDocument(currentResponse);
+                    responseBody = JobFileUtil.createXmlDocument(executeResponse);
                 } else {
                     //  Return unaltered status XML
                     responseBody = statusXMLString;
                 }
 
-
-                //  If requested output format is HTML - perform a transform on the XML
-                if (requestedStatusFormat.equals(JobStatusFormatEnum.HTML)) {
-
-                    LOGGER.info("HTML output format requested.  Running transform.");
-                    responseBody = generateHTML(currentResponse, batchClient, jobId);
-                }
-
-
-                //  Build the response
-                responseBuilder.isBase64Encoded(false);
-                responseBuilder.header("Content-Type", requestedStatusFormat.mimeType());
-                responseBuilder.statusCode(HttpStatus.SC_OK);
-                responseBuilder.body(responseBody);
-
+                httpStatus = HttpStatus.SC_OK;
             } else {
 
-                //  TODO:  output XML or HTML error information
-                String notFoundResponseBody = "Not found.  Job ID [" + jobId + "]";
-                LOGGER.info(notFoundResponseBody);
+                statusDescription = "Unknown status, error retrieving status [Job ID not found]";
+                LOGGER.info(statusDescription);
                 //  Status document was not found in the S3 bucket
-                responseBuilder.statusCode(HttpStatus.SC_OK);
-                responseBuilder.body(notFoundResponseBody);
+                httpStatus = HttpStatus.SC_OK;
+                //  Create an empty response object
+                executeResponse = new ExecuteResponse();
             }
         } catch (Exception ex) {
-            String message = "Exception retrieving status of job [" + jobId + "]: " + ex.getMessage();
-
-            //  TODO: output XML or HTML error information
+            statusDescription = "Exception retrieving status of job [" + jobId + "]: " + ex.getMessage();
+            //  TODO: FORM AN EXCEPTION REPORT?
             //  Bad stuff happened
-            LOGGER.error(message, ex);
-            //  Execute the request
-            responseBuilder.statusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-            responseBuilder.body(message);
+            LOGGER.error(statusDescription, ex);
+            executeResponse = new ExecuteResponse();
+            httpStatus = HttpStatus.SC_INTERNAL_SERVER_ERROR;
         }
 
+        //  If requested output format is HTML - perform a transform on the XML
+        if (requestedStatusFormat.equals(JobStatusFormatEnum.HTML)) {
+
+            LOGGER.info("HTML output format requested.  Running transform.");
+            responseBody = generateHTML(executeResponse, statusDescription, batchClient, jobId);
+        }
+
+        //  Build the response
+        responseBuilder.header("Content-Type", requestedStatusFormat.mimeType());
+        responseBuilder.body(responseBody);
+        responseBuilder.statusCode(httpStatus);
         responseBuilder.isBase64Encoded(false);
         response = responseBuilder.build();
 
@@ -208,7 +207,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
     private String getProgressDescription(AWSBatch batchClient, String jobId) {
 
         String description = null;
-        JobDetail jobDetail = getJobDetail(batchClient, jobId);
+        JobDetail jobDetail = AWSBatchUtil.getJobDetail(batchClient, jobId);
 
         if (jobDetail != null && jobDetail.getJobId() != null) {
 
@@ -218,7 +217,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
 
             if (queueName != null) {
                 //  Determine the position of the job in the queue
-                QueuePosition queuePosition = getQueuePosition(batchClient, jobDetail);
+                QueuePosition queuePosition = AWSBatchUtil.getQueuePosition(batchClient, jobDetail);
 
                 if (queuePosition != null) {
                     description = "Queue position " + queuePosition.getPosition() + " of " + queuePosition.getNumberInQueue();
@@ -229,108 +228,14 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
         return description;
     }
 
-    /**
-     *
-     * @param batchClient
-     * @param jobDetail
-     * @return
-     */
-    private QueuePosition getQueuePosition(AWSBatch batchClient, JobDetail jobDetail) {
-
-        ArrayList<JobSummary> allJobs = new ArrayList<>();
-
-        ListJobsRequest submittedJobsRequest = new ListJobsRequest();
-        submittedJobsRequest.setJobStatus(JobStatus.SUBMITTED);
-        submittedJobsRequest.setJobQueue(jobDetail.getJobQueue());
-
-        ListJobsResult submittedJobsResult = batchClient.listJobs(submittedJobsRequest);
-        LOGGER.info("# SUBMITTED jobs: " + submittedJobsResult.getJobSummaryList().size());
-        allJobs.addAll(submittedJobsResult.getJobSummaryList());
 
 
-        ListJobsRequest pendingJobsRequest = new ListJobsRequest();
-        pendingJobsRequest.setJobStatus(JobStatus.PENDING);
-        pendingJobsRequest.setJobQueue(jobDetail.getJobQueue());
-
-        ListJobsResult pendingJobsResult = batchClient.listJobs(pendingJobsRequest);
-        LOGGER.info("# PENDING jobs: " + pendingJobsResult.getJobSummaryList().size());
-        allJobs.addAll(pendingJobsResult.getJobSummaryList());
-
-
-        ListJobsRequest runnableJobsRequest = new ListJobsRequest();
-        runnableJobsRequest.setJobStatus(JobStatus.RUNNABLE);
-        runnableJobsRequest.setJobQueue(jobDetail.getJobQueue());
-
-        ListJobsResult runnableJobsResult = batchClient.listJobs(runnableJobsRequest);
-        LOGGER.info("# RUNNABLE jobs: " + runnableJobsResult.getJobSummaryList().size());
-        allJobs.addAll(runnableJobsResult.getJobSummaryList());
-
-        ListJobsRequest startingJobsRequest = new ListJobsRequest();
-        startingJobsRequest.setJobStatus(JobStatus.STARTING);
-        startingJobsRequest.setJobQueue(jobDetail.getJobQueue());
-
-        ListJobsResult startingJobsResult = batchClient.listJobs(startingJobsRequest);
-        LOGGER.info("# STARTING jobs: " + startingJobsResult.getJobSummaryList().size());
-        allJobs.addAll(startingJobsResult.getJobSummaryList());
-
-        LOGGER.info("TOTAL JOBS : " + allJobs.size());
-
-        int jobIndex = -1;
-        JobSummary[] jobSummaries = new JobSummary[allJobs.size()];
-        jobSummaries = allJobs.toArray(jobSummaries);
-        for (int index = 0; index <= jobSummaries.length - 1; index++) {
-            LOGGER.info("Search queue : jobId [" + jobSummaries[index].getJobId() + "], Match? [" + jobSummaries[index].getJobId().equalsIgnoreCase(jobDetail.getJobId()) + "]");
-
-            if (jobSummaries[index].getJobId().equalsIgnoreCase(jobDetail.getJobId())) {
-                jobIndex = index;
-                LOGGER.info("Found Job at index [" + jobIndex + "] in queue");
-            }
-        }
-
-        int jobPosition = 0;
-        if (jobIndex >= 0) {
-            jobPosition = jobIndex + 1;
-        }
-
-        return new QueuePosition(jobPosition, allJobs.size());
-    }
-
-
-    private JobDetail getJobDetail(AWSBatch batchClient, String jobId) {
-
-        if (batchClient != null && jobId != null) {
-
-
-            try {
-                DescribeJobsRequest describeRequest = new DescribeJobsRequest();
-                ArrayList<String> jobList = new ArrayList<>();
-                jobList.add(jobId);
-                describeRequest.setJobs(jobList);
-
-                DescribeJobsResult describeResult = batchClient.describeJobs(describeRequest);
-
-                if (describeResult != null && describeResult.getJobs().size() > 0) {
-                    return describeResult.getJobs().get(0);
-                }
-            } catch (Exception ex) {
-                LOGGER.error("Unable to determine the queue for jobId [" + jobId + "]", ex);
-            }
-        }
-
-        return null;
-    }
-
-
-    private String generateHTML(ExecuteResponse status, AWSBatch batchClient, String jobId) {
+    private String generateHTML(ExecuteResponse xmlStatus, String statusDescription, AWSBatch batchClient, String jobId) {
         // Create Transformer
         TransformerFactory tf = TransformerFactory.newInstance();
         String xslString;
 
-        String configS3Bucket = WpsConfig.getConfig(WpsConfig.STATUS_SERVICE_CONFIG_S3_BUCKET_CONFIG_KEY);
-        String xslS3Key = WpsConfig.getConfig(WpsConfig.STATUS_HTML_XSL_S3_KEY_CONFIG_KEY);
-
-        //  TODO: cater for ExceptionReport responses
-
+        //  TODO: cater for ExceptionReport responses?
         try {
             //  Read XSL from S3
             xslString = S3Utils.readS3ObjectAsString(configS3Bucket, xslS3Key, null);
@@ -339,25 +244,27 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
 
             Transformer transformer = tf.newTransformer(xslt);
 
-            //  Get a friendly description of the status
-            String statusDescription = getStatusDescription(status);
-            long unixTimestamp;
-            JobDetail jobDetail = getJobDetail(batchClient, jobId);
+            //  If we can't determine the submission timestamp pass a -1.
+            //  The javascript generated by the XSLT will recognise this as an
+            // unknown timestamp.
+            long unixTimestamp = -1;
 
-            //  Pass in the jobId
-            if(jobDetail != null && jobDetail.getJobId() != null) {
-                //  Get the timestamp from the AWS batch API
-                //  getCreateAt returns milliseconds - we want to pass the seconds since epoch
-                unixTimestamp = jobDetail.getCreatedAt() / 1000;
-                jobId = jobDetail.getJobId();
-                Instant instant = Instant.ofEpochSecond(unixTimestamp/1000);
-                LOGGER.info("Unix timestamp = " + unixTimestamp);
-                LOGGER.info("Instant of submission = " + instant.toString());
-            } else {
-                //  Pass a -1 to indicate that we don't know the submit
-                //  time.  The javascript generated by the XSLT will
-                //  recognise this as an unknown timestamp.
-                unixTimestamp = -1;
+            try {
+                //  Use the request.xml we write to S3 on accepting a job to determine the
+                //  submission time of the job
+                String requestFileS3Key = jobPrefix + jobId + "/" + requestFilename;
+                LOGGER.info("Request file bucket [" + statusS3Bucket + "], Key [" + requestFileS3Key + "]");
+                S3Object requestS3Object = S3Utils.getS3Object(statusS3Bucket, requestFileS3Key, null);
+
+                if (requestS3Object != null) {
+                    long lastModifiedTimestamp = requestS3Object.getObjectMetadata().getLastModified().getTime();
+                    unixTimestamp = lastModifiedTimestamp / 1000;
+                    Instant instant = Instant.ofEpochSecond(unixTimestamp / 1000);
+                    LOGGER.info("Request xml file timestamp = " + unixTimestamp);
+                    LOGGER.info("Instant of submission = " + instant.toString());
+                }
+            } catch(Exception ex) {
+                LOGGER.error("Unable to determine submission time for job [" + jobId + "]: " + ex.getMessage(), ex);
             }
 
             //  Pass the job ID & status description
@@ -369,7 +276,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
 
             // Source
             JAXBContext jc = JAXBContext.newInstance(ExecuteResponse.class);
-            JAXBSource source = new JAXBSource(jc, status);
+            JAXBSource source = new JAXBSource(jc, xmlStatus);
 
             // Transform
             StringWriter htmlWriter = new StringWriter();
@@ -402,10 +309,9 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
     }
 
 
-    private String getStatusDescription(ExecuteResponse status) {
-        StatusType currentStatus = status.getStatus();
+    private String getStatusDescription(StatusType currentStatus) {
 
-        if(status != null) {
+        if(currentStatus != null) {
             if (currentStatus.isSetProcessAccepted()) {
                 return ACCEPTED_STATUS_DESCRIPTION;
             } else if (currentStatus.isSetProcessStarted()) {
