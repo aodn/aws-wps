@@ -118,7 +118,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
             //  completed (successful or failed), then we will return the information contained in the status file unaltered.
             if (statusExists) {
 
-                String statusXMLString = S3Utils.readS3ObjectAsString(statusS3Bucket, s3Key, null);
+                String statusXMLString = S3Utils.readS3ObjectAsString(statusS3Bucket, s3Key);
 
                 //  Read the status document
                 executeResponse = JobFileUtil.unmarshallExecuteResponse(statusXMLString);
@@ -243,7 +243,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
 
         try {
             //  Read XSL from S3
-            xslString = S3Utils.readS3ObjectAsString(configS3Bucket, xslS3Key, null);
+            xslString = S3Utils.readS3ObjectAsString(configS3Bucket, xslS3Key);
             StringInputStream xslInputStream = new StringInputStream(xslString);
             StreamSource xslt = new StreamSource(xslInputStream);
 
@@ -259,7 +259,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
                 //  submission time of the job
                 String requestFileS3Key = jobPrefix + jobId + "/" + requestFilename;
                 LOGGER.info("Request file bucket [" + statusS3Bucket + "], Key [" + requestFileS3Key + "]");
-                S3Object requestS3Object = S3Utils.getS3Object(statusS3Bucket, requestFileS3Key, null);
+                S3Object requestS3Object = S3Utils.getS3Object(statusS3Bucket, requestFileS3Key);
 
                 if (requestS3Object != null) {
                     long lastModifiedTimestamp = requestS3Object.getObjectMetadata().getLastModified().getTime();

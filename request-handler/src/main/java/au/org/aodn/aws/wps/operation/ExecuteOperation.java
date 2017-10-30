@@ -2,23 +2,18 @@ package au.org.aodn.aws.wps.operation;
 
 import au.org.aodn.aws.util.EmailService;
 import au.org.aodn.aws.util.JobFileUtil;
+import au.org.aodn.aws.wps.request.ExecuteRequestHelper;
 import au.org.aodn.aws.wps.status.*;
 import com.amazonaws.services.batch.AWSBatch;
 import com.amazonaws.services.batch.AWSBatchClientBuilder;
 import com.amazonaws.services.batch.model.SubmitJobRequest;
 import com.amazonaws.services.batch.model.SubmitJobResult;
-import net.opengis.wps.v_1_0_0.DataInputsType;
-import net.opengis.wps.v_1_0_0.DataType;
 import net.opengis.wps.v_1_0_0.Execute;
-import net.opengis.wps.v_1_0_0.InputType;
-import net.opengis.wps.v_1_0_0.OutputDefinitionType;
-import net.opengis.wps.v_1_0_0.ResponseFormType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 import static au.org.aodn.aws.wps.status.WpsConfig.*;
 
@@ -44,6 +39,7 @@ public class ExecuteOperation implements Operation {
         //      status filename
         //      status location
         String statusS3BucketName = WpsConfig.getConfig(STATUS_S3_BUCKET_CONFIG_KEY);
+        String jobFilePrefix = WpsConfig.getConfig(AWS_BATCH_JOB_S3_KEY);
         String statusFileName = WpsConfig.getConfig(STATUS_S3_FILENAME_CONFIG_KEY);
         String requestFileName = WpsConfig.getConfig(REQUEST_S3_FILENAME_CONFIG_KEY);
         String jobName = WpsConfig.getConfig(AWS_BATCH_JOB_NAME_CONFIG_KEY);
@@ -57,11 +53,12 @@ public class ExecuteOperation implements Operation {
         LOGGER.info("jobQueueName: " + jobQueueName);
         LOGGER.info("awsRegion: " + awsRegion);
 
+        ExecuteRequestHelper helper = new ExecuteRequestHelper(executeRequest);
+        String email = helper.getEmail();
+
         String processIdentifier = executeRequest.getIdentifier().getValue();  // code spaces not supported for the moment
         JobMapper jobMapper = new JobMapper(processIdentifier);
         String jobDefinitionName = jobMapper.getJobDefinitionName();
-
-        Map<String, String> parameterMap = getJobParameters();
 
         LOGGER.info("Submitting job request...");
         SubmitJobRequest submitJobRequest = new SubmitJobRequest();
@@ -71,7 +68,6 @@ public class ExecuteOperation implements Operation {
         submitJobRequest.setJobQueue(jobQueueName);  //TODO: config/jobqueue selection
         submitJobRequest.setJobName(jobName);
         submitJobRequest.setJobDefinition(jobDefinitionName);  //TODO: either map to correct job def or set vcpus/memory required appropriately
-        submitJobRequest.setParameters(parameterMap);
 
         AWSBatchClientBuilder builder = AWSBatchClientBuilder.standard();
         builder.setRegion(awsRegion);
@@ -83,10 +79,10 @@ public class ExecuteOperation implements Operation {
 
         LOGGER.info("Job submitted.  Job ID : " + jobId);
         LOGGER.info("Writing job request to S3");
-        S3JobFileUpdater s3JobFileUpdater = new S3JobFileUpdater(statusS3BucketName, statusFileName, requestFileName);
+        S3JobFileManager s3JobFileManager = new S3JobFileManager(statusS3BucketName, jobFilePrefix, jobId);
         try {
-            s3JobFileUpdater.writeRequest(JobFileUtil.createXmlDocument(executeRequest), jobId);
-        } catch (UnsupportedEncodingException e) {
+            s3JobFileManager.write(JobFileUtil.createXmlDocument(executeRequest), requestFileName);
+        } catch (IOException e) {
             LOGGER.error(e.getMessage(), e);
         }
 
@@ -95,12 +91,12 @@ public class ExecuteOperation implements Operation {
 
         try {
             statusDocument = statusBuilder.createResponseDocument(EnumStatus.ACCEPTED, null, null, null);
-            s3JobFileUpdater.updateStatus(statusDocument, jobId);
+            s3JobFileManager.write(statusDocument, statusFileName);
 
-            EmailService emailService = new EmailService();
-            String callbackParams = parameterMap.get("callbackParams");
-            String email = callbackParams.substring(callbackParams.indexOf("=") + 1);
-            emailService.sendRegisteredJobEmail(email, jobId);
+            if (email != null) {
+                EmailService emailService = new EmailService();
+                emailService.sendRegisteredJobEmail(email, jobId);
+            }
         } catch (UnsupportedEncodingException e) {
             LOGGER.error(e.getMessage(), e);
             //  Form failed status document
@@ -113,41 +109,4 @@ public class ExecuteOperation implements Operation {
         return statusDocument;
     }
 
-    private Map<String, String> getJobParameters() {
-        Map<String, String> parameters = new LinkedHashMap<>();
-
-        DataInputsType dataInputs = executeRequest.getDataInputs();
-        ResponseFormType responseForm = executeRequest.getResponseForm();
-
-        if (dataInputs == null && responseForm == null) {
-            return parameters;
-        }
-
-        if (dataInputs != null) {
-            for (InputType inputType : dataInputs.getInput()) {
-                if (inputType.getReference() != null) {
-                    throw new UnsupportedOperationException("Input by reference not supported");
-                }
-
-                String identifier = inputType.getIdentifier().getValue();  // codespaces not supported for the moment
-                DataType data = inputType.getData();
-                String literalValue = data.getLiteralData().getValue();   //uom and datatype not supported for the moment
-                parameters.put(identifier, literalValue);
-            }
-        }
-
-        if (responseForm != null) {
-            //  Pass the requested output format to the AWS batch aggregator
-            OutputDefinitionType outputDefinition = responseForm.getRawDataOutput();
-            if(outputDefinition == null) {
-                //TODO: what if there are multiple outputs with different mime types
-                outputDefinition = responseForm.getResponseDocument().getOutput().get(0);
-            }
-
-            String outputMimeType = outputDefinition.getMimeType();
-            parameters.put(outputDefinition.getIdentifier().getValue(), outputMimeType);
-        }
-
-        return parameters;
-    }
 }

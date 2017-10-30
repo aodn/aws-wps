@@ -27,8 +27,7 @@ public class WpsLambdaRequestHandler implements RequestHandler<AwsApiRequest, Aw
         ResponseBuilder responseBuilder = new ResponseBuilder();
 
         try {
-            JAXBContext jaxbContext = JAXBContext.newInstance(ExecuteResponse.class);
-            RequestParserFactory requestParserFactory = new RequestParserFactory(jaxbContext);
+            RequestParserFactory requestParserFactory = new RequestParserFactory();
             RequestParser requestParser = requestParserFactory.getRequestParser(request);
 
             if(requestParser != null) {

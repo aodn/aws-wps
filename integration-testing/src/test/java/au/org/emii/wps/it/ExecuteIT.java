@@ -10,16 +10,15 @@ import com.jayway.restassured.internal.mapper.ObjectMapperType;
 import com.jayway.restassured.specification.RequestSpecification;
 import net.opengis.wps.v_1_0_0.Execute;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
 
-import static au.org.emii.wps.util.Matchers.validateWith;
 import static com.jayway.awaitility.Awaitility.await;
 import static com.jayway.restassured.RestAssured.get;
 import static com.jayway.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.anyOf;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.Matchers.hasXPath;
 
 public class ExecuteIT {
@@ -47,20 +46,13 @@ public class ExecuteIT {
             .output("result", "application/x-netcdf")
             .build();
 
-        String statusUrl = given()
+        String statusUrl = submitAndWaitToComplete(request, TWENTY_MINUTES);
+
+        given()
             .spec(spec)
-            .content(request, ObjectMapperType.JAXB)
         .when()
-            .post()
+            .get(statusUrl)
         .then()
-            .statusCode(200)
-//            .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
-        .extract()
-            .path("Execute.@statusLocation");
-
-        waitUntilComplete(statusUrl, TWENTY_MINUTES);
-
-        get(statusUrl).then()
             .statusCode(200)
 //            .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
             .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"));
@@ -76,23 +68,65 @@ public class ExecuteIT {
             .output("result", "application/x-netcdf")
             .build();
 
-        String statusUrl = given()
+        String statusUrl = submitAndWaitToComplete(request, TWENTY_MINUTES);
+
+        given()
             .spec(spec)
-            .content(request, ObjectMapperType.JAXB)
         .when()
-            .post()
+            .get(statusUrl)
         .then()
             .statusCode(200)
 //            .body(validateWith("/wps/1.0.0/wpsAll.xsd"));
-            .extract()
-        .path("Execute.@statusLocation");
-
-        waitUntilComplete(statusUrl, TWENTY_MINUTES);
-
-        get(statusUrl).then()
-            .statusCode(200)
-//            .body(validateWith("/wps/1.0.0/wpsAll.xsd"));
             .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"));
+    }
+
+    @Test
+    public void testProvenanceRequested() {
+        Execute request = new ExecuteRequestBuilder()
+            .identifer("gs:GoGoDuck")
+            .input("layer", "imos:acorn_hourly_avg_rot_qc_timeseries_url")
+            .input("subset", "TIME,2017-01-01T00:00:00.000Z,2017-01-07T23:04:00.000Z;LATITUDE,-33.18,-31.45;LONGITUDE,114.82,115.39")
+            .input("callbackParams", "imos-wps-testing@mailinator.com")
+            .output("result", "application/x-netcdf")
+            .output("provenance", "text/xml")
+            .build();
+
+        String statusUrl = submitAndWaitToComplete(request, TWENTY_MINUTES);
+
+        given()
+            .spec(spec)
+            .when()
+            .get(statusUrl)
+            .then()
+            .statusCode(200)
+//            .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
+            .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"))
+            .body(hasXPath("/ExecuteResponse/ProcessOutputs/Output/Identifier[text()='result']"))
+            .body(hasXPath("/ExecuteResponse/ProcessOutputs/Output/Identifier[text()='provenance']"));
+    }
+
+    @Test
+    public void testNoProvenanceRequested() {
+        Execute request = new ExecuteRequestBuilder()
+            .identifer("gs:GoGoDuck")
+            .input("layer", "imos:acorn_hourly_avg_rot_qc_timeseries_url")
+            .input("subset", "TIME,2017-01-01T00:00:00.000Z,2017-01-07T23:04:00.000Z;LATITUDE,-33.18,-31.45;LONGITUDE,114.82,115.39")
+            .input("callbackParams", "imos-wps-testing@mailinator.com")
+            .output("result", "application/x-netcdf")
+            .build();
+
+        String statusUrl = submitAndWaitToComplete(request, TWENTY_MINUTES);
+
+        given()
+            .spec(spec)
+            .when()
+            .get(statusUrl)
+            .then()
+            .statusCode(200)
+//            .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
+            .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"))
+            .body(hasXPath("/ExecuteResponse/ProcessOutputs/Output/Identifier[text()='result']"))
+            .body(not(hasXPath("/ExecuteResponse/ProcessOutputs/Output/Identifier[text()='provenance']")));
     }
 
     @Test
@@ -104,17 +138,30 @@ public class ExecuteIT {
             .output("result", "application/x-netcdf")
             .build();
 
+        String statusUrl = submitAndWaitToComplete(request, TWENTY_MINUTES);
+
         given()
+            .spec(spec)
+        .when()
+            .get(statusUrl)
+        .then()
+            .statusCode(200)
+//            .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
+            .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"));
+    }
+
+    private String submitAndWaitToComplete(Execute request, Duration maxWait) {
+        String statusUrl = given()
             .spec(spec)
             .content(request, ObjectMapperType.JAXB)
         .when()
             .post()
         .then()
-            .statusCode(200);
+            .statusCode(200)
 //            .body(validateWith("/wps/1.0.0/wpsAll.xsd"));
-    }
+        .extract()
+            .path("Execute.@statusLocation");
 
-    private void waitUntilComplete(String statusUrl, Duration maxWait) {
         await().atMost(maxWait).until(() ->
             get(statusUrl).then()
                 .statusCode(200)
@@ -122,6 +169,8 @@ public class ExecuteIT {
                     hasXPath("/ExecuteResponse/Status/ProcessSucceeded"),
                     hasXPath("/ExecuteResponse/Status/ProcessFailed")))
         );
+
+        return statusUrl;
     }
 
 }

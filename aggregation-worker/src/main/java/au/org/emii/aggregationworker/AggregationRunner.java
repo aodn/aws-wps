@@ -3,10 +3,11 @@ package au.org.emii.aggregationworker;
 
 import au.org.aodn.aws.exception.EmailException;
 import au.org.aodn.aws.util.EmailService;
-import au.org.aodn.aws.util.S3Utils;
+import au.org.aodn.aws.wps.request.ExecuteRequestHelper;
+import au.org.aodn.aws.wps.request.XmlRequestParser;
 import au.org.aodn.aws.wps.status.EnumStatus;
 import au.org.aodn.aws.wps.status.ExecuteStatusBuilder;
-import au.org.aodn.aws.wps.status.S3JobFileUpdater;
+import au.org.aodn.aws.wps.status.S3JobFileManager;
 import au.org.aodn.aws.wps.status.WpsConfig;
 import au.org.emii.aggregator.NetcdfAggregator;
 import au.org.emii.aggregator.catalogue.CatalogueReader;
@@ -18,21 +19,17 @@ import au.org.emii.geoserver.client.SubsetParameters;
 import au.org.emii.util.IntegerHelper;
 import au.org.emii.util.ProvenanceWriter;
 import freemarker.template.Configuration;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.Options;
+import net.opengis.wps.v_1_0_0.Execute;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
-import thredds.crawlabledataset.s3.S3URI;
 import ucar.nc2.time.CalendarDateRange;
 import ucar.unidata.geoloc.LatLonRect;
 
-import java.io.UnsupportedEncodingException;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -62,7 +59,7 @@ public class AggregationRunner implements CommandLineRunner {
     public void run(String... args) {
 
         DateTime startTime = new DateTime(DateTimeZone.UTC);
-        S3JobFileUpdater s3JobFileUpdater = null;
+        S3JobFileManager statusFileManager = null;
         String batchJobId = null, email = null;
         EmailService emailService = null;
         ExecuteStatusBuilder statusBuilder = null;
@@ -76,6 +73,7 @@ public class AggregationRunner implements CommandLineRunner {
             String outputBucketName = WpsConfig.getConfig(OUTPUT_S3_BUCKET_CONFIG_KEY);
             String outputFilename = WpsConfig.getConfig(OUTPUT_S3_FILENAME_CONFIG_KEY);
             statusS3Bucket = WpsConfig.getConfig(STATUS_S3_BUCKET_CONFIG_KEY);
+            String jobFilePrefix = WpsConfig.getConfig(AWS_BATCH_JOB_S3_KEY);
             statusFilename = WpsConfig.getConfig(STATUS_S3_FILENAME_CONFIG_KEY);
             requestFilename = WpsConfig.getConfig(REQUEST_S3_FILENAME_CONFIG_KEY);
 
@@ -101,7 +99,6 @@ public class AggregationRunner implements CommandLineRunner {
                 downloadReadTimeout = DEFAULT_READ_TIMEOUT_MS;
             }
 
-
             //  TODO:  null check and act on null configuration
             //  TODO : validate configuration
             String wpsEndpointUrl = WpsConfig.getConfig(WPS_ENDPOINT_URL_CONFIG_KEY);
@@ -110,33 +107,32 @@ public class AggregationRunner implements CommandLineRunner {
             String statusDocument = statusBuilder.createResponseDocument(EnumStatus.STARTED, null, null, null);
 
             //  Update status document to indicate job has started
-            s3JobFileUpdater = new S3JobFileUpdater(statusS3Bucket, statusFilename, requestFilename);
-            s3JobFileUpdater.updateStatus(statusDocument, batchJobId);
+            statusFileManager = new S3JobFileManager(statusS3Bucket, jobFilePrefix, batchJobId);
+            statusFileManager.write(statusDocument, statusFilename);
 
             logger.info("AWS BATCH JOB ID     : " + batchJobId);
             logger.info("AWS BATCH CE NAME    : " + awsBatchComputeEnvName);
             logger.info("AWS BATCH QUEUE NAME : " + awsBatchQueueName);
             logger.info("-----------------------------------------------------");
 
-            Options options = new Options();
+            // Get request details
+            String requestFileContent = statusFileManager.read(requestFilename);
+            XmlRequestParser parser = new XmlRequestParser();
+            Execute request = (Execute) parser.parse(requestFileContent);
 
-            options.addOption("l", true, "The layer name");
-            options.addOption("s", true, "Subset parameters");
-            options.addOption("m", true, "The requested output mime type");
-            options.addOption("e", true, "Callback email address");
+            // Get inputs
+            ExecuteRequestHelper requestHelper = new ExecuteRequestHelper(request);
+            String layer = requestHelper.getLiteralInputValue("layer");
+            String subset = requestHelper.getLiteralInputValue("subset");
+            email = requestHelper.getEmail();
 
-            CommandLineParser parser = new DefaultParser();
-            CommandLine commandLine = parser.parse(options, args);
-
-            String layer = commandLine.getOptionValue('l');
-            String subset = commandLine.getOptionValue('s');
-            String resultMime = commandLine.getOptionValue('m');
-            email = commandLine.getOptionValue('e');
+            // Determine required output mime type
+            String requestedMimeType = requestHelper.getRequestedMimeType("result");
+            String resultMime = requestedMimeType != null ? requestedMimeType : "application/x-netcdf";
 
             SubsetParameters subsetParams = SubsetParameters.parse(subset);
 
             if (email != null) {
-                email = email.substring(email.indexOf("=") + 1);
                 emailService = new EmailService();
             }
 
@@ -146,11 +142,7 @@ public class AggregationRunner implements CommandLineRunner {
             logger.info("Request MIME type      = " + resultMime);
             logger.info("Callback email address = " + email);
 
-
             //  TODO: Qa the parameters/settings passed?
-
-            //  Instantiate the correct converter for the requested mimeType & do the conversion
-            Converter converter = Converter.newInstance(resultMime);
 
             //  Query geoserver to get a list of files for the aggregation
             HttpIndexReader indexReader = new HttpIndexReader(WpsConfig.getConfig(WpsConfig.GEOSERVER_CATALOGUE_ENDPOINT_URL_CONFIG_KEY));
@@ -168,7 +160,7 @@ public class AggregationRunner implements CommandLineRunner {
             }
 
             //  Apply overrides (if provided)
-            AggregationOverrides overrides = getAggregationOverrides(aggregatorConfigS3Bucket, aggregatorTemplateFileS3Key, null, layer);
+            AggregationOverrides overrides = getAggregationOverrides(aggregatorConfigS3Bucket, aggregatorTemplateFileS3Key, layer);
 
             //  Apply download configuration
             DownloadConfig downloadConfig = getDownloadConfig();
@@ -190,54 +182,66 @@ public class AggregationRunner implements CommandLineRunner {
                     downloadManager.remove();
                 }
 
+                HashMap<String, String> outputMap = new HashMap<>();
 
                 //  Convert to required output
                 Path workingDir = downloadConfig.getDownloadDirectory();
 
                 //  Perform the conversion
+                //  Instantiate the correct converter for the requested mimeType & do the conversion
+                Converter converter = Converter.newInstance(resultMime);
+
                 convertedFile = workingDir.resolve("converted" + converter.getExtension());
                 converter.convert(outputFile, convertedFile);
 
-                //  Form output file location
-                String jobPrefix = WpsConfig.getConfig(AWS_BATCH_JOB_S3_KEY);
-                S3URI resultS3URI = new S3URI(outputBucketName, jobPrefix + batchJobId + "/" + outputFilename + "." + converter.getExtension());
+                S3JobFileManager outputFileManager = new S3JobFileManager(outputBucketName, jobFilePrefix, batchJobId);
+                String fullOutputFilename = outputFilename + "." + converter.getExtension();
+                outputFileManager.upload(convertedFile.toFile(), fullOutputFilename);
 
-                logger.info("Copying output file to : " + resultS3URI.toString());
+                String resultUrl = WpsConfig.getS3ExternalURL(outputBucketName,
+                    outputFileManager.getJobFileKey(fullOutputFilename));
 
-                //  Upload to S3
-                S3Utils.uploadToS3(resultS3URI, convertedFile.toFile());
+                if (requestHelper.hasRequestedOutput("result")) {
+                    outputMap.put("result", resultUrl);
+                }
 
-                //  Lookup the metadata URL for the layer
-                String catalogueURL = WpsConfig.getConfig(GEONETWORK_CATALOGUE_URL_CONFIG_KEY);
-                String layerSearchField = WpsConfig.getConfig(GEONETWORK_CATALOGUE_LAYER_FIELD_CONFIG_KEY);
-                CatalogueReader catalogueReader = new CatalogueReader(catalogueURL, layerSearchField);
+                if (requestHelper.hasRequestedOutput("provenance")) {
+                    //  Lookup the metadata URL for the layer
+                    String catalogueURL = WpsConfig.getConfig(GEONETWORK_CATALOGUE_URL_CONFIG_KEY);
+                    String layerSearchField = WpsConfig.getConfig(GEONETWORK_CATALOGUE_LAYER_FIELD_CONFIG_KEY);
+                    CatalogueReader catalogueReader = new CatalogueReader(catalogueURL, layerSearchField);
 
-                // Create provenance document
-                Configuration config = new Configuration();
-                config.setClassForTemplateLoading(ProvenanceWriter.class, "");
+                    // Create provenance document
+                    Configuration config = new Configuration();
+                    config.setClassForTemplateLoading(ProvenanceWriter.class, "");
 
-                Map<String, Object> params = new HashMap<>();
-                params.put("jobId", batchJobId);
-                params.put("downloadUrl", WpsConfig.getS3ExternalURL(resultS3URI.getBucket(), resultS3URI.getKey()));
-                params.put("settingsPath", WpsConfig.getS3ExternalURL(aggregatorConfigS3Bucket, aggregatorTemplateFileS3Key));
-                params.put("startTime", startTime);
-                params.put("endTime", new DateTime(DateTimeZone.UTC));
-                params.put("layer", layer);
-                params.put("parameters", subsetParams);
-                params.put("sourceMetadataUrl", catalogueReader.getMetadataUrl(layer));
-                String provenanceDocument = ProvenanceWriter.write(aggregatorConfigS3Bucket, aggregatorProvenanceTemplateS3Key, params);
+                    Map<String, Object> params = new HashMap<>();
+                    params.put("jobId", batchJobId);
+                    params.put("downloadUrl", resultUrl);
+                    params.put("settingsPath", WpsConfig.getS3ExternalURL(aggregatorConfigS3Bucket, aggregatorTemplateFileS3Key));
+                    params.put("startTime", startTime);
+                    params.put("endTime", new DateTime(DateTimeZone.UTC));
+                    params.put("layer", layer);
+                    params.put("parameters", subsetParams);
+                    params.put("sourceMetadataUrl", catalogueReader.getMetadataUrl(layer));
+                    String provenanceDocument = ProvenanceWriter.write(aggregatorConfigS3Bucket, aggregatorProvenanceTemplateS3Key, params);
 
-                //  Upload provenance document to S3
-                //  TODO: configurable provenance filename?
-                S3URI provenanceS3URI = new S3URI(outputBucketName, jobPrefix + batchJobId + "/provenance.xml");
-                S3Utils.uploadToS3(provenanceS3URI, provenanceDocument);
+                    //  Upload provenance document to S3
+                    //  TODO: configurable provenance filename?
+                    outputFileManager.write(provenanceDocument, "provenance.xml");
 
-                HashMap<String, String> outputMap = new HashMap<>();
-                outputMap.put("result", WpsConfig.getS3ExternalURL(resultS3URI.getBucket(), resultS3URI.getKey()));
-                outputMap.put("provenance", WpsConfig.getS3ExternalURL(provenanceS3URI.getBucket(), provenanceS3URI.getKey()));
+                    String provenanceUrl = WpsConfig.getS3ExternalURL(outputBucketName,
+                        outputFileManager.getJobFileKey("provenance.xml"));
+
+                    outputMap.put("provenance", provenanceUrl);
+                }
 
                 statusDocument = statusBuilder.createResponseDocument(EnumStatus.SUCCEEDED, null, null, outputMap);
-                s3JobFileUpdater.updateStatus(statusDocument, batchJobId);
+                statusFileManager.write(statusDocument, statusFilename);
+
+                if (email != null) {
+                    emailService.sendCompletedJobEmail(email, batchJobId, resultUrl, WpsConfig.getJobExpiration());
+                }
             } finally {
                 if (convertedFile != null) {
                     Files.deleteIfExists(convertedFile);
@@ -247,26 +251,22 @@ public class AggregationRunner implements CommandLineRunner {
                 }
             }
 
-            String jobPrefix = WpsConfig.getConfig(AWS_BATCH_JOB_S3_KEY);
-            String outputFileLocation = WpsConfig.getS3ExternalURL(outputBucketName, jobPrefix + batchJobId + "/" + outputFilename + "." + converter.getExtension());
-            emailService.sendCompletedJobEmail(email, batchJobId, outputFileLocation, WpsConfig.getJobExpiration());
-
         } catch (Throwable e) {
             e.printStackTrace();
-            if (s3JobFileUpdater != null) {
+            if (statusFileManager != null) {
                 if (batchJobId != null) {
                     String statusDocument = null;
                     try {
                         statusDocument = statusBuilder.createResponseDocument(EnumStatus.FAILED, "Exception occurred during aggregation :" + e.getMessage(), "AggregationError", null);
-                        s3JobFileUpdater.updateStatus(statusDocument, batchJobId);
-                    } catch (UnsupportedEncodingException uex) {
+                        statusFileManager.write(statusDocument, statusFilename);
+                    } catch (IOException ioe) {
                         logger.error("Unable to update status. Status: " + statusDocument);
-                        uex.printStackTrace();
+                        ioe.printStackTrace();
                     }
                 }
             }
 
-            if (emailService != null) {
+            if (email != null) {
                 try {
                     emailService.sendFailedJobEmail(email, batchJobId);
                 } catch (EmailException ex) {

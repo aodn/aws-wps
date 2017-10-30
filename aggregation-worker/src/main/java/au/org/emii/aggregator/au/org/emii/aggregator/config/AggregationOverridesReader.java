@@ -27,15 +27,15 @@ public class AggregationOverridesReader {
 
     private static Logger logger = LoggerFactory.getLogger(AggregationOverridesReader.class);
 
-    public static AggregationOverrides getAggregationOverrides(String s3Bucket, String s3Key, String s3Region, String layer) {
+    public static AggregationOverrides getAggregationOverrides(String s3Bucket, String s3Key, String layer) {
         AggregationOverrides overrides = new AggregationOverrides();
 
-        logger.info("Loading aggregation templates file from S3.  Bucket [" + s3Bucket + "], Key [" + s3Key + "], Region [" + s3Region + "]");
+        logger.info("Loading aggregation templates file from S3.  Bucket [" + s3Bucket + "], Key [" + s3Key + "]");
 
         //  Read config file from S3
         String overrideTemplateDocument = null;
         try {
-            overrideTemplateDocument = S3Utils.readS3ObjectAsString(s3Bucket, s3Key, s3Region);
+            overrideTemplateDocument = S3Utils.readS3ObjectAsString(s3Bucket, s3Key);
 
             //  Unmarshall from XML
             JAXBContext context = JAXBContext.newInstance(Templates.class);
