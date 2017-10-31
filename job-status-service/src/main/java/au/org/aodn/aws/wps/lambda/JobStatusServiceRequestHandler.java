@@ -10,7 +10,6 @@ import au.org.aodn.aws.wps.JobStatusResponse;
 import au.org.aodn.aws.wps.status.QueuePosition;
 import au.org.aodn.aws.wps.status.WpsConfig;
 import com.amazonaws.services.batch.AWSBatch;
-import com.amazonaws.services.batch.AWSBatchClientBuilder;
 import com.amazonaws.services.batch.model.JobDetail;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
@@ -23,7 +22,6 @@ import net.opengis.wps.v_1_0_0.StatusType;
 import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.util.JAXBSource;
@@ -35,7 +33,6 @@ import javax.xml.transform.stream.StreamSource;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
-import java.time.Instant;
 
 
 public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusRequest, JobStatusResponse> {

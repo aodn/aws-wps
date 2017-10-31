@@ -3,17 +3,29 @@
                 xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ns1="http://www.opengis.net/ows/1.1" xmlns:ns3="http://www.opengis.net/wps/1.0.0">
     <xsl:output method="html" version="1.0" encoding="UTF-8" indent="yes"/>
 
-    <xsl:param name="jobid" />
-    <xsl:param name="statusDescription" />
-    <xsl:param name="submittedTime" />
-
     <xsl:template match="/">
+        <xsl:param name="jobid" />
+        <xsl:param name="statusDescription" />
+        <xsl:param name="submittedTime" />
+        <xsl:param name="bootstrapCssLocation"/>
+        <xsl:param name="aodnCssLocation"/>
+        <xsl:param name="aodnLogoLocation"/>
+
+        <xsl:variable name="result">
+            <xsl:value-of select="ns3:ExecuteResponse/ns3:ProcessOutputs/ns3:Output[ns1:Identifier = 'result']/ns3:Reference/@href"/>
+        </xsl:variable>
+        <xsl:variable name="provenance">
+            <xsl:value-of select="ns3:ExecuteResponse/ns3:ProcessOutputs/ns3:Output[ns1:Identifier = 'provenance']/ns3:Reference/@href"/>
+        </xsl:variable>
+        <xsl:variable name="errorMsg">
+            <xsl:value-of select="ns3:ExecuteResponse/ns3:Status/ns3:ProcessFailed/ns1:ExceptionReport/ns1:Exception/ns1:ExceptionText/text()"/>
+        </xsl:variable>
 
         <xsl:text disable-output-escaping='yes'>&lt;!DOCTYPE html&gt;</xsl:text>
         <html>
         <head>
-            <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css"/>
-            <link rel="stylesheet" type="text/css" href="https://portal.aodn.org.au/css/AODNTheme.css?v="/>
+            <link rel="stylesheet" href="{$bootstrapCssLocation}"/>
+            <link rel="stylesheet" type="text/css" href="{$aodnCssLocation}"/>
 
             <title>IMOS download - <xsl:value-of select="$jobid"/></title>
         </head>
@@ -21,7 +33,7 @@
         <div class="portalheader">
             <div class="container">
                 <a class="btn" role="button" href="https://portal.aodn.org.au">
-                    <img src="https://portal.aodn.org.au/images/AODN/AODN_logo_fullText.png" alt="Portal logo"/>
+                    <img src="{$aodnLogoLocation}" alt="Portal logo"/>
                 </a>
             </div>
         </div>
@@ -44,18 +56,45 @@
                     }
                 </script>
             </dd>
-            <dt>Status :</dt>
-            <dd><xsl:value-of select="$statusDescription" /></dd>
-            <xsl:for-each select="ns3:ExecuteResponse/ns3:ProcessOutputs">
-                <dt>Download :</dt>
-                <xsl:for-each select="ns3:Output">
-                    <xsl:variable name="downloadLink"><xsl:value-of select="ns3:Reference/@href"/></xsl:variable>
-                    <xsl:variable name="outputName"><xsl:value-of select="ns1:Identifier"/></xsl:variable>
-                    <dd>Download [<xsl:value-of select="$outputName"/>] : <a href="{$downloadLink}"><xsl:value-of select="$jobid"/></a></dd>
-                </xsl:for-each>
-            </xsl:for-each>
+            <xsl:choose>
+                <xsl:when test="$errorMsg != ''">
+                    <dt>
+                        Status :
+                    </dt>
+                    <dd>
+                        Failed
+                        <br />
+                    </dd>
+                    <dt>
+                        Error message :
+                    </dt>
+                    <dd>
+                        <xsl:value-of select="$errorMsg"/>
+                        <br />
+                    </dd>
+                </xsl:when>
+                <xsl:otherwise>
+                    <dt>
+                        Status :
+                    </dt>
+                    <dd>
+                        <xsl:value-of select="$statusDescription"/>
+                        <br />
+                    </dd>
+                    <xsl:if test="$result != ''">
+                        <dt>
+                            Download :
+                        </dt>
+                        <dd>
+                            <a href="{$result}">IMOS download -
+                                <xsl:value-of select="$jobid"/>
+                            </a>
+                            <br />
+                        </dd>
+                    </xsl:if>
+                </xsl:otherwise>
+            </xsl:choose>
         </dl>
-
         </div>
             <div class="jumbotronFooter voffset5">
                 <div class="container">
