@@ -48,6 +48,11 @@
             <version>1.11.203</version>
         </dependency>
         <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-batch</artifactId>
+            <version>1.11.203</version>
+        </dependency>
+        <dependency>
             <groupId>org.jvnet.ogc</groupId>
             <artifactId>wps-v_1_0_0-schema</artifactId>
             <version>1.0.0</version>

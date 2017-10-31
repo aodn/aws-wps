@@ -39,16 +39,20 @@ public class S3Utils {
 
 
     public static S3ObjectInputStream getS3ObjectStream(String s3Bucket, String s3Key, String s3Region) throws IOException {
-        //  Get from S3 bucket location
+        S3Object templateObject = getS3Object(s3Bucket, s3Key, s3Region);
+        return templateObject.getObjectContent();
+    }
+
+
+    public static S3Object getS3Object(String s3Bucket, String s3Key, String s3Region) throws IOException {
+        //  Get from S3 bucket
         AmazonS3Client s3Client = new AmazonS3Client();
         if (s3Region != null) {
             Region region = Region.getRegion(Regions.fromName(s3Region));
             s3Client.setRegion(region);
         }
 
-        S3Object templateObject = s3Client.getObject(s3Bucket, s3Key);
-        return templateObject.getObjectContent();
-
+        return s3Client.getObject(s3Bucket, s3Key);
     }
 
 

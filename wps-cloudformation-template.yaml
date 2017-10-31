@@ -701,6 +701,7 @@ Resources:
           STATUS_HTML_XSL_S3_KEY: !Join ['', [!Ref s3configKey, !FindInMap [ConfigurationFileMap, "Filename", "statusTransform"]]]
           STATUS_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
           STATUS_S3_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "status"]
+          REQUEST_S3_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "request"]
           STATUS_SERVICE_CONFIG_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
           JOB_S3_KEY: !Ref s3jobKey
           CONFIG_S3_KEY: !Ref s3configKey
