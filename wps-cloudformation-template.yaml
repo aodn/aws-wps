@@ -52,6 +52,21 @@ Parameters:
   provenanceTemplateNonGriddedURL:
     Type: String
     Default: 'https://raw.githubusercontent.com/aodn/aws-wps/master/wps-common/src/main/resources/config/provenance_template_non_gridded.ftl'
+  sumologicLambdaCodeFilename:
+    Type: String
+    Default: 'index.zip'
+  sumologicLambdaCodeURL:
+    Type: String
+    Default: 'https://github.com/aodn/aws-wps/raw/master/wps-common/src/main/resources/index.zip'
+  bootstrapCssURL:
+    Type: String
+    Default: 'https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css'
+  aodnCssURL:
+    Type: String
+    Default: 'https://raw.githubusercontent.com/aodn/aodn-portal/master/web-app/css/AODNTheme.css'
+  aodnLogoURL:
+    Type: String
+    Default: 'https://raw.githubusercontent.com/aodn/aodn-portal/master/web-app/images/AODN/AODN_logo_fullText.png'
   jobName:
     Type: String
     Default: 'javaduck'
@@ -152,6 +167,9 @@ Mappings:
       netcdf: "NetcdfOutput.xml"
       provenanceTemplateGridded: "provenance_template_gridded.ftl"
       provenanceTemplateNonGridded: "provenance_template_non_gridded.ftl"
+      bootstrapCss: "bootstrap.min.css"
+      aodnCss: "AODNTheme.css"
+      aodnLogo: "AODN_logo_fullText.png"
   production:
     ap-southeast-2:
       vpc: vpc-7302ee16
@@ -179,6 +197,9 @@ Conditions:
   CreatePersistentBucket: !And
     - !Equals [!Ref createPersistentBucket, true]
     - !Not [!Condition CreateEphemeralBucket]
+  IsProdEnvironment: !And
+    - !Equals [ !Ref environment, production ]
+    - !Equals [!Ref 'AWS::AccountId', !FindInMap [EnvironmentMap, production, AccountId]]
   CreateWpsApiGatewayDomainName: !Not [ !Equals [!Ref wpsDomainName, '']]
 Resources:
   PersistentS3Bucket:
@@ -440,7 +461,6 @@ Resources:
   WpsApiGatewayStage:
     DependsOn:
       - WpsApiGatewayAccount
-      - WpsApiGatewayDeployment
       - WPSRestApi
     Type: AWS::ApiGateway::Stage
     Properties:
@@ -462,9 +482,13 @@ Resources:
   WpsDomainToAPIMapping:
     Type: 'AWS::ApiGateway::BasePathMapping'
     Condition: CreateWpsApiGatewayDomainName
+    DependsOn:
+    - WpsApiGatewayStage
+    - WpsRoute53RecordSet
     Properties:
       DomainName: !Ref WpsApiGatewayDomainName
       RestApiId: !Ref WPSRestApi
+      Stage: !Ref wpsApiStage
   WpsRoute53RecordSet:
     Type: 'AWS::Route53::RecordSet'
     Condition: CreateWpsApiGatewayDomainName
@@ -626,6 +650,227 @@ Resources:
                 Effect: "Allow"
                 Action: ["ses:SendRawEmail"]
                 Resource: ["*"]
+  JobStatusApiGatewayResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref WPSRestApi
+      ParentId: !Ref RequestHandlerApiGatewayResource
+      PathPart: !Ref jobStatusApiPath
+  JobStatusApiGatewayRequest:
+    DependsOn:
+      - JobStatusLambdaPermission
+      - RequestHandlerApiGatewayRequest
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: ANY
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Join ["",
+          ["arn:aws:apigateway:", !Ref "AWS::Region", ":lambda:path/2015-03-31/functions/", !GetAtt JobStatusLambdaFunction.Arn, "/invocations"]
+        ]
+        IntegrationResponses:
+          - StatusCode: 200
+      ResourceId: !Ref JobStatusApiGatewayResource
+      RestApiId: !Ref WPSRestApi
+      MethodResponses:
+        - StatusCode: 200
+  JobStatusLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:invokeFunction
+      FunctionName: !GetAtt JobStatusLambdaFunction.Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join ["", ["arn:aws:execute-api:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":", !Ref WPSRestApi, "/*"]]
+  JobStatusLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: Return wps job status
+      FunctionName: !Sub 'wps-job-status-${AWS::StackName}'
+      Handler: 'au.org.aodn.aws.wps.lambda.JobStatusServiceRequestHandler'
+      MemorySize: 1536
+      Role: !GetAtt JobStatusLambdaExecutionRole.Arn
+      Runtime: java8
+      Timeout: 60
+      Code:
+        S3Bucket: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
+        S3Key: !Join [ "", [ !Ref s3configKey,  !Ref jobStatusFilename] ]
+      Environment:
+        Variables:
+          STATUS_HTML_XSL_S3_KEY: !Join ['', [!Ref s3configKey, !FindInMap [ConfigurationFileMap, "Filename", "statusTransform"]]]
+          STATUS_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
+          STATUS_S3_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "status"]
+          REQUEST_S3_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "request"]
+          STATUS_SERVICE_CONFIG_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
+          JOB_S3_KEY: !Ref s3jobKey
+          CONFIG_S3_KEY: !Ref s3configKey
+          BOOTSTRAP_CSS_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "bootstrapCss"]
+          AODN_CSS_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "aodnCss"]
+          AODN_LOGO_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "aodnLogo"]
+    DependsOn: S3PutConfigurationFiles
+  JobStatusLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+        - 'arn:aws:iam::aws:policy/AWSBatchFullAccess'
+      Policies:
+        - PolicyName: PublishVersion
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'lambda:PublishVersion'
+                Resource: '*'
+        - PolicyName: S3Access
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: "Allow"
+                Action: "s3:*"
+                Resource: [
+                  !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]]],
+                  !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]],"/*"]]
+                ]
+  S3PutObjectLambdaFunctionRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+      Policies:
+        - PolicyName: PublishVersion
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'lambda:PublishVersion'
+                Resource: '*'
+        - PolicyName: S3Access
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: "Allow"
+                Action: "s3:Put*"
+                Resource: [
+                  !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]]],
+                  !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]], "/*"]]
+                ]
+  S3PutObjectLambdaFunction:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      Code:
+        ZipFile: |
+          import os
+          import boto3
+          import mimetypes
+          from urllib2 import urlopen, Request
+          import cfnresponse
+
+          responseData = {'Data': 'OK'}
+
+          s3c = boto3.client('s3')
+          target_bucket = os.getenv('BUCKET')
+          config_location = os.getenv('CONFIG_LOCATION')
+          filename_suffix = os.getenv('FILENAME_SUFFIX')
+          http_prefix = os.getenv('HTTP_FILE_PREFIX')
+
+
+          def handler(event, context):
+             try:
+                 if event['RequestType'] == 'Create' or event['RequestType'] == 'Update':
+                     for env_var in os.environ:
+                         env_var_value = os.getenv(env_var)
+                         print('Environment Variable {} : {}'.format(env_var, env_var_value))
+
+                     for env_var in os.environ:
+                         env_var_value = os.getenv(env_var)
+                         filename = os.getenv('{}_{}'.format(env_var, filename_suffix))
+                         if env_var.startswith(http_prefix) and not env_var.endswith(filename_suffix) and env_var_value != http_prefix:
+                             put(filename, env_var_value)
+                 return cfnresponse.send(event, context, cfnresponse.SUCCESS, responseData, 'S3PutObjectFunction')
+             except Exception as e:
+               print(e)
+               return cfnresponse.send(event, context, cfnresponse.FAILED, responseData, 'S3PutObjectFunction')
+
+
+          def put(filename, url):
+              print('Downloading url : {}'.format(url))
+              request = Request(url)
+              response = urlopen(request)
+
+              file_contents = response.read()
+              fileType,fileEncoding = mimetypes.guess_type(filename)
+              if fileType:
+                  s3c.put_object(Bucket=target_bucket, ContentType=fileType, ACL='public-read', Key='{}{}'.format(config_location, filename), Body=file_contents)
+              else:
+                  s3c.put_object(Bucket=target_bucket, ACL='public-read', Key='{}{}'.format(config_location, filename), Body=file_contents)
+              print('Downloaded url : {}'.format(url))
+      Description: "Used to put objects into S3."
+      FunctionName: !Sub 'S3PutObject-${AWS::StackName}'
+      Handler: 'index.handler'
+      Role: !GetAtt S3PutObjectLambdaFunctionRole.Arn
+      Runtime: python2.7
+      MemorySize: 256
+      Timeout: 60
+      Environment:
+        Variables:
+          BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !If [CreatePersistentBucket, !Ref PersistentS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]]
+          CONFIG_LOCATION: !Ref s3configKey
+          FILENAME_SUFFIX: 'FILENAME'
+          HTTP_FILE_PREFIX: 'HTTP_FILE'
+          HTTP_FILE_GET_CAPABILITIES: !Ref getCapabilitiesURL
+          HTTP_FILE_GET_CAPABILITIES_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "getCapabilities"]
+          HTTP_FILE_GOGODUCK: !Ref gogduckURL
+          HTTP_FILE_GOGODUCK_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "gogoduck"]
+          HTTP_FILE_NETCDF_OUTPUT: !Ref netcdfOutputURL
+          HTTP_FILE_NETCDF_OUTPUT_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "netcdf"]
+          HTTP_FILE_TEMPLATES: !Ref templatesURL
+          HTTP_FILE_TEMPLATES_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "templates"]
+          HTTP_FILE_PROVENANCE_TEMPLATE_GRIDDED: !Ref provenanceTemplateGriddedURL
+          HTTP_FILE_PROVENANCE_TEMPLATE_GRIDDED_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "provenanceTemplateGridded"]
+          HTTP_FILE_PROVENANCE_TEMPLATE_NON_GRIDDED: !Ref provenanceTemplateNonGriddedURL
+          HTTP_FILE_PROVENANCE_TEMPLATE_NON_GRIDDED_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "provenanceTemplateNonGridded"]
+          HTTP_FILE_WPS_REQUEST_HANDLER: !Ref requestHandlerCodeURL
+          HTTP_FILE_WPS_REQUEST_HANDLER_FILENAME: !Ref requestHandlerFilename
+          HTTP_FILE_WPS_JOB_STATUS: !Ref jobStatusCodeURL
+          HTTP_FILE_WPS_JOB_STATUS_FILENAME: !Ref jobStatusFilename
+          HTTP_FILE_JOB_STATUS_TRANSFORM: !Ref jobStatusHtmlTransformURL
+          HTTP_FILE_JOB_STATUS_TRANSFORM_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "statusTransform"]
+          HTTP_FILE_SUMOLOGIC_LAMBDA: !Ref sumologicLambdaCodeURL
+          HTTP_FILE_SUMOLOGIC_LAMBDA_FILENAME: !Ref sumologicLambdaCodeFilename
+          HTTP_FILE_BOOTSTRAP_CSS: !Ref bootstrapCssURL
+          HTTP_FILE_BOOTSTRAP_CSS_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "bootstrapCss"]
+          HTTP_FILE_AODN_CSS: !Ref aodnCssURL
+          HTTP_FILE_AODN_CSS_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "aodnCss"]
+          HTTP_FILE_AODN_LOGO: !Ref aodnLogoURL
+          HTTP_FILE_AODN_LOGO_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "aodnLogo"]
+  S3PutConfigurationFiles:
+    Type: "Custom::S3PutObject"
+    Properties:
+      ServiceToken: !GetAtt S3PutObjectLambdaFunction.Arn
   EmptyBucketLambdaFunction:
     Type: "AWS::Lambda::Function"
     Condition: CreateEphemeralBucket
@@ -709,210 +954,87 @@ Resources:
                     !Join ["", ["arn:aws:s3:::", !Ref EphemeralS3Bucket]],
                     !Join ["", ["arn:aws:s3:::", !Ref EphemeralS3Bucket, "/*"]]
                   ]
-  JobStatusApiGatewayResource:
-    Type: AWS::ApiGateway::Resource
+  SumoLogicLambdaFunction:
+    Type: "AWS::Lambda::Function"
+    Condition: IsProdEnvironment
+    DependsOn: S3PutConfigurationFiles
     Properties:
-      RestApiId: !Ref WPSRestApi
-      ParentId: !Ref RequestHandlerApiGatewayResource
-      PathPart: !Ref jobStatusApiPath
-  JobStatusApiGatewayRequest:
-    DependsOn:
-      - JobStatusLambdaPermission
-      - RequestHandlerApiGatewayRequest
-    Type: AWS::ApiGateway::Method
-    Properties:
-      AuthorizationType: NONE
-      HttpMethod: ANY
-      Integration:
-        Type: AWS_PROXY
-        IntegrationHttpMethod: POST
-        Uri: !Join ["",
-          ["arn:aws:apigateway:", !Ref "AWS::Region", ":lambda:path/2015-03-31/functions/", !GetAtt JobStatusLambdaFunction.Arn, "/invocations"]
-        ]
-        IntegrationResponses:
-          - StatusCode: 200
-      ResourceId: !Ref JobStatusApiGatewayResource
-      RestApiId: !Ref WPSRestApi
-      MethodResponses:
-        - StatusCode: 200
-  JobStatusLambdaPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      Action: lambda:invokeFunction
-      FunctionName: !GetAtt JobStatusLambdaFunction.Arn
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Join ["", ["arn:aws:execute-api:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":", !Ref WPSRestApi, "/*"]]
-  JobStatusLambdaFunction:
-    Type: AWS::Lambda::Function
-    Properties:
-      Description: Return wps job status
-      FunctionName: !Sub 'wps-job-status-${AWS::StackName}'
-      Handler: 'au.org.aodn.aws.wps.lambda.JobStatusServiceRequestHandler'
-      MemorySize: 1536
-      Role: !GetAtt JobStatusLambdaExecutionRole.Arn
-      Runtime: java8
-      Timeout: 60
       Code:
         S3Bucket: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
-        S3Key: !Join [ "", [ !Ref s3configKey,  !Ref jobStatusFilename] ]
-      Environment:
-        Variables:
-          STATUS_HTML_XSL_S3_KEY: !Join ['', [!Ref s3configKey, !FindInMap [ConfigurationFileMap, "Filename", "statusTransform"]]]
-          STATUS_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
-          STATUS_S3_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "status"]
-          REQUEST_S3_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "request"]
-          STATUS_SERVICE_CONFIG_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
-          JOB_S3_KEY: !Ref s3jobKey
-    DependsOn: S3PutConfigurationFiles
-  JobStatusLambdaExecutionRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - lambda.amazonaws.com
-            Action:
-              - 'sts:AssumeRole'
-      Path: /
-      ManagedPolicyArns:
-        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
-        - 'arn:aws:iam::aws:policy/AWSBatchFullAccess'
-      Policies:
-        - PolicyName: PublishVersion
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - 'lambda:PublishVersion'
-                Resource: '*'
-        - PolicyName: S3Access
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: "Allow"
-                Action: "s3:*"
-                Resource: [
-                  !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]]],
-                  !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]],"/*"]]
-                ]                
-  S3PutObjectLambdaFunctionRole:
-    Type: 'AWS::IAM::Role'
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - lambda.amazonaws.com
-            Action:
-              - 'sts:AssumeRole'
-      Path: /
-      ManagedPolicyArns:
-        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
-      Policies:
-        - PolicyName: PublishVersion
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - 'lambda:PublishVersion'
-                Resource: '*'
-        - PolicyName: S3Access
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: "Allow"
-                Action: "s3:Put*"
-                Resource: [
-                  !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]]],
-                  !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]], "/*"]]
-                ]
-  S3PutObjectLambdaFunction:
-    Type: "AWS::Lambda::Function"
-    Properties:
-      Code:
-        ZipFile: |
-          import os
-          import boto3
-          from urllib2 import urlopen, Request
-          import cfnresponse
-
-          responseData = {'Data': 'OK'}
-
-          s3c = boto3.client('s3')
-          target_bucket = os.getenv('BUCKET')
-          config_location = os.getenv('CONFIG_LOCATION')
-          filename_suffix = os.getenv('FILENAME_SUFFIX')
-          http_prefix = os.getenv('HTTP_FILE_PREFIX')
-
-
-          def handler(event, context):
-             try:
-                 if event['RequestType'] == 'Create' or event['RequestType'] == 'Update':
-                     for env_var in os.environ:
-                         env_var_value = os.getenv(env_var)
-                         print('Environment Variable {} : {}'.format(env_var, env_var_value))
-
-                     for env_var in os.environ:
-                         env_var_value = os.getenv(env_var)
-                         filename = os.getenv('{}_{}'.format(env_var, filename_suffix))
-                         if env_var.startswith(http_prefix) and not env_var.endswith(filename_suffix) and env_var_value != http_prefix:
-                             put(filename, env_var_value)
-                 return cfnresponse.send(event, context, cfnresponse.SUCCESS, responseData, 'S3PutObjectFunction')
-             except Exception as e:
-               print(e)
-               return cfnresponse.send(event, context, cfnresponse.FAILED, responseData, 'S3PutObjectFunction')
-
-
-          def put(filename, url):
-              print('Downloading url : {}'.format(url))
-              request = Request(url)
-              response = urlopen(request)
-
-              file_contents = response.read()
-              s3c.put_object(Bucket=target_bucket, Key='{}{}'.format(config_location, filename), Body=file_contents)
-              print('Downloaded url : {}'.format(url))
-      Description: "Used to put objects into S3."
-      FunctionName: !Sub 'S3PutObject-${AWS::StackName}'
+        S3Key: !Join [ "", [ !Ref s3configKey,  !Ref sumologicLambdaCodeFilename] ]
+      Description: "Push batch logs to SumoLogic"
+      FunctionName: !Sub 'SumoLogic-WPS-${AWS::StackName}'
       Handler: 'index.handler'
-      Role: !GetAtt S3PutObjectLambdaFunctionRole.Arn
-      Runtime: python2.7
-      MemorySize: 256
-      Timeout: 60
+      Role: !GetAtt SumoLogicLambdaFunctionRole.Arn
+      Runtime: nodejs4.3
+      Timeout: 3
       Environment:
         Variables:
-          BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !If [CreatePersistentBucket, !Ref PersistentS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]]
-          CONFIG_LOCATION: !Ref s3configKey
-          FILENAME_SUFFIX: 'FILENAME'
-          HTTP_FILE_PREFIX: 'HTTP_FILE'
-          HTTP_FILE_GET_CAPABILITIES: !Ref getCapabilitiesURL
-          HTTP_FILE_GET_CAPABILITIES_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "getCapabilities"]
-          HTTP_FILE_GOGODUCK: !Ref gogduckURL
-          HTTP_FILE_GOGODUCK_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "gogoduck"]
-          HTTP_FILE_NETCDF_OUTPUT: !Ref netcdfOutputURL
-          HTTP_FILE_NETCDF_OUTPUT_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "netcdf"]
-          HTTP_FILE_TEMPLATES: !Ref templatesURL
-          HTTP_FILE_TEMPLATES_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "templates"]
-          HTTP_FILE_PROVENANCE_TEMPLATE_GRIDDED: !Ref provenanceTemplateGriddedURL
-          HTTP_FILE_PROVENANCE_TEMPLATE_GRIDDED_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "provenanceTemplateGridded"]
-          HTTP_FILE_PROVENANCE_TEMPLATE_NON_GRIDDED: !Ref provenanceTemplateNonGriddedURL
-          HTTP_FILE_PROVENANCE_TEMPLATE_NON_GRIDDED_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "provenanceTemplateNonGridded"]
-          HTTP_FILE_WPS_REQUEST_HANDLER: !Ref requestHandlerCodeURL
-          HTTP_FILE_WPS_REQUEST_HANDLER_FILENAME: !Ref requestHandlerFilename
-          HTTP_FILE_WPS_JOB_STATUS: !Ref jobStatusCodeURL
-          HTTP_FILE_WPS_JOB_STATUS_FILENAME: !Ref jobStatusFilename
-          HTTP_FILE_JOB_STATUS_TRANSFORM: !Ref jobStatusHtmlTransformURL
-          HTTP_FILE_JOB_STATUS_TRANSFORM_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "statusTransform"]
-  S3PutConfigurationFiles:
-    Type: "Custom::S3PutObject"
+          SUMO_ENDPOINT: "https://collectors.au.sumologic.com/receiver/v1/http/ZaVnC4dhaV3JEVfixYA5qRTxb0hVvEsYbW9rNuknWVkg4QwmWbJyxLLZF8L6yMcfphRWtOqhmS-a2ztp_JuFYjVqn3aDNPBJ5n4IUzlzSXdHXVuWW6t2gw=="
+  SumoLogicLambdaFunctionRole:
+      Type: 'AWS::IAM::Role'
+      Condition: IsProdEnvironment
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - lambda.amazonaws.com
+              Action:
+                - 'sts:AssumeRole'
+        Path: /
+        ManagedPolicyArns:
+          - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+  BatchJobLogsLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Condition: IsProdEnvironment
     Properties:
-      ServiceToken: !GetAtt S3PutObjectLambdaFunction.Arn
+      Action: lambda:invokeFunction
+      FunctionName: !GetAtt SumoLogicLambdaFunction.Arn
+      Principal: !Sub 'logs.${AWS::Region}.amazonaws.com'
+      SourceArn: !Join ["", ["arn:aws:logs:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":log-group:/aws/batch/job:*"]]
+  BatchJobLogsSubscriptionFilter:
+    Type: "AWS::Logs::SubscriptionFilter"
+    Condition: IsProdEnvironment
+    DependsOn: BatchJobLogsLambdaPermission
+    Properties:
+      DestinationArn: !GetAtt SumoLogicLambdaFunction.Arn
+      FilterPattern: "" # Will need to update the filter pattern or create a log stream. Currently all the batch job logs will be fetched.
+      LogGroupName: "/aws/batch/job"
+  RequestHandlerLogsLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Condition: IsProdEnvironment
+    Properties:
+      Action: lambda:invokeFunction
+      FunctionName: !GetAtt SumoLogicLambdaFunction.Arn
+      Principal: !Sub 'logs.${AWS::Region}.amazonaws.com'
+      SourceArn: !Join ["", ["arn:aws:logs:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":log-group:/aws/lambda/", !Ref RequestHandlerLambdaFunction,":*"]]
+  RequestHandlerLambdaLogsSubscriptionFilter:
+    Type: "AWS::Logs::SubscriptionFilter"
+    Condition: IsProdEnvironment
+    DependsOn: RequestHandlerLogsLambdaPermission
+    Properties:
+      DestinationArn: !GetAtt SumoLogicLambdaFunction.Arn
+      FilterPattern: ""
+      LogGroupName: !Join ["", ["/aws/lambda/", !Ref RequestHandlerLambdaFunction]]
+  JobStatusLogsLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Condition: IsProdEnvironment
+    Properties:
+      Action: lambda:invokeFunction
+      FunctionName: !GetAtt SumoLogicLambdaFunction.Arn
+      Principal: !Sub 'logs.${AWS::Region}.amazonaws.com'
+      SourceArn: !Join ["", ["arn:aws:logs:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":log-group:/aws/lambda/", !Ref JobStatusLambdaFunction,":*"]]
+  JobStatusLambdaLogsSubscriptionFilter:
+    Type: "AWS::Logs::SubscriptionFilter"
+    Condition: IsProdEnvironment
+    DependsOn: JobStatusLogsLambdaPermission
+    Properties:
+      DestinationArn: !GetAtt SumoLogicLambdaFunction.Arn
+      FilterPattern: ""
+      LogGroupName: !Join ["", ["/aws/lambda/", !Ref JobStatusLambdaFunction]]
 Outputs:
   RequestHandlerApiGatewayUrl:
     Value: !If [

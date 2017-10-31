@@ -41,6 +41,7 @@ public class WpsConfig {
     public static final String AWS_BATCH_CE_NAME_CONFIG_KEY = "AWS_BATCH_CE_NAME";
     public static final String AWS_BATCH_JQ_NAME_CONFIG_KEY = "AWS_BATCH_JQ_NAME";
     public static final String AWS_BATCH_JOB_S3_KEY = "JOB_S3_KEY";
+    public static final String AWS_BATCH_CONFIG_S3_KEY = "CONFIG_S3_KEY";
     private static final String AWS_BATCH_JOB_EXPIRATION_IN_DAYS = "JOB_EXPIRATION_IN_DAYS";
 
     public static final String GET_CAPABILITIES_TEMPLATE_S3_BUCKET_CONFIG_KEY = "GET_CAPABILITIES_TEMPLATE_S3_BUCKET";
@@ -80,6 +81,10 @@ public class WpsConfig {
     private static final String FAILED_JOB_EMAIL_KEY = "jobFailedEmail";
     private static final String REGISTERED_JOB_EMAIL_SUBJECT_KEY = "jobRegisteredEmailSubject";
     private static final String REGISTERED_JOB_EMAIL_KEY = "jobRegisteredEmail";
+
+    private static final String BOOTSTRAP_CSS_FILENAME_CONFIG_KEY = "BOOTSTRAP_CSS_FILENAME";
+    private static final String AODN_CSS_FILENAME_CONFIG_KEY = "AODN_CSS_FILENAME";
+    private static final String AODN_LOGO_FILENAME_CONFIG_KEY = "AODN_LOGO_FILENAME";
 
     public static final String APPLICATION_PROPERTIES = "application.properties";
     private static Properties properties = null;
@@ -139,6 +144,11 @@ public class WpsConfig {
             setProperty(properties, STATUS_SERVICE_CONFIG_S3_BUCKET_CONFIG_KEY);
             setProperty(properties, STATUS_HTML_XSL_S3_KEY_CONFIG_KEY);
             setProperty(properties, STATUS_SERVICE_ENDPOINT_KEY);
+
+            setProperty(properties, BOOTSTRAP_CSS_FILENAME_CONFIG_KEY);
+            setProperty(properties, AODN_CSS_FILENAME_CONFIG_KEY);
+            setProperty(properties, AODN_LOGO_FILENAME_CONFIG_KEY);
+            setProperty(properties, AWS_BATCH_CONFIG_S3_KEY);
         }
 
         return properties;
@@ -166,6 +176,22 @@ public class WpsConfig {
     public static String getStatusServiceEndpoint(String jobUuid, String format) {
         String statusServiceEndpoint = getConfig(STATUS_SERVICE_ENDPOINT_KEY);
         return String.format("%s?%s=%s&%s=%s", statusServiceEndpoint, STATUS_SERVICE_JOB_ID_PARAMETER_NAME, jobUuid, STATUS_SERVICE_FORMAT_PARAMETER_NAME, format);
+    }
+
+    public static String getBootstrapCssS3ExternalURL() {
+        return getConfigFileS3ExternalURL(BOOTSTRAP_CSS_FILENAME_CONFIG_KEY);
+    }
+
+    public static String getAodnCssS3ExternalURL() {
+        return getConfigFileS3ExternalURL(AODN_CSS_FILENAME_CONFIG_KEY);
+    }
+
+    public static String getAodnLogoS3ExternalURL() {
+        return getConfigFileS3ExternalURL(AODN_LOGO_FILENAME_CONFIG_KEY);
+    }
+
+    private static String getConfigFileS3ExternalURL(String filename) {
+        return getS3ExternalURL(getConfig(STATUS_S3_BUCKET_CONFIG_KEY), getConfig(AWS_BATCH_CONFIG_S3_KEY) + getConfig(filename));
     }
 
     public static String getJobExpiration() {
