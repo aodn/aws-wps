@@ -86,7 +86,10 @@ public class WpsConfig {
     private static final String AODN_CSS_FILENAME_CONFIG_KEY = "AODN_CSS_FILENAME";
     private static final String AODN_LOGO_FILENAME_CONFIG_KEY = "AODN_LOGO_FILENAME";
 
+    public static final String LANGUAGE_KEY = "language";
+
     public static final String APPLICATION_PROPERTIES = "application.properties";
+
     private static Properties properties = null;
 
     private static Properties getProperties() {
