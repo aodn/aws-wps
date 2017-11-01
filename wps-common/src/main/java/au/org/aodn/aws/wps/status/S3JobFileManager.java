@@ -27,16 +27,16 @@ public class S3JobFileManager {
         return S3Utils.readS3ObjectAsString(s3bucket, jobFileKey);
     }
 
-    public void write(String content, String fileName) throws IOException {
+    public void write(String content, String fileName, String contentType) throws IOException {
         String jobFileKey = getJobFileKey(fileName);
         LOGGER.info(String.format("Writing to bucket %s key %s", s3bucket, jobFileKey));
-        S3Utils.uploadToS3(content, s3bucket, jobFileKey);
+        S3Utils.uploadToS3(content, s3bucket, jobFileKey, contentType);
     }
 
-    public void upload(File file, String filename) throws InterruptedException {
+    public void upload(File file, String filename, String contentType) throws InterruptedException, IOException {
         String jobFileKey = getJobFileKey(filename);
         LOGGER.info(String.format("Uploading %s to bucket %s key %s", file.toString(), s3bucket, jobFileKey));
-        S3Utils.uploadToS3(file, s3bucket, jobFileKey);
+        S3Utils.uploadToS3(file, s3bucket, jobFileKey, contentType);
     }
 
     public String getJobFileKey(String fileName) {
