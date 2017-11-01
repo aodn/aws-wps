@@ -23,28 +23,24 @@ public class S3Utils {
     private static final Logger LOGGER = LoggerFactory.getLogger(S3Utils.class);
 
     public static String readS3ObjectAsString(String s3Bucket, String s3Key) throws IOException {
-        String objectString = null;
-        S3ObjectInputStream contentStream = null;
+
+        String objectString;
 
         //  read file to String
-        try {
-            contentStream = getS3ObjectStream(s3Bucket, s3Key);
+        try(S3ObjectInputStream contentStream = getS3ObjectStream(s3Bucket, s3Key)) {
             objectString = Utils.inputStreamToString(contentStream);
         } catch (IOException ioex) {
             //  Bad stuff - blow up!
-            LOGGER.error("Problem loading S3 object: ", ioex);
+            LOGGER.error("Problem reading S3 object [" + s3Bucket + "/" + s3Key +"]: ", ioex);
             throw ioex;
-        } finally {
-            if(contentStream != null) {
-                contentStream.close();
-            }
         }
+
         return objectString;
     }
 
     public static S3ObjectInputStream getS3ObjectStream(String s3Bucket, String s3Key) throws IOException {
-        S3Object templateObject = getS3Object(s3Bucket, s3Key);
-        return templateObject.getObjectContent();
+        S3Object s3Object = getS3Object(s3Bucket, s3Key);
+        return s3Object.getObjectContent();
     }
 
 
@@ -55,7 +51,7 @@ public class S3Utils {
     }
 
     public static void uploadToS3(File file, String s3bucket, String fileKey, String contentType)
-        throws InterruptedException {
+        throws InterruptedException, IOException {
         TransferManager tx = TransferManagerBuilder.defaultTransferManager();
         FileInputStream fileStream = null;
         try {
@@ -65,7 +61,11 @@ public class S3Utils {
             if(contentType != null) {
                 ObjectMetadata meta = new ObjectMetadata();
                 meta.setContentType(contentType);
-                LOGGER.info("Setting contentType [" + contentType + "]");
+                //  Need to set content length - otherwise S3 TransferManager tries
+                //  to read the entire file into memory.  May be rectified at some point
+                //  in the future. See: https://github.com/aws/aws-sdk-java/issues/474#issuecomment-126413580
+                meta.setContentLength(file.length());
+                LOGGER.info("Setting contentType [" + contentType + "]. Content length [" + file.length() +" bytes]");
                 fileStream = new FileInputStream(file);
                 myUpload = tx.upload(s3bucket, fileKey, fileStream, meta);
             } else {
@@ -75,7 +75,9 @@ public class S3Utils {
             myUpload.waitForCompletion();
         } catch(FileNotFoundException fnfe) {
             LOGGER.error("File not found: " + fnfe, fnfe);
-        }finally {
+            throw fnfe;
+        } finally {
+
             if(fileStream != null) {
                 try {
                     fileStream.close();

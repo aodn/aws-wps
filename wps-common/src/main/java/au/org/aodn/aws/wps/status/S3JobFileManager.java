@@ -33,7 +33,7 @@ public class S3JobFileManager {
         S3Utils.uploadToS3(content, s3bucket, jobFileKey, contentType);
     }
 
-    public void upload(File file, String filename, String contentType) throws InterruptedException {
+    public void upload(File file, String filename, String contentType) throws InterruptedException, IOException {
         String jobFileKey = getJobFileKey(filename);
         LOGGER.info(String.format("Uploading %s to bucket %s key %s", file.toString(), s3bucket, jobFileKey));
         S3Utils.uploadToS3(file, s3bucket, jobFileKey, contentType);
