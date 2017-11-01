@@ -81,7 +81,7 @@ public class ExecuteOperation implements Operation {
         LOGGER.info("Writing job request to S3");
         S3JobFileManager s3JobFileManager = new S3JobFileManager(statusS3BucketName, jobFilePrefix, jobId);
         try {
-            s3JobFileManager.write(JobFileUtil.createXmlDocument(executeRequest), requestFileName);
+            s3JobFileManager.write(JobFileUtil.createXmlDocument(executeRequest), requestFileName, STATUS_FILE_MIME_TYPE);
         } catch (IOException e) {
             LOGGER.error(e.getMessage(), e);
         }
@@ -91,7 +91,7 @@ public class ExecuteOperation implements Operation {
 
         try {
             statusDocument = statusBuilder.createResponseDocument(EnumStatus.ACCEPTED, null, null, null);
-            s3JobFileManager.write(statusDocument, statusFileName);
+            s3JobFileManager.write(statusDocument, statusFileName, STATUS_FILE_MIME_TYPE);
 
             if (email != null) {
                 EmailService emailService = new EmailService();

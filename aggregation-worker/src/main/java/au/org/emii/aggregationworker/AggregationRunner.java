@@ -108,7 +108,7 @@ public class AggregationRunner implements CommandLineRunner {
 
             //  Update status document to indicate job has started
             statusFileManager = new S3JobFileManager(statusS3Bucket, jobFilePrefix, batchJobId);
-            statusFileManager.write(statusDocument, statusFilename);
+            statusFileManager.write(statusDocument, statusFilename, STATUS_FILE_MIME_TYPE);
 
             logger.info("AWS BATCH JOB ID     : " + batchJobId);
             logger.info("AWS BATCH CE NAME    : " + awsBatchComputeEnvName);
@@ -196,7 +196,7 @@ public class AggregationRunner implements CommandLineRunner {
 
                 S3JobFileManager outputFileManager = new S3JobFileManager(outputBucketName, jobFilePrefix, batchJobId);
                 String fullOutputFilename = outputFilename + "." + converter.getExtension();
-                outputFileManager.upload(convertedFile.toFile(), fullOutputFilename);
+                outputFileManager.upload(convertedFile.toFile(), fullOutputFilename, resultMime);
 
                 String resultUrl = WpsConfig.getS3ExternalURL(outputBucketName,
                     outputFileManager.getJobFileKey(fullOutputFilename));
@@ -228,7 +228,7 @@ public class AggregationRunner implements CommandLineRunner {
 
                     //  Upload provenance document to S3
                     //  TODO: configurable provenance filename?
-                    outputFileManager.write(provenanceDocument, "provenance.xml");
+                    outputFileManager.write(provenanceDocument, "provenance.xml", PROVENANCE_FILE_MIME_TYPE);
 
                     String provenanceUrl = WpsConfig.getS3ExternalURL(outputBucketName,
                         outputFileManager.getJobFileKey("provenance.xml"));
@@ -237,7 +237,7 @@ public class AggregationRunner implements CommandLineRunner {
                 }
 
                 statusDocument = statusBuilder.createResponseDocument(EnumStatus.SUCCEEDED, null, null, outputMap);
-                statusFileManager.write(statusDocument, statusFilename);
+                statusFileManager.write(statusDocument, statusFilename, STATUS_FILE_MIME_TYPE);
 
                 if (email != null) {
                     emailService.sendCompletedJobEmail(email, batchJobId, resultUrl, WpsConfig.getJobExpiration());
@@ -258,7 +258,7 @@ public class AggregationRunner implements CommandLineRunner {
                     String statusDocument = null;
                     try {
                         statusDocument = statusBuilder.createResponseDocument(EnumStatus.FAILED, "Exception occurred during aggregation :" + e.getMessage(), "AggregationError", null);
-                        statusFileManager.write(statusDocument, statusFilename);
+                        statusFileManager.write(statusDocument, statusFilename, STATUS_FILE_MIME_TYPE);
                     } catch (IOException ioe) {
                         logger.error("Unable to update status. Status: " + statusDocument);
                         ioe.printStackTrace();

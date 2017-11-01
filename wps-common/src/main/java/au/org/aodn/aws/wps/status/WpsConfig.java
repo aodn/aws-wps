@@ -17,6 +17,9 @@ public class WpsConfig {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WpsConfig.class);
 
+    public static final String STATUS_FILE_MIME_TYPE = "text/xml";
+    public static final String PROVENANCE_FILE_MIME_TYPE = "text/xml";
+
     //  Configuration key names
     public static final String AWS_BATCH_JOB_NAME_CONFIG_KEY = "AWS_BATCH_JOB_NAME";
     public static final String AWS_BATCH_JOB_QUEUE_NAME_CONFIG_KEY = "AWS_BATCH_JOB_QUEUE_NAME";
