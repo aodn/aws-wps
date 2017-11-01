@@ -176,7 +176,6 @@ public class HttpIndexReader implements IndexReader {
                     //  TODO:  source the base URL from configuration
                     URL fileURL = new URL("http://data.aodn.org.au/" + fileURI.toString());
 
-                    logger.info("Added download: " + fileURL.toString());
                     DownloadRequest downloadRequest = new DownloadRequest(fileURL, fileSize);
                     downloadList.add(downloadRequest);
                 } else {
@@ -188,15 +187,14 @@ public class HttpIndexReader implements IndexReader {
 
                     int headerFieldIndex = 0;
                     for (String currentField : headerFields) {
-                        logger.info("Header field name [" + currentField + "]");
 
                         if (currentField.trim().equalsIgnoreCase(urlField)) {
-                            logger.info("Found " + urlField + "] field in CSV output at position [" + headerFieldIndex + "]");
+                            logger.info("Found [" + urlField + "] field in CSV output at position [" + headerFieldIndex + "]");
                             fileUrlIndex = headerFieldIndex;
                         }
 
                         if (currentField.trim().equalsIgnoreCase("size")) {
-                            logger.info("Found 'size' field in CSV output at position [" + headerFieldIndex + "]");
+                            logger.info("Found [size] field in CSV output at position [" + headerFieldIndex + "]");
                             fileSizeIndex = headerFieldIndex;
                         }
                         headerFieldIndex++;

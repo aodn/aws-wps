@@ -59,11 +59,10 @@ public class AggregationOverridesReader {
                     }
                 }
 
-                logger.info("Template match [" + match + "]: Layer [" + layer + "], Template Name [" + currentTemplate.getName() + "], Match [" + currentTemplate.getMatch() + "]");
 
                 //  Next template
                 if (match) {
-
+                    logger.info("Template match: Layer [" + layer + "], Template Name [" + currentTemplate.getName() + "], Match [" + currentTemplate.getMatch() + "]");
 
                     //  Convert the 'attribute' elements into GlobalAttributeOverride objects
                     Template.Attributes srcAttributes = currentTemplate.getAttributes();
@@ -83,7 +82,7 @@ public class AggregationOverridesReader {
                                 logger.info("Attribute value null.");
                             }
 
-                            logger.info("Applying Attribute Override: Name [" + currentSrcAttr.getName() + "], Type [" + currentSrcAttr.getType() + "], Value [" + attributeValue + "]");
+                            logger.info("[] Applying Attribute Override: Name [" + currentSrcAttr.getName() + "], Type [" + currentSrcAttr.getType() + "], Value [" + attributeValue + "]");
 
                             GlobalAttributeOverride newOverride = new GlobalAttributeOverride(currentSrcAttr.getName(), DataType.getType(currentSrcAttr.getType()), currentSrcAttr.getMatch(), attributeValue);
                             overrides.getAttributeOverrides().getAddOrReplaceAttributes().add(newOverride);
@@ -109,7 +108,7 @@ public class AggregationOverridesReader {
                                 }
                             }
 
-                            logger.info("Applying Variable Override: Name [" + currentSrcVariable.getName() + "], Type [" + currentSrcVariable.getType() + "]");
+                            logger.info("[] Applying Variable Override: Name [" + currentSrcVariable.getName() + "], Type [" + currentSrcVariable.getType() + "]");
                             if (variableAttributeOverrides != null) {
                                 for (VariableAttributeOverride var : variableAttributeOverrides) {
                                     logger.info("    - Attribute override: Name [" + var.getName() + "], Type [" + var.getType() + "], Values [" + var.getValues() + "]");
