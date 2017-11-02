@@ -1,12 +1,16 @@
 package au.org.aodn.aws.wps.status;
 
+import au.org.aodn.aws.exception.OGCException;
+import au.org.aodn.aws.util.DescribeProcessHelper;
 import au.org.aodn.aws.util.JobFileUtil;
 import net.opengis.ows.v_1_1_0.CodeType;
 import net.opengis.wps.v_1_0_0.DataType;
 import net.opengis.wps.v_1_0_0.ExecuteResponse;
+import net.opengis.wps.v_1_0_0.ProcessBriefType;
 import net.opengis.wps.v_1_0_0.LiteralDataType;
 import net.opengis.wps.v_1_0_0.OutputDataType;
 import net.opengis.wps.v_1_0_0.OutputReferenceType;
+import net.opengis.wps.v_1_0_0.ProcessDescriptionType;
 import net.opengis.wps.v_1_0_0.ProcessFailedType;
 import net.opengis.wps.v_1_0_0.ProcessStartedType;
 import net.opengis.wps.v_1_0_0.StatusType;
@@ -20,7 +24,7 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
-import static au.org.aodn.aws.wps.status.WpsConfig.AWS_BATCH_JOB_S3_KEY;
+import static au.org.aodn.aws.wps.status.WpsConfig.AWS_BATCH_JOB_S3_KEY_PREFIX;
 
 public class ExecuteStatusBuilder {
 
@@ -29,18 +33,15 @@ public class ExecuteStatusBuilder {
     private String wpsEndpointUrl;
     private String location;
     private String jobId;
-    private String s3Bucket;
-    private String filename;
+
 
     private static final  Logger LOGGER = LoggerFactory.getLogger(ExecuteStatusBuilder.class);
 
     public ExecuteStatusBuilder(String wpsEndpointUrl, String jobId, String s3Bucket, String filename) {
-        String jobPrefix = WpsConfig.getConfig(AWS_BATCH_JOB_S3_KEY);
+        String jobFileS3KeyPrefix = WpsConfig.getConfig(AWS_BATCH_JOB_S3_KEY_PREFIX);
         this.wpsEndpointUrl = wpsEndpointUrl;
-        this.location = WpsConfig.getS3ExternalURL(s3Bucket, jobPrefix + jobId + "/" + filename);
+        this.location = WpsConfig.getS3ExternalURL(s3Bucket, jobFileS3KeyPrefix + jobId + "/" + filename);
         this.jobId = jobId;
-        this.s3Bucket = s3Bucket;
-        this.filename = filename;
     }
 
     public String getStatusLocation() {
@@ -59,12 +60,31 @@ public class ExecuteStatusBuilder {
      * @param outputs
      * @return
      */
-    public String createResponseDocument(EnumStatus jobStatus, String failedMessage, String failedCode, HashMap<String, String> outputs) {
+    public String createResponseDocument(EnumStatus jobStatus, String processIdentifier, String failedMessage, String failedCode, HashMap<String, String> outputs) {
 
         ExecuteResponse response = new ExecuteResponse();
         response.setServiceInstance(wpsEndpointUrl);
         response.setLang(WpsConfig.getConfig(WpsConfig.LANGUAGE_KEY));
         response.setStatusLocation(getStatusLocation());
+
+        //  Form the Process section of the response
+        ProcessBriefType processBriefType = null;
+
+        try {
+            ProcessDescriptionType processDescription = DescribeProcessHelper.getProcessDescription(processIdentifier);
+
+            if (processDescription != null) {
+                processBriefType = new ProcessBriefType();
+                processBriefType.setIdentifier(processDescription.getIdentifier());
+                processBriefType.setAbstract(processDescription.getAbstract());
+                processBriefType.setTitle(processDescription.getTitle());
+                processBriefType.setProcessVersion(processDescription.getProcessVersion());
+            }
+        } catch(OGCException ex) {
+            // We'll return a response without this element - even though it isn't
+            // compliant with the schema
+            LOGGER.error("Unable to retrieve process description for [" + processIdentifier + "]: " + ex.getMessage(), ex);
+        }
 
         StatusType status = new StatusType();
 
@@ -95,8 +115,11 @@ public class ExecuteStatusBuilder {
             status.setProcessFailed(getProcessFailedType(failedMessage, failedCode));
         }
 
-        response.setStatus(status);
+        if(processBriefType != null) {
+            response.setProcess(processBriefType);
+        }
 
+        response.setStatus(status);
 
         return JobFileUtil.createXmlDocument(response);
     }

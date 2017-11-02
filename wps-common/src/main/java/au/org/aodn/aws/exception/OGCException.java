@@ -1,4 +1,4 @@
-package au.org.aodn.aws.wps.exception;
+package au.org.aodn.aws.exception;
 
 public class OGCException extends Throwable {
     private final String exceptionCode;
@@ -30,6 +30,6 @@ public class OGCException extends Throwable {
     @Override
     public String getMessage() {
         return String.format("OGCException: exceptionCode='%s' locator='%s' exceptionText='%s'",
-            exceptionCode, locator, exceptionText);
+                exceptionCode, locator, exceptionText);
     }
 }
