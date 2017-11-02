@@ -82,6 +82,9 @@ Parameters:
   maxVCPUs:
     Type: Number
     Default: 4
+  maxHeapSize:
+    Type: String
+    Default: 512m
   geoserver:
     Type: String
     Description: Geoserver from which to source files to aggregate
@@ -326,6 +329,8 @@ Resources:
         Vcpus: !Ref jobVCPUs
         Memory: !Ref jobMemory
         JobRoleArn: !Ref JobInstanceRole
+        Command:
+          - !Join [ "", [ "-Xmx",  !Ref maxHeapSize] ]
         Environment:
           -
             Name: "OUTPUT_S3_FILENAME"
