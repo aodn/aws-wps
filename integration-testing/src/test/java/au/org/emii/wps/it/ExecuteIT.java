@@ -18,6 +18,7 @@ import static com.jayway.awaitility.Awaitility.await;
 import static com.jayway.restassured.RestAssured.get;
 import static com.jayway.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.anyOf;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.Matchers.hasXPath;
 
@@ -56,6 +57,44 @@ public class ExecuteIT {
             .statusCode(200)
 //            .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
             .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"));
+    }
+
+    @Test
+    public void testTimeseries() {
+        Execute request = new ExecuteRequestBuilder()
+            .identifer("gs:GoGoDuck")
+            .input("layer", "imos:acorn_hourly_avg_rot_qc_timeseries_url")
+            .input("subset", "TIME,2017-01-04T10:30:00.000Z,2017-01-04T11:30:00.000Z;LATITUDE,-31.8009,-31.8009;LONGITUDE,115.0227,115.0227")
+            .input("callbackParams", "imos-wps-testing@mailinator.com")
+            .output("result", "text/csv")
+            .build();
+
+        String statusUrl = submitAndWaitToComplete(request, TWENTY_MINUTES);
+
+        String outputLocation = given()
+            .spec(spec)
+          .when()
+            .get(statusUrl)
+          .then()
+            .statusCode(200)
+//            .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
+            .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"))
+          .extract()
+            .path("ExecuteResponse.ProcessOutputs.Output.Reference.@href");
+
+        given()
+            .spec(spec)
+          .when()
+            .get(outputLocation)
+          .then()
+            .statusCode(200)
+            .contentType("text/csv")
+            .body(equalTo(
+                "TIME (UTC),LATITUDE (degrees_north),LONGITUDE (degrees_east),GDOP (Degrees),UCUR (m s-1),VCUR (m s-1),UCUR_sd (m s-1),VCUR_sd (m s-1),NOBS1 (1),NOBS2 (1),UCUR_quality_control,VCUR_quality_control\n" +
+                "2017-01-04T10:30:00Z,-31.810335,115.019623,68.80474,0.019122316,0.5347731,0.04222228,0.044319205,6,6,1,1\n" +
+                "2017-01-04T11:30:00Z,-31.810335,115.019623,68.80474,-0.009952986,0.55120397,0.034548346,0.036436576,6,6,1,1\n"
+            ));
+
     }
 
     @Test
@@ -160,7 +199,7 @@ public class ExecuteIT {
             .statusCode(200)
 //            .body(validateWith("/wps/1.0.0/wpsAll.xsd"));
         .extract()
-            .path("Execute.@statusLocation");
+            .path("ExecuteResponse.@statusLocation");
 
         await().atMost(maxWait).until(() ->
             get(statusUrl).then()
