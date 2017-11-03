@@ -73,7 +73,7 @@ public class AggregationRunner implements CommandLineRunner {
             String outputBucketName = WpsConfig.getConfig(OUTPUT_S3_BUCKET_CONFIG_KEY);
             String outputFilename = WpsConfig.getConfig(OUTPUT_S3_FILENAME_CONFIG_KEY);
             statusS3Bucket = WpsConfig.getConfig(STATUS_S3_BUCKET_CONFIG_KEY);
-            String jobFilePrefix = WpsConfig.getConfig(AWS_BATCH_JOB_S3_KEY);
+            String jobFileS3KeyPrefix = WpsConfig.getConfig(AWS_BATCH_JOB_S3_KEY_PREFIX);
             statusFilename = WpsConfig.getConfig(STATUS_S3_FILENAME_CONFIG_KEY);
             requestFilename = WpsConfig.getConfig(REQUEST_S3_FILENAME_CONFIG_KEY);
 
@@ -104,10 +104,10 @@ public class AggregationRunner implements CommandLineRunner {
             String wpsEndpointUrl = WpsConfig.getConfig(WPS_ENDPOINT_URL_CONFIG_KEY);
 
             statusBuilder = new ExecuteStatusBuilder(wpsEndpointUrl, batchJobId, statusS3Bucket, statusFilename);
-            String statusDocument = statusBuilder.createResponseDocument(EnumStatus.STARTED, null, null, null);
+            String statusDocument = statusBuilder.createResponseDocument(EnumStatus.STARTED, GOGODUCK_PROCESS_IDENTIFIER, null, null, null);
 
             //  Update status document to indicate job has started
-            statusFileManager = new S3JobFileManager(statusS3Bucket, jobFilePrefix, batchJobId);
+            statusFileManager = new S3JobFileManager(statusS3Bucket, jobFileS3KeyPrefix, batchJobId);
             statusFileManager.write(statusDocument, statusFilename, STATUS_FILE_MIME_TYPE);
 
             logger.info("AWS BATCH JOB ID     : " + batchJobId);
@@ -194,7 +194,7 @@ public class AggregationRunner implements CommandLineRunner {
                 convertedFile = workingDir.resolve("converted" + converter.getExtension());
                 converter.convert(outputFile, convertedFile);
 
-                S3JobFileManager outputFileManager = new S3JobFileManager(outputBucketName, jobFilePrefix, batchJobId);
+                S3JobFileManager outputFileManager = new S3JobFileManager(outputBucketName, jobFileS3KeyPrefix, batchJobId);
                 String fullOutputFilename = outputFilename + "." + converter.getExtension();
                 outputFileManager.upload(convertedFile.toFile(), fullOutputFilename, resultMime);
 
@@ -236,7 +236,7 @@ public class AggregationRunner implements CommandLineRunner {
                     outputMap.put("provenance", provenanceUrl);
                 }
 
-                statusDocument = statusBuilder.createResponseDocument(EnumStatus.SUCCEEDED, null, null, outputMap);
+                statusDocument = statusBuilder.createResponseDocument(EnumStatus.SUCCEEDED, GOGODUCK_PROCESS_IDENTIFIER, null, null, outputMap);
                 statusFileManager.write(statusDocument, statusFilename, STATUS_FILE_MIME_TYPE);
 
                 if (email != null) {
@@ -257,7 +257,7 @@ public class AggregationRunner implements CommandLineRunner {
                 if (batchJobId != null) {
                     String statusDocument = null;
                     try {
-                        statusDocument = statusBuilder.createResponseDocument(EnumStatus.FAILED, "Exception occurred during aggregation :" + e.getMessage(), "AggregationError", null);
+                        statusDocument = statusBuilder.createResponseDocument(EnumStatus.FAILED, GOGODUCK_PROCESS_IDENTIFIER,"Exception occurred during aggregation :" + e.getMessage(), "AggregationError", null);
                         statusFileManager.write(statusDocument, statusFilename, STATUS_FILE_MIME_TYPE);
                     } catch (IOException ioe) {
                         logger.error("Unable to update status. Status: " + statusDocument);

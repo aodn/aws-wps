@@ -1,20 +1,18 @@
 package au.org.aodn.aws.wps.lambda;
 
+import au.org.aodn.aws.exception.OGCException;
 import au.org.aodn.aws.wps.AwsApiRequest;
 import au.org.aodn.aws.wps.AwsApiResponse;
 import au.org.aodn.aws.wps.AwsApiResponse.ResponseBuilder;
 import au.org.aodn.aws.wps.RequestParser;
 import au.org.aodn.aws.wps.RequestParserFactory;
-import au.org.aodn.aws.wps.exception.OGCException;
 import au.org.aodn.aws.util.JobFileUtil;
 import au.org.aodn.aws.wps.operation.Operation;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
-import net.opengis.wps.v_1_0_0.ExecuteResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.xml.bind.JAXBContext;
 
 public class WpsLambdaRequestHandler implements RequestHandler<AwsApiRequest, AwsApiResponse> {
 

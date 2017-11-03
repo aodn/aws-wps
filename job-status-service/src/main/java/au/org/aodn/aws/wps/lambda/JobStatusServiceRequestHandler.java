@@ -49,7 +49,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
     private Logger LOGGER = LoggerFactory.getLogger(JobStatusServiceRequestHandler.class);
 
     private String statusFilename = WpsConfig.getConfig(WpsConfig.STATUS_S3_FILENAME_CONFIG_KEY);
-    private String jobPrefix = WpsConfig.getConfig(WpsConfig.AWS_BATCH_JOB_S3_KEY);
+    private String jobFileS3KeyPrefix = WpsConfig.getConfig(WpsConfig.AWS_BATCH_JOB_S3_KEY_PREFIX);
     private String statusS3Bucket = WpsConfig.getConfig(WpsConfig.STATUS_S3_BUCKET_CONFIG_KEY);
     private String configS3Bucket = WpsConfig.getConfig(WpsConfig.STATUS_SERVICE_CONFIG_S3_BUCKET_CONFIG_KEY);
     private String xslS3Key = WpsConfig.getConfig(WpsConfig.STATUS_HTML_XSL_S3_KEY_CONFIG_KEY);
@@ -103,7 +103,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
         //  Read the status file for the jobId passed (if it exists)
         try {
 
-            String s3Key = jobPrefix + jobId + "/" + statusFilename;
+            String s3Key = jobFileS3KeyPrefix + jobId + "/" + statusFilename;
 
             //  Check for the existence of the status document
             AmazonS3 s3Client = AmazonS3ClientBuilder.defaultClient();
@@ -257,7 +257,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
             try {
                 //  Use the request.xml we write to S3 on accepting a job to determine the
                 //  submission time of the job
-                String requestFileS3Key = jobPrefix + jobId + "/" + requestFilename;
+                String requestFileS3Key = jobFileS3KeyPrefix + jobId + "/" + requestFilename;
                 LOGGER.info("Request file bucket [" + statusS3Bucket + "], Key [" + requestFileS3Key + "]");
                 S3Object requestS3Object = S3Utils.getS3Object(statusS3Bucket, requestFileS3Key);
 

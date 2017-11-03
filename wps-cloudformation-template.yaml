@@ -396,6 +396,12 @@ Resources:
             Name: "JOB_S3_KEY"
             Value: !Ref s3jobKey
           -
+            Name: "DESCRIBE_PROCESS_S3_KEY_PREFIX"
+            Value: !Ref s3configKey
+          -
+            Name: "DESCRIBE_PROCESS_S3_BUCKET"
+            Value: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
+          -
             Name: "STATUS_SERVICE_ENDPOINT"
             Value: !If [
               CreateWpsApiGatewayDomainName,

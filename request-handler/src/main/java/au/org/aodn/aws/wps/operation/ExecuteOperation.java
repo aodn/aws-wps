@@ -39,7 +39,7 @@ public class ExecuteOperation implements Operation {
         //      status filename
         //      status location
         String statusS3BucketName = WpsConfig.getConfig(STATUS_S3_BUCKET_CONFIG_KEY);
-        String jobFilePrefix = WpsConfig.getConfig(AWS_BATCH_JOB_S3_KEY);
+        String jobFileS3KeyPrefix = WpsConfig.getConfig(AWS_BATCH_JOB_S3_KEY_PREFIX);
         String statusFileName = WpsConfig.getConfig(STATUS_S3_FILENAME_CONFIG_KEY);
         String requestFileName = WpsConfig.getConfig(REQUEST_S3_FILENAME_CONFIG_KEY);
         String jobName = WpsConfig.getConfig(AWS_BATCH_JOB_NAME_CONFIG_KEY);
@@ -79,7 +79,7 @@ public class ExecuteOperation implements Operation {
 
         LOGGER.info("Job submitted.  Job ID : " + jobId);
         LOGGER.info("Writing job request to S3");
-        S3JobFileManager s3JobFileManager = new S3JobFileManager(statusS3BucketName, jobFilePrefix, jobId);
+        S3JobFileManager s3JobFileManager = new S3JobFileManager(statusS3BucketName, jobFileS3KeyPrefix, jobId);
         try {
             s3JobFileManager.write(JobFileUtil.createXmlDocument(executeRequest), requestFileName, STATUS_FILE_MIME_TYPE);
         } catch (IOException e) {
@@ -90,7 +90,7 @@ public class ExecuteOperation implements Operation {
         ExecuteStatusBuilder statusBuilder = new ExecuteStatusBuilder(wpsEndpointUrl, jobId, statusS3BucketName, statusFileName);
 
         try {
-            statusDocument = statusBuilder.createResponseDocument(EnumStatus.ACCEPTED, null, null, null);
+            statusDocument = statusBuilder.createResponseDocument(EnumStatus.ACCEPTED, executeRequest.getIdentifier().getValue(), null, null, null);
             s3JobFileManager.write(statusDocument, statusFileName, STATUS_FILE_MIME_TYPE);
 
             if (email != null) {
@@ -100,10 +100,10 @@ public class ExecuteOperation implements Operation {
         } catch (UnsupportedEncodingException e) {
             LOGGER.error(e.getMessage(), e);
             //  Form failed status document
-            statusDocument = statusBuilder.createResponseDocument(EnumStatus.FAILED, "Failed to create status file : " + e.getMessage(), "StatusFileError", null);
+            statusDocument = statusBuilder.createResponseDocument(EnumStatus.FAILED, executeRequest.getIdentifier().getValue(),"Failed to create status file : " + e.getMessage(), "StatusFileError", null);
         } catch (Exception e) {
             LOGGER.error(e.getMessage(), e);
-            statusDocument = statusBuilder.createResponseDocument(EnumStatus.FAILED, e.getMessage(), "EmailError", null);
+            statusDocument = statusBuilder.createResponseDocument(EnumStatus.FAILED, executeRequest.getIdentifier().getValue(), e.getMessage(), "EmailError", null);
         }
 
         return statusDocument;

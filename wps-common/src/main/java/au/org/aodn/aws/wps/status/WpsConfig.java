@@ -19,6 +19,7 @@ public class WpsConfig {
 
     public static final String STATUS_FILE_MIME_TYPE = "text/xml";
     public static final String PROVENANCE_FILE_MIME_TYPE = "text/xml";
+    public static final String GOGODUCK_PROCESS_IDENTIFIER = "gs:GoGoDuck";
 
     //  Configuration key names
     public static final String AWS_BATCH_JOB_NAME_CONFIG_KEY = "AWS_BATCH_JOB_NAME";
@@ -43,7 +44,7 @@ public class WpsConfig {
     public static final String AWS_BATCH_JOB_ID_CONFIG_KEY = "AWS_BATCH_JOB_ID";
     public static final String AWS_BATCH_CE_NAME_CONFIG_KEY = "AWS_BATCH_CE_NAME";
     public static final String AWS_BATCH_JQ_NAME_CONFIG_KEY = "AWS_BATCH_JQ_NAME";
-    public static final String AWS_BATCH_JOB_S3_KEY = "JOB_S3_KEY";
+    public static final String AWS_BATCH_JOB_S3_KEY_PREFIX = "JOB_S3_KEY";
     public static final String AWS_BATCH_CONFIG_S3_KEY = "CONFIG_S3_KEY";
     private static final String AWS_BATCH_JOB_EXPIRATION_IN_DAYS = "JOB_EXPIRATION_IN_DAYS";
 
@@ -127,7 +128,7 @@ public class WpsConfig {
             setProperty(properties, AWS_BATCH_CE_NAME_CONFIG_KEY);
             setProperty(properties, AWS_BATCH_JQ_NAME_CONFIG_KEY);
             setProperty(properties, AWS_BATCH_JOB_EXPIRATION_IN_DAYS);
-            setProperty(properties, AWS_BATCH_JOB_S3_KEY);
+            setProperty(properties, AWS_BATCH_JOB_S3_KEY_PREFIX);
 
             setProperty(properties, GET_CAPABILITIES_TEMPLATE_S3_BUCKET_CONFIG_KEY);
             setProperty(properties, GET_CAPABILITIES_TEMPLATE_S3_KEY_CONFIG_KEY);
