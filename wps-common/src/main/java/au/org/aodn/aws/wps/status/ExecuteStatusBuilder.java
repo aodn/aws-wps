@@ -31,23 +31,20 @@ public class ExecuteStatusBuilder {
     private static int CHUNK_SIZE = 512;
 
     private String wpsEndpointUrl;
-    private String location;
+    private String statusServiceEndpointUrl;
+    private String statusFileS3Location;
     private String jobId;
 
 
     private static final  Logger LOGGER = LoggerFactory.getLogger(ExecuteStatusBuilder.class);
 
-    public ExecuteStatusBuilder(String wpsEndpointUrl, String jobId, String s3Bucket, String filename) {
+    public ExecuteStatusBuilder(String jobId, String s3Bucket, String filename) {
         String jobFileS3KeyPrefix = WpsConfig.getConfig(AWS_BATCH_JOB_S3_KEY_PREFIX);
-        this.wpsEndpointUrl = wpsEndpointUrl;
-        this.location = WpsConfig.getS3ExternalURL(s3Bucket, jobFileS3KeyPrefix + jobId + "/" + filename);
+        this.wpsEndpointUrl = WpsConfig.getAwsWpsEndpointUrl();
+        this.statusFileS3Location = WpsConfig.getS3ExternalURL(s3Bucket, jobFileS3KeyPrefix + jobId + "/" + filename);
         this.jobId = jobId;
     }
 
-    public String getStatusLocation() {
-        return this.location;
-
-    }
 
     /**
      * The outputs HashMap is a map of the output name to the output result.
@@ -65,7 +62,7 @@ public class ExecuteStatusBuilder {
         ExecuteResponse response = new ExecuteResponse();
         response.setServiceInstance(wpsEndpointUrl);
         response.setLang(WpsConfig.getConfig(WpsConfig.LANGUAGE_KEY));
-        response.setStatusLocation(getStatusLocation());
+        response.setStatusLocation(WpsConfig.getStatusServiceXmlEndpoint(jobId));
 
         //  Form the Process section of the response
         ProcessBriefType processBriefType = null;
