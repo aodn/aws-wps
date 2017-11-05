@@ -101,9 +101,8 @@ public class AggregationRunner implements CommandLineRunner {
 
             //  TODO:  null check and act on null configuration
             //  TODO : validate configuration
-            String wpsEndpointUrl = WpsConfig.getConfig(WPS_ENDPOINT_URL_CONFIG_KEY);
 
-            statusBuilder = new ExecuteStatusBuilder(wpsEndpointUrl, batchJobId, statusS3Bucket, statusFilename);
+            statusBuilder = new ExecuteStatusBuilder(batchJobId, statusS3Bucket, statusFilename);
             String statusDocument = statusBuilder.createResponseDocument(EnumStatus.STARTED, GOGODUCK_PROCESS_IDENTIFIER, null, null, null);
 
             //  Update status document to indicate job has started

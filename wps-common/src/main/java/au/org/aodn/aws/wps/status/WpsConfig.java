@@ -52,7 +52,7 @@ public class WpsConfig {
     public static final String GET_CAPABILITIES_TEMPLATE_S3_KEY_CONFIG_KEY = "GET_CAPABILITIES_TEMPLATE_S3_KEY";
     public static final String DESCRIBE_PROCESS_S3_BUCKET_CONFIG_KEY = "DESCRIBE_PROCESS_S3_BUCKET";
     public static final String DESCRIBE_PROCESS_S3_KEY_PREFIX_CONFIG_KEY = "DESCRIBE_PROCESS_S3_KEY_PREFIX";
-    public static final String WPS_ENDPOINT_URL_CONFIG_KEY = "GEOSERVER_WPS_ENDPOINT_URL";
+    public static final String WPS_ENDPOINT_URL_CONFIG_KEY = "AWS_WPS_ENDPOINT_URL";
     public static final String GEOSERVER_CATALOGUE_ENDPOINT_URL_CONFIG_KEY = "GEOSERVER_CATALOGUE_ENDPOINT_URL";
     public static final String WPS_ENDPOINT_TEMPLATE_KEY = "wpsEndpointURL";
 
@@ -71,7 +71,7 @@ public class WpsConfig {
     public static final String STATUS_SERVICE_FORMAT_PARAMETER_NAME = "format";
     public static final String STATUS_SERVICE_CONFIG_S3_BUCKET_CONFIG_KEY = "STATUS_SERVICE_CONFIG_S3_BUCKET";
     public static final String STATUS_HTML_XSL_S3_KEY_CONFIG_KEY = "STATUS_HTML_XSL_S3_KEY";
-    public static final String STATUS_SERVICE_ENDPOINT_KEY = "STATUS_SERVICE_ENDPOINT";
+    public static final String STATUS_SERVICE_ENDPOINT_KEY = "STATUS_SERVICE_ENDPOINT_URL";
 
     public static final String SITE_ACRONYM = "siteAcronym";
     public static final String EMAIL_SIGNATURE = "emailSignature";
@@ -183,6 +183,10 @@ public class WpsConfig {
     public static String getStatusServiceEndpoint(String jobUuid, String format) {
         String statusServiceEndpoint = getConfig(STATUS_SERVICE_ENDPOINT_KEY);
         return String.format("%s?%s=%s&%s=%s", statusServiceEndpoint, STATUS_SERVICE_JOB_ID_PARAMETER_NAME, jobUuid, STATUS_SERVICE_FORMAT_PARAMETER_NAME, format);
+    }
+
+    public static String getAwsWpsEndpointUrl() {
+        return getConfig(WPS_ENDPOINT_URL_CONFIG_KEY);
     }
 
     public static String getBootstrapCssS3ExternalURL() {
