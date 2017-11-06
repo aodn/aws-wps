@@ -4,8 +4,10 @@ import au.org.aodn.aws.exception.OGCException;
 import au.org.aodn.aws.util.DescribeProcessHelper;
 import au.org.aodn.aws.util.JobFileUtil;
 import net.opengis.ows.v_1_1_0.CodeType;
+import net.opengis.ows.v_1_1_0.LanguageStringType;
 import net.opengis.wps.v_1_0_0.DataType;
 import net.opengis.wps.v_1_0_0.ExecuteResponse;
+import net.opengis.wps.v_1_0_0.OutputDescriptionType;
 import net.opengis.wps.v_1_0_0.ProcessBriefType;
 import net.opengis.wps.v_1_0_0.LiteralDataType;
 import net.opengis.wps.v_1_0_0.OutputDataType;
@@ -64,19 +66,10 @@ public class ExecuteStatusBuilder {
         response.setLang(WpsConfig.getConfig(WpsConfig.LANGUAGE_KEY));
         response.setStatusLocation(WpsConfig.getStatusServiceXmlEndpoint(jobId));
 
-        //  Form the Process section of the response
-        ProcessBriefType processBriefType = null;
+        ProcessDescriptionType processDescription = null;
 
         try {
-            ProcessDescriptionType processDescription = DescribeProcessHelper.getProcessDescription(processIdentifier);
-
-            if (processDescription != null) {
-                processBriefType = new ProcessBriefType();
-                processBriefType.setIdentifier(processDescription.getIdentifier());
-                processBriefType.setAbstract(processDescription.getAbstract());
-                processBriefType.setTitle(processDescription.getTitle());
-                processBriefType.setProcessVersion(processDescription.getProcessVersion());
-            }
+            processDescription = DescribeProcessHelper.getProcessDescription(processIdentifier);
         } catch(OGCException ex) {
             // We'll return a response without this element - even though it isn't
             // compliant with the schema
@@ -102,17 +95,25 @@ public class ExecuteStatusBuilder {
             //  If outputs were passed - add them to the response
             if (outputs != null) {
                 for (Map.Entry<String, String> currentEntry : outputs.entrySet()) {
-                    String key = currentEntry.getKey();
+                    String outputIdentifier = currentEntry.getKey();
                     String href = currentEntry.getValue();
-                    LOGGER.info("OUTPUT [" + key + "]=[" + href + "]");
-                    addOutputToResponse(response, key, href);
+                    LanguageStringType title = getOutputTitle(processDescription, outputIdentifier);
+                    LOGGER.info("OUTPUT [" + outputIdentifier + "]=[" + href + "]");
+                    addOutputToResponse(response, outputIdentifier, title, href);
                 }
             }
         } else if (jobStatus == EnumStatus.FAILED) {
             status.setProcessFailed(getProcessFailedType(failedMessage, failedCode));
         }
 
-        if(processBriefType != null) {
+        //  Form the Process section of the response
+
+        if (processDescription != null) {
+            ProcessBriefType processBriefType = new ProcessBriefType();
+            processBriefType.setIdentifier(processDescription.getIdentifier());
+            processBriefType.setAbstract(processDescription.getAbstract());
+            processBriefType.setTitle(processDescription.getTitle());
+            processBriefType.setProcessVersion(processDescription.getProcessVersion());
             response.setProcess(processBriefType);
         }
 
@@ -136,7 +137,21 @@ public class ExecuteStatusBuilder {
     }
 
 
-    private void addOutputToResponse(ExecuteResponse response, String outputIdentifier, String outputHref) {
+    private LanguageStringType getOutputTitle(ProcessDescriptionType processDescription, String outputIdentifier) {
+        if (processDescription == null || processDescription.getProcessOutputs() == null) {
+            return null;
+        }
+
+        for (OutputDescriptionType output: processDescription.getProcessOutputs().getOutput()) {
+            if (output.getIdentifier().getValue().equals(outputIdentifier)) {
+                return output.getTitle();
+            }
+        }
+
+        return null;
+    }
+
+    private void addOutputToResponse(ExecuteResponse response, String outputIdentifier, LanguageStringType title, String outputHref) {
         OutputDataType output = new OutputDataType();
 
         OutputReferenceType outputReference = new OutputReferenceType();
@@ -146,6 +161,7 @@ public class ExecuteStatusBuilder {
         CodeType outputIdentifierCode = new CodeType();
         outputIdentifierCode.setValue(outputIdentifier);
         output.setIdentifier(outputIdentifierCode);
+        output.setTitle(title);
         if (response.getProcessOutputs() == null) {
             ExecuteResponse.ProcessOutputs outputs = new ExecuteResponse.ProcessOutputs();
             response.setProcessOutputs(outputs);

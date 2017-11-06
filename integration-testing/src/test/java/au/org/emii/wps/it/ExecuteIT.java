@@ -14,6 +14,7 @@ import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
 
+import static au.org.emii.wps.util.Matchers.validateWith;
 import static com.jayway.awaitility.Awaitility.await;
 import static com.jayway.restassured.RestAssured.get;
 import static com.jayway.restassured.RestAssured.given;
@@ -55,7 +56,7 @@ public class ExecuteIT {
             .get(statusUrl)
         .then()
             .statusCode(200)
-//            .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
+            .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
             .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"));
     }
 
@@ -77,7 +78,7 @@ public class ExecuteIT {
             .get(statusUrl)
           .then()
             .statusCode(200)
-//            .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
+            .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
             .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"))
           .extract()
             .path("ExecuteResponse.ProcessOutputs.Output.Reference.@href");
@@ -115,7 +116,7 @@ public class ExecuteIT {
             .get(statusUrl)
         .then()
             .statusCode(200)
-//            .body(validateWith("/wps/1.0.0/wpsAll.xsd"));
+            .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
             .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"));
     }
 
@@ -138,7 +139,7 @@ public class ExecuteIT {
             .get(statusUrl)
             .then()
             .statusCode(200)
-//            .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
+            .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
             .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"))
             .body(hasXPath("/ExecuteResponse/ProcessOutputs/Output/Identifier[text()='result']"))
             .body(hasXPath("/ExecuteResponse/ProcessOutputs/Output/Identifier[text()='provenance']"));
@@ -162,7 +163,7 @@ public class ExecuteIT {
             .get(statusUrl)
             .then()
             .statusCode(200)
-//            .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
+            .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
             .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"))
             .body(hasXPath("/ExecuteResponse/ProcessOutputs/Output/Identifier[text()='result']"))
             .body(not(hasXPath("/ExecuteResponse/ProcessOutputs/Output/Identifier[text()='provenance']")));
@@ -185,7 +186,7 @@ public class ExecuteIT {
             .get(statusUrl)
         .then()
             .statusCode(200)
-//            .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
+            .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
             .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"));
     }
 
@@ -197,7 +198,7 @@ public class ExecuteIT {
             .post()
         .then()
             .statusCode(200)
-//            .body(validateWith("/wps/1.0.0/wpsAll.xsd"));
+            .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
         .extract()
             .path("ExecuteResponse.@statusLocation");
 
