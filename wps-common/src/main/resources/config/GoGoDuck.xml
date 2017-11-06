@@ -64,6 +64,22 @@
                     </Supported>
                 </ComplexOutput>
             </Output>
+            <Output>
+                <ows:Identifier>provenance</ows:Identifier>
+                <ows:Title>provenance</ows:Title>
+                <ComplexOutput>
+                    <Default>
+                        <Format>
+                            <MimeType>application/xml</MimeType>
+                        </Format>
+                    </Default>
+                    <Supported>
+                        <Format>
+                            <MimeType>application/xml</MimeType>
+                        </Format>
+                    </Supported>
+                </ComplexOutput>
+            </Output>
         </ProcessOutputs>
     </ProcessDescription>
 </wps:ProcessDescriptions>
