@@ -1,17 +1,24 @@
 package au.org.emii.wps.it;
 
+import static org.junit.Assert.*;
 import au.org.emii.wps.util.ExecuteRequestBuilder;
 import com.jayway.awaitility.Duration;
 import com.jayway.restassured.builder.RequestSpecBuilder;
 import com.jayway.restassured.filter.log.RequestLoggingFilter;
 import com.jayway.restassured.filter.log.ResponseLoggingFilter;
 import com.jayway.restassured.http.ContentType;
+import com.jayway.restassured.response.Response;
 import com.jayway.restassured.internal.mapper.ObjectMapperType;
 import com.jayway.restassured.specification.RequestSpecification;
 import net.opengis.wps.v_1_0_0.Execute;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.io.IOException;
+import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
 import static au.org.emii.wps.util.Matchers.validateWith;
@@ -27,6 +34,7 @@ public class ExecuteIT {
     private static final Duration TWENTY_MINUTES = new Duration(20, TimeUnit.MINUTES);
     private static RequestSpecification spec;
     private static String SERVICE_ENDPOINT = System.getenv("WPS_ENDPOINT");
+    //public static final Logger LOGGER = LoggerFactory.getLogger(ExecuteIT.class);
 
     @BeforeClass
     public static void initSpec() {
@@ -96,6 +104,67 @@ public class ExecuteIT {
                 "2017-01-04T11:30:00Z,-31.810335,115.019623,68.80474,-0.009952986,0.55120397,0.034548346,0.036436576,6,6,1,1\n"
             ));
 
+    }
+
+    @Test
+    public void testTimeseriesInTimestampOrder() {
+        Execute request = new ExecuteRequestBuilder()
+                .identifer("gs:GoGoDuck")
+                .input("layer", "imos:acorn_hourly_avg_rot_qc_timeseries_url")
+                .input("subset", "TIME,2017-01-04T11:30:00.000Z,2017-01-06T11:30:00.000Z;LATITUDE,-31.8009,-31.8009;LONGITUDE,115.0227,115.0227")
+                .input("callbackParams", "imos-wps-testing@mailinator.com")
+                .output("result", "text/csv")
+                .build();
+
+        String statusUrl = submitAndWaitToComplete(request, TWENTY_MINUTES);
+
+        String outputLocation = given()
+                .spec(spec)
+                .when()
+                .get(statusUrl)
+                .then()
+                .statusCode(200)
+                .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
+                .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"))
+                .extract()
+                .path("ExecuteResponse.ProcessOutputs.Output.Reference.@href");
+
+        Response response = given()
+                .spec(spec)
+                .when()
+                .get(outputLocation);
+
+        String csvOutput = response.getBody().print();
+
+        //  First line is CSV header
+        //  Time field is index 0
+        //  Check that the timestamps are in descending time order
+        try {
+            CSVParser parser = CSVParser.parse(csvOutput, CSVFormat.DEFAULT);
+            int lineNum = 0;
+            Instant currentInstant = null;
+            Instant nextInstant;
+            for(CSVRecord record : parser) {
+                if(lineNum > 0) {
+                    if(currentInstant == null) {
+                        currentInstant = Instant.parse(record.get(0));
+                    } else {
+                        nextInstant = Instant.parse(record.get(0));
+
+                        if(!currentInstant.isAfter(nextInstant)) {
+                            //  Fail
+                            fail("Timestamps not in descending order. Current [" + currentInstant.toString() + "], Next [" + nextInstant.toString() +"]");
+                        } else {
+                            currentInstant = nextInstant;
+                        }
+                    }
+                }
+                lineNum++;
+            }
+        } catch (IOException ioex) {
+            ioex.printStackTrace();
+            fail("Unable to parse CSV output [" + csvOutput + "]: " + ioex.getMessage());
+        }
     }
 
     @Test
