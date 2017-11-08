@@ -90,23 +90,28 @@ public class S3Utils {
     }
 
     public static void uploadToS3(String document, String bucket, String key, String contentType) throws IOException {
-        try {
-            AmazonS3 s3Client = AmazonS3ClientBuilder.defaultClient();
-            StringInputStream inputStream = new StringInputStream(document);
+
+        AmazonS3 s3Client = AmazonS3ClientBuilder.defaultClient();
+
+        try (StringInputStream inputStream = new StringInputStream(document)) {
             PutObjectRequest putRequest = new PutObjectRequest(bucket, key, inputStream, new ObjectMetadata());
             putRequest.setCannedAcl(CannedAccessControlList.PublicRead);
 
+            ObjectMetadata meta = new ObjectMetadata();
+
             //  Add content (mime) type metadata if provided
             if(contentType != null) {
-                ObjectMetadata meta = new ObjectMetadata();
                 meta.setContentType(contentType);
-                putRequest.setMetadata(meta);
                 LOGGER.info("Setting contentType [" + contentType + "]");
             }
 
+            LOGGER.info("Setting contentLength [" + inputStream.available() + " bytes]");
+            meta.setContentLength(inputStream.available());
+            putRequest.setMetadata(meta);
+
             s3Client.putObject(putRequest);
         } catch (Exception ex) {
-            LOGGER.error(String.format("Unable to write file %s to bucket %s at %s", document, bucket, key), ex);
+            LOGGER.error(String.format("Unable to write content [%s] to S3. Bucket [%s], Key [%s]", document, bucket, key), ex);
             throw new IOException(ex);
         }
     }
