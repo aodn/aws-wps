@@ -34,7 +34,6 @@ public class ExecuteIT {
     private static final Duration TWENTY_MINUTES = new Duration(20, TimeUnit.MINUTES);
     private static RequestSpecification spec;
     private static String SERVICE_ENDPOINT = System.getenv("WPS_ENDPOINT");
-    //public static final Logger LOGGER = LoggerFactory.getLogger(ExecuteIT.class);
 
     @BeforeClass
     public static void initSpec() {
