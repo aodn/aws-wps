@@ -62,22 +62,22 @@ public class HttpIndexReader implements IndexReader {
             }
 
             logger.info("GET Request Params String: " + getParamsDataString);
-            byte[]getParamasBytes = getParamsDataString.getBytes();
+            byte[]getParamsBytes = getParamsDataString.getBytes();
 
 
             URL url = new URL(downloadUrl);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
             conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-            conn.setRequestProperty("Content-Length", String.valueOf(getParamasBytes.length));
+            conn.setRequestProperty("Content-Length", String.valueOf(getParamsBytes.length));
             conn.setDoOutput(true);
-            conn.getOutputStream().write(getParamasBytes);
+            conn.getOutputStream().write(getParamsBytes);
 
             InputStream inputStream = conn.getInputStream();
             DataInputStream dataInputStream = new DataInputStream(new BufferedInputStream(inputStream));
 
             logger.info(String.format("Getting list of files from '%s'", downloadUrl));
-            logger.info(String.format("Parameters: '%s'", new String(getParamasBytes)));
+            logger.info(String.format("Parameters: '%s'", new String(getParamsBytes)));
             String line = null;
             Integer i = 0;
             int fileUrlIndex = 0;
