@@ -1,6 +1,7 @@
 package au.org.emii.aggregator.catalogue;
 
 
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -35,12 +36,22 @@ public class CatalogueReader {
     public String getMetadataUrl(String layer) {
         try {
             if (catalogueUrl == null || layerSearchField == null) {
-                logger.error("Missing configuration: Catalogue URl [" + catalogueUrl + "], Layer search field [" + layerSearchField + "]");
+                logger.error("Missing configuration: Catalogue URL [" + catalogueUrl + "], Layer search field [" + layerSearchField + "]");
                 return "";
+            }
+
+            logger.info("Layer name: " + layer);
+
+            //  Strip the imos: off the front of the layer name if it is present
+            if(layer.startsWith("imos:")) {
+                layer = StringUtils.removeStart(layer, "imos:");
+                logger.info("Adjusted layer name: " + layer);
             }
 
             String searchUrl = String.format(CATALOGUE_SEARCH_TEMPLATE, this.catalogueUrl,
                     this.layerSearchField, layer);
+
+            logger.info("Catalogue search URL: " + searchUrl);
 
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             factory.setNamespaceAware(true);
@@ -57,7 +68,7 @@ public class CatalogueReader {
             NodeList nl = (NodeList) expr.evaluate(doc, XPathConstants.NODESET);
 
             if (nl.getLength() == 0 || nl.item(0) == null) {
-                logger.error("No metadata URL found for {}", layer);
+                logger.error("No metadata URL found for {}. Nodelist empty.", layer);
                 return "";
             }
 
@@ -65,7 +76,7 @@ public class CatalogueReader {
 
             if(nodeValue == null)
             {
-                logger.error("No metadata URL found for {}", layer);
+                logger.error("No metadata URL found for {}. Empty node.", layer);
                 return "";
             }
 

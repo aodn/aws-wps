@@ -79,9 +79,9 @@
 
     <prov:entity prov:id="outputAggregationSettings">
         <#if settingsPath?has_content>
-        <prov:location>https://github.com/aodn/geoserver-config/tree/production/${settingsPath}</prov:location>
+        <prov:location>${settingsPath}</prov:location>
         <#else>
-        <prov:location>https://github.com/aodn/geoserver-config/tree/production/wps/gogoduck.xml</prov:location>
+        <prov:location>https://raw.githubusercontent.com/aodn/aws-wps/master/wps-common/src/main/resources/config/templates.xml</prov:location>
         </#if>
         <prov:type codeList="codeListLocation#type" codeListValue="outputConfiguration">outputConfiguration</prov:type>
     </prov:entity>
