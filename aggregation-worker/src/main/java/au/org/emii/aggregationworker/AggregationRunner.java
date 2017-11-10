@@ -33,6 +33,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -145,7 +147,7 @@ public class AggregationRunner implements CommandLineRunner {
 
             //  Query geoserver to get a list of files for the aggregation
             HttpIndexReader indexReader = new HttpIndexReader(WpsConfig.getConfig(WpsConfig.GEOSERVER_CATALOGUE_ENDPOINT_URL_CONFIG_KEY));
-            Set<DownloadRequest> downloads = indexReader.getDownloadRequestList(layer, "time", "file_url", subsetParams);
+            List<DownloadRequest> downloads = indexReader.getDownloadRequestList(layer, "time", "file_url", subsetParams);
 
             //  Apply subset parameters
             LatLonRect bbox = subsetParams.getBbox();
@@ -176,7 +178,7 @@ public class AggregationRunner implements CommandLineRunner {
                     ParallelDownloadManager downloadManager = new ParallelDownloadManager(downloadConfig, downloader);
                     NetcdfAggregator netcdfAggregator = new NetcdfAggregator(outputFile, overrides, chunkSize, bbox, subsetParams.getVerticalRange(), subsetTimeRange)
             ) {
-                for (Download download : downloadManager.download(downloads)) {
+                for (Download download : downloadManager.download(new LinkedHashSet<>(downloads))) {
                     netcdfAggregator.add(download.getPath());
                     downloadManager.remove();
                 }

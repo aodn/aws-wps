@@ -8,10 +8,10 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import au.org.emii.aggregator.exception.AggregationException;
 import au.org.emii.download.DownloadRequest;
@@ -29,111 +29,16 @@ public class HttpIndexReader implements IndexReader {
     }
 
     @Override
-    public URIList getUriList(String profile, String timeField, String urlField, SubsetParameters subset) throws AggregationException {
+    public List<DownloadRequest> getDownloadRequestList(String layer, String timeField, String urlField, SubsetParameters subset) throws AggregationException {
 
-        URIList uriList = new URIList();
-
-        try {
-            String downloadUrl = String.format("%s/wfs", geoserver);
-
-
-            Map<String, String> params = new HashMap<String, String>();
-            params.put("typeName", profile);
-            params.put("SERVICE", "WFS");
-            params.put("outputFormat", "csv");
-            params.put("REQUEST", "GetFeature");
-            params.put("VERSION", "1.0.0");
-
-            //  Apply time filter if time parameters supplied
-            String cqlTimeFilter = getCqlTimeFilter(subset, timeField);
-            if (cqlTimeFilter != null) {
-                params.put("CQL_FILTER", cqlTimeFilter);
-            }
-
-
-            byte[] postDataBytes = encodeMapForPostRequest(params);
-
-            URL url = new URL(downloadUrl);
-            HttpURLConnection conn = null;
-            InputStream inputStream = null;
-            BufferedInputStream bufferedStream = null;
-            DataInputStream dataInputStream = null;
-
-
-            //  Make HTTP request to geoserver
-            conn = (HttpURLConnection) url.openConnection();
-
-            try {
-                conn.setRequestMethod("GET");
-                conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-                conn.setRequestProperty("Content-Length", String.valueOf(postDataBytes.length));
-                conn.setDoOutput(true);
-                conn.getOutputStream().write(postDataBytes);
-                int responseCode = conn.getResponseCode();
-                String responseMessage = conn.getResponseMessage();
-
-                logger.info("HTTP Response : Code [" + responseCode + "], Message [" + responseMessage + "]");
-
-                inputStream = conn.getInputStream();
-                bufferedStream = new BufferedInputStream(inputStream);
-                dataInputStream = new DataInputStream(bufferedStream);
-
-                logger.info(String.format("Getting list of files from '%s'", downloadUrl));
-                logger.info(String.format("Parameters: '%s'", new String(postDataBytes)));
-
-                //  Read response from geoserver - CSV format
-                //  Example structure:
-                //  acorn_hourly_avg_rot_qc_timeseries_url.fid-7a10c7e5_15e34df590d_2000,939620,IMOS/ACORN/gridded_1h-avg-current-map_QC/ROT/2017/03/31/IMOS_ACORN_V_20170331T233000Z_ROT_FV01_1-hour-avg.nc,128950,"ROT, Rottnest Shelf",2017-03-31T23:30:00,POINT (1 2)
-                String line;
-                Integer i = 0;
-                while ((line = dataInputStream.readLine()) != null) {
-                    if (i > 0) { // Skip first line - it's the headers
-                        logger.info("CSV line    = " + line);
-                        String[] lineParts = line.split(",");
-                        uriList.add(new URI(lineParts[2]));
-                    } else {
-                        logger.info("CSV headers = " + line);
-                    }
-                    i++;
-                }
-            } catch (Exception e) {
-                logger.error(e.getMessage(), e);
-                throw e;
-            } finally {
-                if (inputStream != null) {
-                    inputStream.close();
-                }
-
-                if (bufferedStream != null) {
-                    bufferedStream.close();
-                }
-
-                if (dataInputStream != null) {
-                    dataInputStream.close();
-                }
-
-                if (conn != null) {
-                    conn.disconnect();
-                }
-            }
-        } catch (Exception e) {
-            logger.error("We could not obtain list of URLs, does the collection still exist?");
-            throw new AggregationException(String.format("Could not obtain list of URLs: '%s'", e.getMessage()));
-        }
-
-        return uriList;
-    }
-
-
-    public Set<DownloadRequest> getDownloadRequestList(String layer, String timeField, String urlField, SubsetParameters subset) throws AggregationException {
-
-        HashSet<DownloadRequest> downloadList = new HashSet<DownloadRequest>();
+        ArrayList<DownloadRequest> downloadList = new ArrayList<DownloadRequest>();
 
         try {
 
             String downloadUrl = String.format("%s/wfs", geoserver);
 
             Map<String, String> params = new HashMap<String, String>();
+            //  TODO: source from configuration?
             params.put("typeName", layer);
             params.put("SERVICE", "WFS");
             params.put("outputFormat", "csv");
@@ -143,24 +48,36 @@ public class HttpIndexReader implements IndexReader {
             //  Apply time filter if time parameters supplied
             String cqlTimeFilter = getCqlTimeFilter(subset, timeField);
             if (cqlTimeFilter != null) {
+                //  Add sortBy clause to order the files by descending timestamp
                 params.put("CQL_FILTER", cqlTimeFilter);
             }
 
-            byte[] postDataBytes = encodeMapForPostRequest(params);
+            logger.info("CQL Time Filter: " + cqlTimeFilter);
+
+            //  URL encode the parameters - except the sortBy parameter
+            String getParamsDataString = encodeMapForPostRequest(params);
+
+            if(timeField != null) {
+                getParamsDataString += getTimeSortClause(timeField);
+            }
+
+            logger.info("GET Request Params String: " + getParamsDataString);
+            byte[]getParamsBytes = getParamsDataString.getBytes();
+
 
             URL url = new URL(downloadUrl);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
             conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-            conn.setRequestProperty("Content-Length", String.valueOf(postDataBytes.length));
+            conn.setRequestProperty("Content-Length", String.valueOf(getParamsBytes.length));
             conn.setDoOutput(true);
-            conn.getOutputStream().write(postDataBytes);
+            conn.getOutputStream().write(getParamsBytes);
 
             InputStream inputStream = conn.getInputStream();
             DataInputStream dataInputStream = new DataInputStream(new BufferedInputStream(inputStream));
 
             logger.info(String.format("Getting list of files from '%s'", downloadUrl));
-            logger.info(String.format("Parameters: '%s'", new String(postDataBytes)));
+            logger.info(String.format("Parameters: '%s'", new String(getParamsBytes)));
             String line = null;
             Integer i = 0;
             int fileUrlIndex = 0;
@@ -177,6 +94,8 @@ public class HttpIndexReader implements IndexReader {
                     URL fileURL = new URL("http://data.aodn.org.au/" + fileURI.toString());
 
                     DownloadRequest downloadRequest = new DownloadRequest(fileURL, fileSize);
+
+                    logger.info("Adding download URL: " + fileURL);
                     downloadList.add(downloadRequest);
                 } else {
                     //  The first line is the header - which lists all of the fields returned.
@@ -213,7 +132,7 @@ public class HttpIndexReader implements IndexReader {
     }
 
 
-    private byte[] encodeMapForPostRequest(Map<String, String> params) {
+    private String encodeMapForPostRequest(Map<String, String> params) {
         byte[] postDataBytes = null;
         try {
             StringBuilder postData = new StringBuilder();
@@ -228,14 +147,14 @@ public class HttpIndexReader implements IndexReader {
             logger.error(String.format("Error encoding parameters: '%s'", e.getMessage()));
         }
 
-        return postDataBytes;
+        return new String(postDataBytes);
     }
 
     public static void main(String[] args) {
         HttpIndexReader indexReader = new HttpIndexReader("http://geoserver-123.aodn.org.au/geoserver/imos");
         String subsetString = "TIME,2009-01-01T00:00:00.000Z,2017-12-25T23:04:00.000Z;LATITUDE,-33.433849,-32.150743;LONGITUDE,114.15197,115.741219;DEPTH,0.0,100.0";
         SubsetParameters subsetParams = SubsetParameters.parse(subsetString);
-        Set<DownloadRequest> downloadList = null;
+        List<DownloadRequest> downloadList = null;
 
         try {
             downloadList = indexReader.getDownloadRequestList("imos:acorn_hourly_avg_rot_qc_timeseries_url", "time", "file_url", subsetParams);
@@ -266,5 +185,21 @@ public class HttpIndexReader implements IndexReader {
             }
         }
         return cqlTimeFilter;
+    }
+
+
+    /**
+     * Form sort clause for CQL filter of the form:
+     *   &sortBy=<time_field>+D
+     *
+     * @param timeField
+     * @return
+     */
+    private String getTimeSortClause(String timeField) {
+        String sortClause = "";
+        if(timeField != null) {
+            sortClause = "&sortBy=" + timeField + "+D";
+        }
+        return sortClause;
     }
 }
