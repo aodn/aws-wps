@@ -854,6 +854,7 @@ Resources:
     Properties:
       ServiceToken: !GetAtt ReloadLambdaCodeFunction.Arn
       Version: !Ref version
+    DependsOn: S3PutConfigurationFiles
   S3PutObjectLambdaFunctionRole:
     Type: 'AWS::IAM::Role'
     Properties:
@@ -981,6 +982,7 @@ Resources:
     Type: "Custom::S3PutObject"
     Properties:
       ServiceToken: !GetAtt S3PutObjectLambdaFunction.Arn
+      Version: !Ref version
   EmptyBucketLambdaFunction:
     Type: "AWS::Lambda::Function"
     Condition: CreateEphemeralBucket
