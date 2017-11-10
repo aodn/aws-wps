@@ -2,6 +2,10 @@ AWSTemplateFormatVersion: 2010-09-09
 Description: >-
   A template for AWS-WPS
 Parameters:
+  version:
+    Type: Number
+    Description: "Build/Code version"
+    Default: 1
   s3configKey:
     Type: String
     Default: 'config/'
@@ -753,6 +757,103 @@ Resources:
                   !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]]],
                   !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]],"/*"]]
                 ]
+  ReloadLambdaCodeFunctionRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+      Policies:
+        - PolicyName: UpdateVersion
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'lambda:UpdateFunctionCode'
+                Resource: '*'
+  ReloadLambdaCodeFunction:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      Code:
+        ZipFile: |
+          import os
+          import boto3
+          import mimetypes
+          from urllib2 import urlopen, Request
+          import cfnresponse
+
+          client = boto3.client('lambda')
+          responseData = {'Data': 'OK'}
+          function_name_suffix = os.getenv('FUNCTION_NAME_SUFFIX')
+          s3_bucket_suffix = os.getenv('S3_BUCKET_SUFFIX')
+          s3_key_suffix = os.getenv('S3_KEY_SUFFIX')
+
+          def handler(event, context):
+             try:
+                 print('RequestType')
+                 print(event['RequestType'])
+
+                 if event['RequestType'] == 'Update':
+                     for env_var in os.environ:
+                         env_var_value = os.getenv(env_var)
+                         print('Environment Variable {} : {}'.format(env_var, env_var_value))
+
+                     for env_var in os.environ:
+                         env_var_value = os.getenv(env_var)
+                         if env_var.endswith(function_name_suffix):
+                             function_name_prefix = env_var.replace(function_name_suffix, '')
+                             function_name = env_var_value
+                             s3_bucket = os.getenv('{}{}'.format(function_name_prefix, s3_bucket_suffix))
+                             s3_key = os.getenv('{}{}'.format(function_name_prefix, s3_key_suffix))
+
+                             print('s3Bucket Key:{} Value:{}'.format('{}{}'.format(function_name_prefix, s3_bucket_suffix), s3_bucket))
+                             print('s3Key Key:{} Value:{}'.format('{}{}'.format(function_name_prefix, s3_key_suffix), s3_key))
+
+                             response = client.update_function_code(
+                                 FunctionName=function_name,
+                                 S3Bucket=s3_bucket,
+                                 S3Key=s3_key,
+                                 Publish=True
+                             )
+                             print('response: {}'.format(response))
+
+                 return cfnresponse.send(event, context, cfnresponse.SUCCESS, responseData, 'S3PutObjectFunction')
+             except Exception as e:
+               print(e)
+               return cfnresponse.send(event, context, cfnresponse.FAILED, responseData, 'S3PutObjectFunction')
+
+      FunctionName: !Sub 'ReloadLambdaCode-${AWS::StackName}'
+      Handler: 'index.handler'
+      Role: !GetAtt ReloadLambdaCodeFunctionRole.Arn
+      Runtime: python2.7
+      MemorySize: 128
+      Timeout: 60
+      Environment:
+        Variables:
+          FUNCTION_NAME_SUFFIX: 'Function'
+          S3_BUCKET_SUFFIX: 'S3Bucket'
+          S3_KEY_SUFFIX: 'S3Key'
+          RequestHandler_Function: !Ref RequestHandlerLambdaFunction
+          RequestHandler_S3Bucket: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
+          RequestHandler_S3Key: !Join [ "", [ !Ref s3configKey,  !Ref requestHandlerFilename] ]
+          JobStatus_Function: !Ref JobStatusLambdaFunction
+          JobStatus_S3Bucket: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
+          JobStatus_S3Key: !Join [ "", [ !Ref s3configKey,  !Ref jobStatusFilename] ]
+  ReloadLambdaCode:
+    Type: "Custom::ReloadLambdaCode"
+    Properties:
+      ServiceToken: !GetAtt ReloadLambdaCodeFunction.Arn
+      Version: !Ref version
   S3PutObjectLambdaFunctionRole:
     Type: 'AWS::IAM::Role'
     Properties:
