@@ -81,7 +81,7 @@
         <#if settingsPath?has_content>
         <prov:location>${settingsPath}</prov:location>
         <#else>
-        <prov:location>https://s3-ap-southeast-2.amazonaws.com/aws-wps-dev-testing/config/templates.xml</prov:location>
+        <prov:location>https://raw.githubusercontent.com/aodn/aws-wps/master/wps-common/src/main/resources/config/templates.xml</prov:location>
         </#if>
         <prov:type codeList="codeListLocation#type" codeListValue="outputConfiguration">outputConfiguration</prov:type>
     </prov:entity>
