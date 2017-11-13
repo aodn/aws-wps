@@ -781,6 +781,10 @@ Resources:
                 Action:
                   - 'lambda:UpdateFunctionCode'
                 Resource: '*'
+                Resource: [
+                  !Join ["", ["arn:aws:lambda:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":function:", !Ref JobStatusLambdaFunction]],
+                  !Join ["", ["arn:aws:lambda:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":function:", !Ref RequestHandlerLambdaFunction]]
+                ]
   ReloadLambdaCodeFunction:
     Type: "AWS::Lambda::Function"
     Properties:
