@@ -787,9 +787,8 @@ Resources:
       Code:
         ZipFile: |
           import os
+
           import boto3
-          import mimetypes
-          from urllib2 import urlopen, Request
           import cfnresponse
 
           client = boto3.client('lambda')
@@ -798,39 +797,37 @@ Resources:
           s3_bucket_suffix = os.getenv('S3_BUCKET_SUFFIX')
           s3_key_suffix = os.getenv('S3_KEY_SUFFIX')
 
+
           def handler(event, context):
-             try:
-                 print('RequestType')
-                 print(event['RequestType'])
+              try:
+                  if event['RequestType'] == 'Update':
+                      function_vars = [var for var in os.environ if var.endswith(function_name_suffix)]
 
-                 if event['RequestType'] == 'Update':
-                     for env_var in os.environ:
-                         env_var_value = os.getenv(env_var)
-                         print('Environment Variable {} : {}'.format(env_var, env_var_value))
+                      for function_name in function_vars:
+                          function_name_prefix = function_name.replace(function_name_suffix, '')
+                          bucket_var = '{}{}'.format(function_name_prefix, s3_bucket_suffix)
+                          key_var = '{}{}'.format(function_name_prefix, s3_key_suffix)
 
-                     for env_var in os.environ:
-                         env_var_value = os.getenv(env_var)
-                         if env_var.endswith(function_name_suffix):
-                             function_name_prefix = env_var.replace(function_name_suffix, '')
-                             function_name = env_var_value
-                             s3_bucket = os.getenv('{}{}'.format(function_name_prefix, s3_bucket_suffix))
-                             s3_key = os.getenv('{}{}'.format(function_name_prefix, s3_key_suffix))
+                          s3_bucket = os.getenv(bucket_var)
+                          s3_key = os.getenv(key_var)
 
-                             print('s3Bucket Key:{} Value:{}'.format('{}{}'.format(function_name_prefix, s3_bucket_suffix), s3_bucket))
-                             print('s3Key Key:{} Value:{}'.format('{}{}'.format(function_name_prefix, s3_key_suffix), s3_key))
+                          print('s3Bucket Key:{} Value:{}'.format(bucket_var, s3_bucket))
+                          print('s3Key Key:{} Value:{}'.format(key_var, s3_key))
 
-                             response = client.update_function_code(
-                                 FunctionName=function_name,
-                                 S3Bucket=s3_bucket,
-                                 S3Key=s3_key,
-                                 Publish=True
-                             )
-                             print('response: {}'.format(response))
+                          reload_function = os.getenv(function_name)
+                          print('Reloading code for function:{}'.format(reload_function))
 
-                 return cfnresponse.send(event, context, cfnresponse.SUCCESS, responseData, 'S3PutObjectFunction')
-             except Exception as e:
-               print(e)
-               return cfnresponse.send(event, context, cfnresponse.FAILED, responseData, 'S3PutObjectFunction')
+                          response = client.update_function_code(
+                              FunctionName=reload_function,
+                              S3Bucket=s3_bucket,
+                              S3Key=s3_key,
+                              Publish=True
+                          )
+                          print('response: {}'.format(response))
+                  return cfnresponse.send(event, context, cfnresponse.SUCCESS, responseData, 'ReloadLambdaCodeFunction')
+              except Exception as e:
+                  print(e)
+                  return cfnresponse.send(event, context, cfnresponse.FAILED, responseData, 'ReloadLambdaCodeFunction')
 
       FunctionName: !Sub 'ReloadLambdaCode-${AWS::StackName}'
       Handler: 'index.handler'
@@ -921,10 +918,10 @@ Resources:
                          filename = os.getenv('{}_{}'.format(env_var, filename_suffix))
                          if env_var.startswith(http_prefix) and not env_var.endswith(filename_suffix) and env_var_value != http_prefix:
                              put(filename, env_var_value)
-                 return cfnresponse.send(event, context, cfnresponse.SUCCESS, responseData, 'S3PutObjectFunction')
+                 return cfnresponse.send(event, context, cfnresponse.SUCCESS, responseData, 'S3PutObjectLambdaFunction')
              except Exception as e:
                print(e)
-               return cfnresponse.send(event, context, cfnresponse.FAILED, responseData, 'S3PutObjectFunction')
+               return cfnresponse.send(event, context, cfnresponse.FAILED, responseData, 'S3PutObjectLambdaFunction')
 
 
           def put(filename, url):
