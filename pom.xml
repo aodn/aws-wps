@@ -20,4 +20,29 @@
         <module>aggregation-worker</module>
         <module>job-status-service</module>
     </modules>
+
+    <repositories>
+        <repository>
+            <id>aodn</id>
+            <url>http://content.aodn.org.au/repo/maven/</url>
+        </repository>
+    </repositories>
+
+    <build>
+        <extensions>
+            <extension>
+                <groupId>org.springframework.build</groupId>
+                <artifactId>aws-maven</artifactId>
+                <version>5.0.0.RELEASE</version>
+            </extension>
+        </extensions>
+    </build>
+
+    <distributionManagement>
+        <repository>
+            <id>maven-s3-repo</id>
+            <name>AODN Repository</name>
+            <url>s3://content.aodn.org.au/repo/maven</url>
+        </repository>
+    </distributionManagement>
 </project>
