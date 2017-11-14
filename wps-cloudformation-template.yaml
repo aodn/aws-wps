@@ -1131,7 +1131,7 @@ Resources:
     Properties:
       DestinationArn: !GetAtt SumoLogicLambdaFunction.Arn
       FilterPattern: ""
-      LogGroupName: !Join ["", ["/aws/lambda/", !Ref RequestHandlerLambdaFunction]]
+      LogGroupName: !Ref RequestHandlerLogGroup
   JobStatusLogsLambdaPermission:
     Type: AWS::Lambda::Permission
     Condition: IsProdEnvironment
@@ -1147,7 +1147,15 @@ Resources:
     Properties:
       DestinationArn: !GetAtt SumoLogicLambdaFunction.Arn
       FilterPattern: ""
-      LogGroupName: !Join ["", ["/aws/lambda/", !Ref JobStatusLambdaFunction]]
+      LogGroupName: !Ref JobStatusLogGroup
+  JobStatusLogGroup:
+    Type: "AWS::Logs::LogGroup"
+    Properties:
+      LogGroupName: JobStatusLogGroup
+  RequestHandlerLogGroup:
+    Type: "AWS::Logs::LogGroup"
+    Properties:
+      LogGroupName: RequestHandlerLogGroup
 Outputs:
   RequestHandlerApiGatewayUrl:
     Value: !If [
