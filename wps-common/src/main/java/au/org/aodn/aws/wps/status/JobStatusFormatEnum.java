@@ -2,7 +2,8 @@ package au.org.aodn.aws.wps.status;
 
 public enum JobStatusFormatEnum {
     XML("application/xml"),
-    HTML("text/html");
+    HTML("text/html"),
+    ADMIN("text/html");
 
     private final String mimeType;
 
