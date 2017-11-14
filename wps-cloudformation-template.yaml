@@ -56,6 +56,8 @@ Parameters:
   provenanceTemplateNonGriddedURL:
     Type: String
     Default: 'https://raw.githubusercontent.com/aodn/aws-wps/master/wps-common/src/main/resources/config/provenance_template_non_gridded.ftl'
+  sumoEndpoint:
+    Type: String
   sumologicLambdaCodeFilename:
     Type: String
     Default: 'index.zip'
@@ -204,9 +206,7 @@ Conditions:
   CreatePersistentBucket: !And
     - !Equals [!Ref createPersistentBucket, true]
     - !Not [!Condition CreateEphemeralBucket]
-  IsProdEnvironment: !And
-    - !Equals [ !Ref environment, production ]
-    - !Equals [!Ref 'AWS::AccountId', !FindInMap [EnvironmentMap, production, AccountId]]
+  ConfigureSumoLogic: !Not [!Equals [ "", !Ref sumoEndpoint]]
   CreateWpsApiGatewayDomainName: !Not [ !Equals [!Ref wpsDomainName, '']]
 Resources:
   PersistentS3Bucket:
@@ -1069,7 +1069,7 @@ Resources:
                   ]
   SumoLogicLambdaFunction:
     Type: "AWS::Lambda::Function"
-    Condition: IsProdEnvironment
+    Condition: "ConfigureSumoLogic"
     DependsOn: S3PutConfigurationFiles
     Properties:
       Code:
@@ -1083,10 +1083,10 @@ Resources:
       Timeout: 3
       Environment:
         Variables:
-          SUMO_ENDPOINT: "https://collectors.au.sumologic.com/receiver/v1/http/ZaVnC4dhaV3JEVfixYA5qRTxb0hVvEsYbW9rNuknWVkg4QwmWbJyxLLZF8L6yMcfphRWtOqhmS-a2ztp_JuFYjVqn3aDNPBJ5n4IUzlzSXdHXVuWW6t2gw=="
+          SUMO_ENDPOINT: !Ref sumoEndpoint
   SumoLogicLambdaFunctionRole:
       Type: 'AWS::IAM::Role'
-      Condition: IsProdEnvironment
+      Condition: "ConfigureSumoLogic"
       Properties:
         AssumeRolePolicyDocument:
           Version: 2012-10-17
@@ -1102,7 +1102,7 @@ Resources:
           - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
   BatchJobLogsLambdaPermission:
     Type: AWS::Lambda::Permission
-    Condition: IsProdEnvironment
+    Condition: "ConfigureSumoLogic"
     Properties:
       Action: lambda:invokeFunction
       FunctionName: !GetAtt SumoLogicLambdaFunction.Arn
@@ -1110,7 +1110,7 @@ Resources:
       SourceArn: !Join ["", ["arn:aws:logs:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":log-group:/aws/batch/job:*"]]
   BatchJobLogsSubscriptionFilter:
     Type: "AWS::Logs::SubscriptionFilter"
-    Condition: IsProdEnvironment
+    Condition: "ConfigureSumoLogic"
     DependsOn: BatchJobLogsLambdaPermission
     Properties:
       DestinationArn: !GetAtt SumoLogicLambdaFunction.Arn
@@ -1118,7 +1118,7 @@ Resources:
       LogGroupName: "/aws/batch/job"
   RequestHandlerLogsLambdaPermission:
     Type: AWS::Lambda::Permission
-    Condition: IsProdEnvironment
+    Condition: "ConfigureSumoLogic"
     Properties:
       Action: lambda:invokeFunction
       FunctionName: !GetAtt SumoLogicLambdaFunction.Arn
@@ -1126,7 +1126,7 @@ Resources:
       SourceArn: !Join ["", ["arn:aws:logs:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":log-group:", !Ref RequestHandlerLogGroup,":*"]]
   RequestHandlerLambdaLogsSubscriptionFilter:
     Type: "AWS::Logs::SubscriptionFilter"
-    Condition: IsProdEnvironment
+    Condition: "ConfigureSumoLogic"
     DependsOn: RequestHandlerLogsLambdaPermission
     Properties:
       DestinationArn: !GetAtt SumoLogicLambdaFunction.Arn
@@ -1134,7 +1134,7 @@ Resources:
       LogGroupName: !Ref RequestHandlerLogGroup
   JobStatusLogsLambdaPermission:
     Type: AWS::Lambda::Permission
-    Condition: IsProdEnvironment
+    Condition: "ConfigureSumoLogic"
     Properties:
       Action: lambda:invokeFunction
       FunctionName: !GetAtt SumoLogicLambdaFunction.Arn
@@ -1142,7 +1142,7 @@ Resources:
       SourceArn: !Join ["", ["arn:aws:logs:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":log-group:", !Ref JobStatusLogGroup,":*"]]
   JobStatusLambdaLogsSubscriptionFilter:
     Type: "AWS::Logs::SubscriptionFilter"
-    Condition: IsProdEnvironment
+    Condition: "ConfigureSumoLogic"
     DependsOn: JobStatusLogsLambdaPermission
     Properties:
       DestinationArn: !GetAtt SumoLogicLambdaFunction.Arn
@@ -1151,11 +1151,11 @@ Resources:
   JobStatusLogGroup:
     Type: "AWS::Logs::LogGroup"
     Properties:
-      LogGroupName: JobStatusLogGroup
+      LogGroupName: !Join ["", ["/aws/lambda/", !Ref JobStatusLambdaFunction]]
   RequestHandlerLogGroup:
     Type: "AWS::Logs::LogGroup"
     Properties:
-      LogGroupName: RequestHandlerLogGroup
+      LogGroupName: !Join ["", ["/aws/lambda/", !Ref RequestHandlerLambdaFunction]]
 Outputs:
   RequestHandlerApiGatewayUrl:
     Value: !If [
