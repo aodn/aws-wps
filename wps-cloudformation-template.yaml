@@ -1123,7 +1123,7 @@ Resources:
       Action: lambda:invokeFunction
       FunctionName: !GetAtt SumoLogicLambdaFunction.Arn
       Principal: !Sub 'logs.${AWS::Region}.amazonaws.com'
-      SourceArn: !Join ["", ["arn:aws:logs:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":log-group:/aws/lambda/", !Ref RequestHandlerLambdaFunction,":*"]]
+      SourceArn: !Join ["", ["arn:aws:logs:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":log-group:/", !Ref RequestHandlerLogGroup,":*"]]
   RequestHandlerLambdaLogsSubscriptionFilter:
     Type: "AWS::Logs::SubscriptionFilter"
     Condition: IsProdEnvironment
@@ -1139,7 +1139,7 @@ Resources:
       Action: lambda:invokeFunction
       FunctionName: !GetAtt SumoLogicLambdaFunction.Arn
       Principal: !Sub 'logs.${AWS::Region}.amazonaws.com'
-      SourceArn: !Join ["", ["arn:aws:logs:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":log-group:/aws/lambda/", !Ref JobStatusLambdaFunction,":*"]]
+      SourceArn: !Join ["", ["arn:aws:logs:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":log-group:/", !Ref JobStatusLogGroup,":*"]]
   JobStatusLambdaLogsSubscriptionFilter:
     Type: "AWS::Logs::SubscriptionFilter"
     Condition: IsProdEnvironment
