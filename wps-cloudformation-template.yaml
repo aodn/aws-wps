@@ -3,9 +3,9 @@ Description: >-
   A template for AWS-WPS
 Parameters:
   version:
-    Type: Number
+    Type: String
     Description: "Build/Code version"
-    Default: 1
+    Default: "0"
   s3configKey:
     Type: String
     Default: 'config/'
