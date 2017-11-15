@@ -9,7 +9,6 @@ import com.jayway.restassured.builder.RequestSpecBuilder;
 import com.jayway.restassured.filter.log.RequestLoggingFilter;
 import com.jayway.restassured.filter.log.ResponseLoggingFilter;
 import com.jayway.restassured.http.ContentType;
-import com.jayway.restassured.internal.NameAndValue;
 import com.jayway.restassured.response.Response;
 import com.jayway.restassured.internal.mapper.ObjectMapperType;
 import com.jayway.restassured.specification.RequestSpecification;
@@ -24,7 +23,6 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.TimeUnit;

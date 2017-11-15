@@ -43,8 +43,8 @@
         <prov:type codeList="codeListLocation#type" codeListValue="timeExtent">timeExtent</prov:type>
     </prov:entity>
 
-<#assign eastBL = parameters.bbox.lonMin>
-<#assign westBL = parameters.bbox.lonMax>
+<#assign westBL = parameters.bbox.lonMin>
+<#assign eastBL = parameters.bbox.lonMax>
 <#assign southBL = parameters.bbox.latMin>
 <#assign northBL = parameters.bbox.latMax>
 
