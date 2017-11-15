@@ -1,5 +1,7 @@
 package au.org.emii.wps.it;
 
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.junit.Assert.*;
 import au.org.emii.wps.util.ExecuteRequestBuilder;
 import com.jayway.awaitility.Duration;
@@ -7,6 +9,7 @@ import com.jayway.restassured.builder.RequestSpecBuilder;
 import com.jayway.restassured.filter.log.RequestLoggingFilter;
 import com.jayway.restassured.filter.log.ResponseLoggingFilter;
 import com.jayway.restassured.http.ContentType;
+import com.jayway.restassured.internal.NameAndValue;
 import com.jayway.restassured.response.Response;
 import com.jayway.restassured.internal.mapper.ObjectMapperType;
 import com.jayway.restassured.specification.RequestSpecification;
@@ -14,21 +17,29 @@ import net.opengis.wps.v_1_0_0.Execute;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.utils.URIBuilder;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.time.Instant;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import static au.org.emii.wps.util.GPathMatcher.hasGPath;
 import static au.org.emii.wps.util.Matchers.validateWith;
+import static au.org.emii.wps.util.NcmlValidatable.getNcml;
 import static com.jayway.awaitility.Awaitility.await;
 import static com.jayway.restassured.RestAssured.get;
 import static com.jayway.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.Matchers.hasXPath;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.xml.HasXPath.hasXPath;
 
 public class ExecuteIT {
     private static final Duration TWENTY_MINUTES = new Duration(20, TimeUnit.MINUTES);
@@ -46,7 +57,7 @@ public class ExecuteIT {
     }
 
     @Test
-    public void testAcornSubset() {
+    public void testAcornSubset() throws IOException {
         Execute request = new ExecuteRequestBuilder()
             .identifer("gs:GoGoDuck")
             .input("layer", "imos:acorn_hourly_avg_rot_qc_timeseries_url")
@@ -57,14 +68,32 @@ public class ExecuteIT {
 
         String statusUrl = submitAndWaitToComplete(request, TWENTY_MINUTES);
 
-        given()
+        String outputLocation = given()
             .spec(spec)
         .when()
             .get(statusUrl)
         .then()
             .statusCode(200)
             .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
-            .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"));
+            .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"))
+        .extract()
+            .path("ExecuteResponse.ProcessOutputs.Output.Reference.@href");
+
+        getNcml(outputLocation).content(
+            // Check global attributes overridden as required
+            hasXPath("/netcdf/attribute[@name='time_coverage_start']/@value", equalTo("2017-01-01T00:00:00Z")),
+            hasXPath("/netcdf/attribute[@name='time_coverage_end']/@value", equalTo("2017-01-07T23:04:00Z")),
+            hasXPath("/netcdf/attribute[@name='geospatial_lat_min']/@value", equalTo("-33.145229")),
+            hasXPath("/netcdf/attribute[@name='geospatial_lat_max']/@value", equalTo("-31.485632")),
+            hasXPath("/netcdf/attribute[@name='geospatial_lon_min']/@value", equalTo("114.849838")),
+            hasXPath("/netcdf/attribute[@name='geospatial_lon_max']/@value", equalTo("115.359207")),
+            // Check all variables have been included
+            hasGPath("netcdf.variable.@name", containsInAnyOrder(
+                "TIME","LATITUDE","LONGITUDE","GDOP","UCUR","VCUR","UCUR_sd","VCUR_sd","NOBS1","NOBS2",
+                "UCUR_quality_control","VCUR_quality_control"
+                )
+            )
+        );
     }
 
     @Test
@@ -167,7 +196,7 @@ public class ExecuteIT {
     }
 
     @Test
-    public void testSrsSubset() {
+    public void testSrsSubset() throws IOException {
         Execute request = new ExecuteRequestBuilder()
             .identifer("gs:GoGoDuck")
             .input("layer", "srs_ghrsst_l3s_1d_day_url")
@@ -178,14 +207,35 @@ public class ExecuteIT {
 
         String statusUrl = submitAndWaitToComplete(request, TWENTY_MINUTES);
 
-        given()
+        String outputLocation = given()
             .spec(spec)
         .when()
             .get(statusUrl)
         .then()
             .statusCode(200)
             .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
-            .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"));
+            .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"))
+        .extract()
+            .path("ExecuteResponse.ProcessOutputs.Output.Reference.@href");
+
+        getNcml(outputLocation).content(
+            // Check global attributes overridden as required
+            hasXPath("/netcdf/attribute[@name='time_coverage_start']/@value", equalTo("2017-10-19T03:20:00Z")),
+            hasXPath("/netcdf/attribute[@name='start_time']/@value", equalTo("2017-10-19T03:20:00Z")),
+            hasXPath("/netcdf/attribute[@name='time_coverage_end']/@value", equalTo("2017-10-19T03:20:00Z")),
+            hasXPath("/netcdf/attribute[@name='stop_time']/@value", equalTo("2017-10-19T03:20:00Z")),
+            hasXPath("/netcdf/attribute[@name='northernmost_latitude']/@value", equalTo("19.989999771118164 ")),
+            hasXPath("/netcdf/attribute[@name='southernmost_latitude']/@value", equalTo("-69.98999786376953 ")),
+            hasXPath("/netcdf/attribute[@name='westernmost_longitude']/@value", equalTo("70.01000213623047 ")),
+            hasXPath("/netcdf/attribute[@name='easternmost_longitude']/@value", equalTo("189.99000549316406 ")),
+            // Check only requested variables have been included
+            hasGPath("netcdf.variable.@name", containsInAnyOrder(
+                "time", "lat", "lon", "dt_analysis", "l2p_flags", "quality_level", "satellite_zenith_angle",
+                "sea_surface_temperature", "sses_bias", "sses_count", "sses_standard_deviation", "sst_dtime"                )
+            ),
+            // Ensure type has been overridden as required
+            hasXPath("/netcdf/variable[@name='sea_surface_temperature']/@type", equalTo("float"))
+        );
     }
 
     @Test
@@ -195,13 +245,12 @@ public class ExecuteIT {
             .input("layer", "imos:acorn_hourly_avg_rot_qc_timeseries_url")
             .input("subset", "TIME,2017-01-01T00:00:00.000Z,2017-01-07T23:04:00.000Z;LATITUDE,-33.18,-31.45;LONGITUDE,114.82,115.39")
             .input("callbackParams", "imos-wps-testing@mailinator.com")
-            .output("result", "application/x-netcdf")
             .output("provenance", "text/xml")
             .build();
 
         String statusUrl = submitAndWaitToComplete(request, TWENTY_MINUTES);
 
-        given()
+        String outputLocation = given()
             .spec(spec)
             .when()
             .get(statusUrl)
@@ -209,8 +258,31 @@ public class ExecuteIT {
             .statusCode(200)
             .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
             .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"))
-            .body(hasXPath("/ExecuteResponse/ProcessOutputs/Output/Identifier[text()='result']"))
-            .body(hasXPath("/ExecuteResponse/ProcessOutputs/Output/Identifier[text()='provenance']"));
+            .body("ExecuteResponse.ProcessOutputs.Output.Identifier", equalTo("provenance"))
+        .extract()
+            .path("ExecuteResponse.ProcessOutputs.Output.Reference.@href");
+
+        given()
+            .spec(spec)
+        .when()
+            .get(outputLocation)
+        .then()
+            .statusCode(200)
+            .contentType("text/xml")
+            .body(
+                hasXPath("//TimePeriod/beginPosition", equalTo("2017-01-01T00:00:00Z")),
+                hasXPath("//TimePeriod/endPosition", equalTo("2017-01-07T23:04:00Z")),
+                hasXPath("//EX_GeographicBoundingBox/westBoundLongitude/Decimal", equalTo("114.82")),
+                hasXPath("//EX_GeographicBoundingBox/eastBoundLongitude/Decimal", equalTo("115.39")),
+                hasXPath("//EX_GeographicBoundingBox/southBoundLatitude/Decimal", equalTo("-33.18")),
+                hasXPath("//EX_GeographicBoundingBox/northBoundLatitude/Decimal", equalTo("-31.45")),
+                hasXPath("//entity[@id='layerName']/location", equalTo("imos:acorn_hourly_avg_rot_qc_timeseries_url")),
+                hasXPath("//entity[@id='outputAggregationSettings']/location", not(isEmptyOrNullString())),
+                hasXPath("//entity[@id='sourceData']/location", endsWith("geonetwork/srv/en/metadata.show?uuid=028b9801-279f-427c-964b-0ffcdf310b59")),
+                hasXPath("//softwareAgent[@id='JavaCode']/location", not(isEmptyOrNullString())),
+                hasXPath("//other/identifier", equalTo(getJobId(statusUrl)))
+            );
+
     }
 
     @Test
@@ -279,6 +351,29 @@ public class ExecuteIT {
         );
 
         return statusUrl;
+    }
+
+    private String getJobId(String statusUrl) {
+        // Get query parameters as a list
+
+        List<NameValuePair> queryParams;
+
+        try {
+            URIBuilder parser = new URIBuilder(statusUrl);
+            queryParams = parser.getQueryParams();
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
+
+        // Find jobId parameter and return its value
+
+        for (NameValuePair param: queryParams) {
+            if (param.getName().equals("jobId")) {
+                return param.getValue();
+            }
+        }
+
+        return null;
     }
 
 }

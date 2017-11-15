@@ -10,6 +10,7 @@ import org.junit.Test;
 
 import static au.org.emii.wps.util.Matchers.validateWith;
 import static com.jayway.restassured.RestAssured.given;
+import static org.hamcrest.CoreMatchers.hasItem;
 
 public class GetCapabilitiesIT {
     private static final String SERVICE_ENDPOINT = System.getenv("WPS_ENDPOINT");
@@ -36,6 +37,7 @@ public class GetCapabilitiesIT {
         .then()
             .statusCode(200)
             .contentType(ContentType.XML)
-            .body(validateWith("/wps/1.0.0/wpsAll.xsd"));
+            .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
+            .body("Capabilities.ProcessOfferings.Process.Identifier", hasItem("gs:GoGoDuck"));
     }
 }

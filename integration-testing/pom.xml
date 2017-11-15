@@ -63,6 +63,16 @@
             <artifactId>commons-csv</artifactId>
             <version>1.4</version>
         </dependency>
+        <dependency>
+            <groupId>edu.ucar</groupId>
+            <artifactId>cdm</artifactId>
+            <version>4.6.9</version>
+        </dependency>
+        <dependency>
+            <groupId>edu.ucar</groupId>
+            <artifactId>httpservices</artifactId>
+            <version>4.6.9</version>
+        </dependency>
     </dependencies>
 
     <build>
