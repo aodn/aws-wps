@@ -10,7 +10,9 @@ import au.org.aodn.aws.wps.JobStatusResponse;
 import au.org.aodn.aws.wps.status.QueuePosition;
 import au.org.aodn.aws.wps.status.WpsConfig;
 import com.amazonaws.services.batch.AWSBatch;
+import com.amazonaws.services.batch.AWSBatchClientBuilder;
 import com.amazonaws.services.batch.model.JobDetail;
+import com.amazonaws.services.batch.model.JobSummary;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.s3.AmazonS3;
@@ -34,6 +36,9 @@ import javax.xml.transform.stream.StreamSource;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 
 public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusRequest, JobStatusResponse> {
@@ -101,97 +106,183 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
         int httpStatus;
         String statusDescription = null;
 
-        //  Read the status file for the jobId passed (if it exists)
-        try {
+        if (requestedStatusFormat.equals(JobStatusFormatEnum.QUEUE)) {
+            LOGGER.info("Queue contents requested.");
 
-            String s3Key = jobFileS3KeyPrefix + jobId + "/" + statusFilename;
+            AWSBatch batchClient = AWSBatchClientBuilder.defaultClient();
+            String queueName = "JavaDuckQueue1-cam";
 
-            //  Check for the existence of the status document
-            AmazonS3 s3Client = AmazonS3ClientBuilder.defaultClient();
-            boolean statusExists = s3Client.doesObjectExist(statusS3Bucket, s3Key);
-
-
-            LOGGER.info("Status file exists for jobId [" + jobId + "]? " + statusExists);
-
-            //  If the status file exists and the job is in an 'waiting' state (we have accepted the job but processing
-            //  has not yet commenced) we will attempt to work out the queue position of the job and add that to
-            //  the status information we send back to the caller.  If the job is being processed or processing has
-            //  completed (successful or failed), then we will return the information contained in the status file unaltered.
-            if (statusExists) {
-
-                String statusXMLString = S3Utils.readS3ObjectAsString(statusS3Bucket, s3Key);
-
-                //  Read the status document
-                executeResponse = JobFileUtil.unmarshallExecuteResponse(statusXMLString);
-
-                LOGGER.info("Unmarshalled XML for jobId [" + jobId + "]");
-                LOGGER.info(statusXMLString);
-
-                StatusType currentStatus = executeResponse.getStatus();
-                //  Get a friendly description of the status
-                statusDescription = getStatusDescription(currentStatus);
-
-                /**  PARKED UNTIL WE CAN RELIABLY DETERMINE THE QUEUE POSITION OF
-                 *   THE JOB USING THE BATCH API.
-                 *   CURRENTLY THE AWS QUEUES SEEM TO BE NON-FIFO : SO IMPOSSIBLE TO
-                 *   DETERMINE THE ORDER IN WHICH QUEUED JOBS WILL EXECUTE!!
-                 *
-                //  If the ExecuteResponse indicates that the job has been accepted but not
-                //  started, completed or failed - then we will update the position indicator.
+            List<JobSummary> waitingJobSummaries = AWSBatchUtil.getWaitingJobs(batchClient, queueName);
+            List<JobSummary> runningJobSummaries = AWSBatchUtil.getRunningJobs(batchClient, queueName);
+            List<JobSummary> completedJobSummaries = AWSBatchUtil.getCompletedJobs(batchClient, queueName);
 
 
-                if(isJobWaiting(currentStatus)) {
-                    AWSBatch batchClient = AWSBatchClientBuilder.defaultClient();
+            StringBuilder htmlBuilder = new StringBuilder();
+            htmlBuilder.append("<html>");
+            htmlBuilder.append("<body>");
+            htmlBuilder.append("<H2>WPS QUEUE CONTENTS: " + queueName + "</H2>");
 
-                    LOGGER.info("Updating XML with progress description for jobId [" + jobId + "]");
-
-                    //  Perform a queue position lookup + insert the position information into the XML
-                    //  All we have to do is setProcessAccepted to a string that includes some queue
-                    //  position information.
-                    String jobProgressDescription = getProgressDescription(batchClient, jobId);
-
-                    LOGGER.info("Progress description: " + jobProgressDescription);
-
-                    if(jobProgressDescription != null) {
-                        currentStatus.setProcessAccepted(currentStatus.getProcessAccepted() + " " + jobProgressDescription);
-                        executeResponse.setStatus(currentStatus);
-                    }
-
-                    responseBody = JobFileUtil.createXmlDocument(executeResponse);
-                } else {
-                    //  Return unaltered status XML
-                    responseBody = statusXMLString;
+            htmlBuilder.append("<H3>Queued Jobs</H3>");
+            LOGGER.info("Waiting jobs: " + waitingJobSummaries.size());
+            if(waitingJobSummaries.size() > 0) {
+                htmlBuilder.append("<TABLE>");
+                int position = 1;
+                htmlBuilder.append("<TR><TH>Position</TH><TH>Job ID</TH><TH>Submitted</TH><TH>Status</TH>");
+                for(JobSummary currentJob : waitingJobSummaries) {
+                    JobDetail jobDetail = AWSBatchUtil.getJobDetail(batchClient, currentJob.getJobId());
+                    String status = jobDetail.getStatus();
+                    Long createdAt = jobDetail.getCreatedAt();
+                    Date createDate = new Date(createdAt);
+                    htmlBuilder.append("<TR><TD>" + position + "</TD><TD>" + jobDetail.getJobId() + "</TD><TD>" + createDate.toString() + "</TD><TD>" + status + "</TD></TR>");
+                    position++;
                 }
-                 **/
-                responseBody = statusXMLString;
-
-                httpStatus = HttpStatus.SC_OK;
+                htmlBuilder.append("</TABLE>");
             } else {
+                htmlBuilder.append("No jobs currently in the queue<BR/>");
+            }
 
-                statusDescription = "Unknown status, error retrieving status [Job ID not found]";
-                LOGGER.info(statusDescription);
-                //  Status document was not found in the S3 bucket
-                httpStatus = HttpStatus.SC_OK;
-                //  Create an empty response object
+            htmlBuilder.append("<H3>Running Jobs</H3>");
+            LOGGER.info("Running jobs: " + runningJobSummaries.size());
+            if(runningJobSummaries.size() > 0) {
+
+                htmlBuilder.append("<TABLE>");
+                int position = 1;
+                htmlBuilder.append("<TR><TH>Submitted</TH><TH>Job ID</TH><TH>Status</TH>");
+                for(JobSummary currentJob : runningJobSummaries) {
+                    JobDetail jobDetail = AWSBatchUtil.getJobDetail(batchClient, currentJob.getJobId());
+                    String status = jobDetail.getStatus();
+                    Long createdAt = jobDetail.getCreatedAt();
+                    Date createDate = new Date(createdAt);
+                    htmlBuilder.append("<TR><TD>" + createDate.toString() + "</TD><TD>" + jobDetail.getJobId() + "</TD><TD>" + status + "</TD></TR>");
+                    position++;
+                }
+                htmlBuilder.append("</TABLE>");
+            } else {
+                htmlBuilder.append("No jobs currently running<BR/>");
+            }
+
+            htmlBuilder.append("<H3>Completed Jobs</H3>");
+            LOGGER.info("Completed jobs: " + completedJobSummaries.size());
+            if(completedJobSummaries.size() > 0) {
+
+                htmlBuilder.append("<TABLE>");
+                int position = 1;
+                htmlBuilder.append("<TR><TH>Submitted</TH><TH>Job ID</TH><TH>Completed</TH><TH>Status</TH>");
+                for(JobSummary currentJob : completedJobSummaries) {
+                    JobDetail jobDetail = AWSBatchUtil.getJobDetail(batchClient, currentJob.getJobId());
+                    String status = jobDetail.getStatus();
+                    Long createdAt = jobDetail.getCreatedAt();
+                    Date createDate = new Date(createdAt);
+                    Long stoppedAt = jobDetail.getStoppedAt();
+                    Date stopDate = new Date(stoppedAt);
+                    htmlBuilder.append("<TR><TD>" + createDate.toString() + "</TD><TD>" + jobDetail.getJobId() + "</TD><TD>" + stopDate.toString() + "</TD><TD>" + status + "</TD></TR>");
+                    position++;
+                }
+                htmlBuilder.append("</TABLE>");
+            } else {
+                htmlBuilder.append("No completed jobs<BR/>");
+            }
+
+            htmlBuilder.append("</body>");
+            htmlBuilder.append("</html>");
+            responseBody = htmlBuilder.toString();
+
+
+            httpStatus = HttpStatus.SC_OK;
+
+        } else {
+            //  Read the status file for the jobId passed (if it exists)
+            try {
+
+                String s3Key = jobFileS3KeyPrefix + jobId + "/" + statusFilename;
+
+                //  Check for the existence of the status document
+                AmazonS3 s3Client = AmazonS3ClientBuilder.defaultClient();
+                boolean statusExists = s3Client.doesObjectExist(statusS3Bucket, s3Key);
+
+
+                LOGGER.info("Status file exists for jobId [" + jobId + "]? " + statusExists);
+
+                //  If the status file exists and the job is in an 'waiting' state (we have accepted the job but processing
+                //  has not yet commenced) we will attempt to work out the queue position of the job and add that to
+                //  the status information we send back to the caller.  If the job is being processed or processing has
+                //  completed (successful or failed), then we will return the information contained in the status file unaltered.
+                if (statusExists) {
+
+                    String statusXMLString = S3Utils.readS3ObjectAsString(statusS3Bucket, s3Key);
+
+                    //  Read the status document
+                    executeResponse = JobFileUtil.unmarshallExecuteResponse(statusXMLString);
+
+                    LOGGER.info("Unmarshalled XML for jobId [" + jobId + "]");
+                    LOGGER.info(statusXMLString);
+
+                    StatusType currentStatus = executeResponse.getStatus();
+                    //  Get a friendly description of the status
+                    statusDescription = getStatusDescription(currentStatus);
+
+                    /**  PARKED UNTIL WE CAN RELIABLY DETERMINE THE QUEUE POSITION OF
+                     *   THE JOB USING THE BATCH API.
+                     *   CURRENTLY THE AWS QUEUES SEEM TO BE NON-FIFO : SO IMPOSSIBLE TO
+                     *   DETERMINE THE ORDER IN WHICH QUEUED JOBS WILL EXECUTE!!
+                     *
+                     //  If the ExecuteResponse indicates that the job has been accepted but not
+                     //  started, completed or failed - then we will update the position indicator.
+
+
+                     if(isJobWaiting(currentStatus)) {
+                     AWSBatch batchClient = AWSBatchClientBuilder.defaultClient();
+
+                     LOGGER.info("Updating XML with progress description for jobId [" + jobId + "]");
+
+                     //  Perform a queue position lookup + insert the position information into the XML
+                     //  All we have to do is setProcessAccepted to a string that includes some queue
+                     //  position information.
+                     String jobProgressDescription = getProgressDescription(batchClient, jobId);
+
+                     LOGGER.info("Progress description: " + jobProgressDescription);
+
+                     if(jobProgressDescription != null) {
+                     currentStatus.setProcessAccepted(currentStatus.getProcessAccepted() + " " + jobProgressDescription);
+                     executeResponse.setStatus(currentStatus);
+                     }
+
+                     responseBody = JobFileUtil.createXmlDocument(executeResponse);
+                     } else {
+                     //  Return unaltered status XML
+                     responseBody = statusXMLString;
+                     }
+                     **/
+                    responseBody = statusXMLString;
+
+                    httpStatus = HttpStatus.SC_OK;
+                } else {
+
+                    statusDescription = "Unknown status, error retrieving status [Job ID not found]";
+                    LOGGER.info(statusDescription);
+                    //  Status document was not found in the S3 bucket
+                    httpStatus = HttpStatus.SC_OK;
+                    //  Create an empty response object
+                    executeResponse = new ExecuteResponse();
+                }
+            } catch (Exception ex) {
+                statusDescription = "Exception retrieving status of job [" + jobId + "]: " + ex.getMessage();
+                //  TODO: FORM AN EXCEPTION REPORT?
+                //  Bad stuff happened
+                LOGGER.error(statusDescription, ex);
                 executeResponse = new ExecuteResponse();
+                httpStatus = HttpStatus.SC_INTERNAL_SERVER_ERROR;
             }
-        } catch (Exception ex) {
-            statusDescription = "Exception retrieving status of job [" + jobId + "]: " + ex.getMessage();
-            //  TODO: FORM AN EXCEPTION REPORT?
-            //  Bad stuff happened
-            LOGGER.error(statusDescription, ex);
-            executeResponse = new ExecuteResponse();
-            httpStatus = HttpStatus.SC_INTERNAL_SERVER_ERROR;
-        }
 
-        //  If requested output format is HTML - perform a transform on the XML
-        if (requestedStatusFormat.equals(JobStatusFormatEnum.HTML) || requestedStatusFormat.equals(JobStatusFormatEnum.ADMIN)) {
-            LOGGER.info("HTML output format requested.  Running transform.");
-            boolean adminInfoRequested = false;
-            if(requestedStatusFormat.equals(JobStatusFormatEnum.ADMIN)) {
-                adminInfoRequested = true;
+            //  If requested output format is HTML - perform a transform on the XML
+            if (requestedStatusFormat.equals(JobStatusFormatEnum.HTML) || requestedStatusFormat.equals(JobStatusFormatEnum.ADMIN)) {
+                LOGGER.info("HTML output format requested.  Running transform.");
+                boolean adminInfoRequested = false;
+                if (requestedStatusFormat.equals(JobStatusFormatEnum.ADMIN)) {
+                    adminInfoRequested = true;
+                }
+                responseBody = generateHTML(executeResponse, statusDescription, jobId, adminInfoRequested);
             }
-            responseBody = generateHTML(executeResponse, statusDescription, jobId, adminInfoRequested);
         }
 
         //  Build the response

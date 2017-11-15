@@ -13,10 +13,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class AWSBatchUtil {
 
     private static Logger LOGGER = LoggerFactory.getLogger(AWSBatchUtil.class);
+
     /**
      *
      * @param batchClient
@@ -25,41 +27,7 @@ public class AWSBatchUtil {
      */
     public static QueuePosition getQueuePosition(AWSBatch batchClient, JobDetail jobDetail) {
 
-        ArrayList<JobSummary> allJobs = new ArrayList<>();
-
-        ListJobsRequest submittedJobsRequest = new ListJobsRequest();
-        submittedJobsRequest.setJobStatus(JobStatus.SUBMITTED);
-        submittedJobsRequest.setJobQueue(jobDetail.getJobQueue());
-
-        ListJobsResult submittedJobsResult = batchClient.listJobs(submittedJobsRequest);
-        LOGGER.info("# SUBMITTED jobs: " + submittedJobsResult.getJobSummaryList().size());
-        allJobs.addAll(submittedJobsResult.getJobSummaryList());
-
-
-        ListJobsRequest pendingJobsRequest = new ListJobsRequest();
-        pendingJobsRequest.setJobStatus(JobStatus.PENDING);
-        pendingJobsRequest.setJobQueue(jobDetail.getJobQueue());
-
-        ListJobsResult pendingJobsResult = batchClient.listJobs(pendingJobsRequest);
-        LOGGER.info("# PENDING jobs: " + pendingJobsResult.getJobSummaryList().size());
-        allJobs.addAll(pendingJobsResult.getJobSummaryList());
-
-
-        ListJobsRequest runnableJobsRequest = new ListJobsRequest();
-        runnableJobsRequest.setJobStatus(JobStatus.RUNNABLE);
-        runnableJobsRequest.setJobQueue(jobDetail.getJobQueue());
-
-        ListJobsResult runnableJobsResult = batchClient.listJobs(runnableJobsRequest);
-        LOGGER.info("# RUNNABLE jobs: " + runnableJobsResult.getJobSummaryList().size());
-        allJobs.addAll(runnableJobsResult.getJobSummaryList());
-
-        ListJobsRequest startingJobsRequest = new ListJobsRequest();
-        startingJobsRequest.setJobStatus(JobStatus.STARTING);
-        startingJobsRequest.setJobQueue(jobDetail.getJobQueue());
-
-        ListJobsResult startingJobsResult = batchClient.listJobs(startingJobsRequest);
-        LOGGER.info("# STARTING jobs: " + startingJobsResult.getJobSummaryList().size());
-        allJobs.addAll(startingJobsResult.getJobSummaryList());
+        List<JobSummary> allJobs = getWaitingJobs(batchClient, jobDetail.getJobQueue());
 
         LOGGER.info("TOTAL JOBS : " + allJobs.size());
 
@@ -106,5 +74,109 @@ public class AWSBatchUtil {
         }
 
         return null;
+    }
+
+
+    /**
+     * Get an ordered list of all jobs in the named queue.
+     *
+     * @param batchClient
+     * @param queueName
+     * @return
+     */
+    public static List<JobSummary> getWaitingJobs(AWSBatch batchClient, String queueName) {
+
+        ArrayList<JobSummary> allJobs = new ArrayList<>();
+
+        ListJobsRequest submittedJobsRequest = new ListJobsRequest();
+        submittedJobsRequest.setJobStatus(JobStatus.SUBMITTED);
+        submittedJobsRequest.setJobQueue(queueName);
+
+        ListJobsResult submittedJobsResult = batchClient.listJobs(submittedJobsRequest);
+        LOGGER.info("# SUBMITTED jobs: " + submittedJobsResult.getJobSummaryList().size());
+        allJobs.addAll(submittedJobsResult.getJobSummaryList());
+
+
+        ListJobsRequest pendingJobsRequest = new ListJobsRequest();
+        pendingJobsRequest.setJobStatus(JobStatus.PENDING);
+        pendingJobsRequest.setJobQueue(queueName);
+
+        ListJobsResult pendingJobsResult = batchClient.listJobs(pendingJobsRequest);
+        LOGGER.info("# PENDING jobs: " + pendingJobsResult.getJobSummaryList().size());
+        allJobs.addAll(pendingJobsResult.getJobSummaryList());
+
+
+        ListJobsRequest runnableJobsRequest = new ListJobsRequest();
+        runnableJobsRequest.setJobStatus(JobStatus.RUNNABLE);
+        runnableJobsRequest.setJobQueue(queueName);
+
+        ListJobsResult runnableJobsResult = batchClient.listJobs(runnableJobsRequest);
+        LOGGER.info("# RUNNABLE jobs: " + runnableJobsResult.getJobSummaryList().size());
+        allJobs.addAll(runnableJobsResult.getJobSummaryList());
+
+        ListJobsRequest startingJobsRequest = new ListJobsRequest();
+        startingJobsRequest.setJobStatus(JobStatus.STARTING);
+        startingJobsRequest.setJobQueue(queueName);
+
+        ListJobsResult startingJobsResult = batchClient.listJobs(startingJobsRequest);
+        LOGGER.info("# STARTING jobs: " + startingJobsResult.getJobSummaryList().size());
+        allJobs.addAll(startingJobsResult.getJobSummaryList());
+
+        return allJobs;
+    }
+
+
+    /**
+     * Get an ordered list of all jobs in the named queue.
+     *
+     * @param batchClient
+     * @param queueName
+     * @return
+     */
+    public static List<JobSummary> getRunningJobs(AWSBatch batchClient, String queueName) {
+
+        ArrayList<JobSummary> allJobs = new ArrayList<>();
+
+        ListJobsRequest runningJobsRequest = new ListJobsRequest();
+        runningJobsRequest.setJobStatus(JobStatus.RUNNING);
+        runningJobsRequest.setJobQueue(queueName);
+
+        ListJobsResult runningJobsResult = batchClient.listJobs(runningJobsRequest);
+        LOGGER.info("# RUNNING jobs: " + runningJobsResult.getJobSummaryList().size());
+        allJobs.addAll(runningJobsResult.getJobSummaryList());
+
+
+        return allJobs;
+    }
+
+
+    /**
+     * Get an ordered list of all jobs in the named queue.
+     *
+     * @param batchClient
+     * @param queueName
+     * @return
+     */
+    public static List<JobSummary> getCompletedJobs(AWSBatch batchClient, String queueName) {
+
+        ArrayList<JobSummary> allJobs = new ArrayList<>();
+
+        ListJobsRequest failedJobsRequest = new ListJobsRequest();
+        failedJobsRequest.setJobStatus(JobStatus.FAILED);
+        failedJobsRequest.setJobQueue(queueName);
+
+        ListJobsResult failedJobsResult = batchClient.listJobs(failedJobsRequest);
+        LOGGER.info("# FAILED jobs: " + failedJobsResult.getJobSummaryList().size());
+        allJobs.addAll(failedJobsResult.getJobSummaryList());
+
+        ListJobsRequest succeededJobsRequest = new ListJobsRequest();
+        succeededJobsRequest.setJobStatus(JobStatus.SUCCEEDED);
+        succeededJobsRequest.setJobQueue(queueName);
+
+        ListJobsResult succeededJobsResult = batchClient.listJobs(succeededJobsRequest);
+        LOGGER.info("# SUCCEEDED jobs: " + succeededJobsResult.getJobSummaryList().size());
+        allJobs.addAll(succeededJobsResult.getJobSummaryList());
+
+        return allJobs;
     }
 }

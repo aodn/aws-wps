@@ -101,8 +101,8 @@ public class WpsConfig {
             // Load properties from config
             properties = new Properties();
             ClassLoader loader = Thread.currentThread().getContextClassLoader();
-            InputStream resourceStream = loader.getResourceAsStream(APPLICATION_PROPERTIES);
-            try {
+
+            try(InputStream resourceStream = loader.getResourceAsStream(APPLICATION_PROPERTIES)) {
                 properties.load(resourceStream);
             } catch (IOException e) {
                 LOGGER.error("Unable to load application properties. Error:", e);

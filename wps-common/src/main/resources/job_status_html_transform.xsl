@@ -29,7 +29,7 @@
             <link rel="stylesheet" href="{$bootstrapCssLocation}"/>
             <link rel="stylesheet" type="text/css" href="{$aodnCssLocation}"/>
 
-            <title>IMOS download - <xsl:value-of select="$jobid"/></title>
+            <title>IMOS Job Status - <xsl:value-of select="$jobid"/></title>
         </head>
         <body>
         <div class="portalheader">
