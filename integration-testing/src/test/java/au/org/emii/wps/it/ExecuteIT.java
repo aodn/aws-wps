@@ -268,7 +268,7 @@ public class ExecuteIT {
             .get(outputLocation)
         .then()
             .statusCode(200)
-            .contentType("text/xml")
+            .contentType("application/xml")
             .body(
                 hasXPath("//TimePeriod/beginPosition", equalTo("2017-01-01T00:00:00Z")),
                 hasXPath("//TimePeriod/endPosition", equalTo("2017-01-07T23:04:00Z")),

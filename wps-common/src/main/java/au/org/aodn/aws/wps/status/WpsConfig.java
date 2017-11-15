@@ -18,7 +18,7 @@ public class WpsConfig {
     private static final Logger LOGGER = LoggerFactory.getLogger(WpsConfig.class);
 
     public static final String STATUS_FILE_MIME_TYPE = "text/xml";
-    public static final String PROVENANCE_FILE_MIME_TYPE = "text/xml";
+    public static final String PROVENANCE_FILE_MIME_TYPE = "application/xml";
     public static final String GOGODUCK_PROCESS_IDENTIFIER = "gs:GoGoDuck";
 
     //  Configuration key names
