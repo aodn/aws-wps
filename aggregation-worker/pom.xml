@@ -132,6 +132,7 @@
                         </goals>
                         <configuration>
                             <overWriteReleases>false</overWriteReleases>
+                            <useBaseVersion>false</useBaseVersion>
                             <includeScope>runtime</includeScope>
                             <outputDirectory>${project.build.directory}/lib</outputDirectory>
                         </configuration>
