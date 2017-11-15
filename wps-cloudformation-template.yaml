@@ -58,6 +58,7 @@ Parameters:
     Default: 'https://raw.githubusercontent.com/aodn/aws-wps/master/wps-common/src/main/resources/config/provenance_template_non_gridded.ftl'
   sumoEndpoint:
     Type: String
+    Default: ''
   sumologicLambdaCodeFilename:
     Type: String
     Default: 'index.zip'
