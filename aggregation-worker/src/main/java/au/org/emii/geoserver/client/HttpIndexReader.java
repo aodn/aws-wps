@@ -190,7 +190,7 @@ public class HttpIndexReader implements IndexReader {
 
     /**
      * Form sort clause for CQL filter of the form:
-     *   &sortBy=<time_field>+D
+     *   &sortBy=<time_field>+A
      *
      * @param timeField
      * @return
@@ -198,7 +198,7 @@ public class HttpIndexReader implements IndexReader {
     private String getTimeSortClause(String timeField) {
         String sortClause = "";
         if(timeField != null) {
-            sortClause = "&sortBy=" + timeField + "+D";
+            sortClause = "&sortBy=" + timeField + "+A";
         }
         return sortClause;
     }

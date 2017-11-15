@@ -166,7 +166,7 @@ public class ExecuteIT {
 
         //  First line is CSV header
         //  Time field is index 0
-        //  Check that the timestamps are in descending time order
+        //  Check that the timestamps are in ascending time order
         try {
             CSVParser parser = CSVParser.parse(csvOutput, CSVFormat.DEFAULT);
             int lineNum = 0;
@@ -179,9 +179,9 @@ public class ExecuteIT {
                     } else {
                         nextInstant = Instant.parse(record.get(0));
 
-                        if(!currentInstant.isAfter(nextInstant)) {
+                        if(!currentInstant.isBefore(nextInstant)) {
                             //  Fail
-                            fail("Timestamps not in descending order. Current [" + currentInstant.toString() + "], Next [" + nextInstant.toString() +"]");
+                            fail("Timestamps not in ascending order. Current [" + currentInstant.toString() + "], Next [" + nextInstant.toString() +"]");
                         } else {
                             currentInstant = nextInstant;
                         }
