@@ -57,7 +57,8 @@ public class DescribeProcessIT {
         .then()
             .statusCode(200)
             .contentType(ContentType.XML)
-            .body(validateWith("/wps/1.0.0/wpsAll.xsd"));
+            .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
+            .body("ProcessDescriptions.ProcessDescription.Identifier", equalTo("gs:GoGoDuck"));
     }
 
 }
