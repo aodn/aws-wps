@@ -19,16 +19,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-public class HttpIndexReader implements IndexReader {
+public class HttpIndexReader {
     private static final Logger logger = LoggerFactory.getLogger(HttpIndexReader.class);
 
-    protected String geoserver = null;
+    private String geoserver = null;
+
 
     public HttpIndexReader(String geoserver) {
         this.geoserver = geoserver;
     }
 
-    @Override
     public List<DownloadRequest> getDownloadRequestList(String layer, String timeField, String urlField, SubsetParameters subset) throws AggregationException {
 
         ArrayList<DownloadRequest> downloadList = new ArrayList<DownloadRequest>();

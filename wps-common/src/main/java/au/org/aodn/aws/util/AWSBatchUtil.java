@@ -1,6 +1,5 @@
 package au.org.aodn.aws.util;
 
-import au.org.aodn.aws.wps.status.QueuePosition;
 import com.amazonaws.services.batch.AWSBatch;
 import com.amazonaws.services.batch.model.DescribeJobsRequest;
 import com.amazonaws.services.batch.model.DescribeJobsResult;
@@ -9,6 +8,8 @@ import com.amazonaws.services.batch.model.JobStatus;
 import com.amazonaws.services.batch.model.JobSummary;
 import com.amazonaws.services.batch.model.ListJobsRequest;
 import com.amazonaws.services.batch.model.ListJobsResult;
+import au.org.aodn.aws.wps.status.QueuePosition;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,20 +57,37 @@ public class AWSBatchUtil {
 
         if (batchClient != null && jobId != null) {
 
+            try {
+                ArrayList<String> jobList = new ArrayList<>();
+                jobList.add(jobId);
+                return getJobDetails(batchClient, jobList).get(0);
+
+            } catch (Exception ex) {
+                LOGGER.error("Unable to retrieve job details for jobId [" + jobId + "]", ex);
+            }
+        }
+
+        return null;
+    }
+
+
+    public static List<JobDetail> getJobDetails(AWSBatch batchClient, List<String> jobIds) {
+
+        if (batchClient != null && jobIds != null) {
+
 
             try {
                 DescribeJobsRequest describeRequest = new DescribeJobsRequest();
-                ArrayList<String> jobList = new ArrayList<>();
-                jobList.add(jobId);
-                describeRequest.setJobs(jobList);
+
+                describeRequest.setJobs(jobIds);
 
                 DescribeJobsResult describeResult = batchClient.describeJobs(describeRequest);
 
                 if (describeResult != null && describeResult.getJobs().size() > 0) {
-                    return describeResult.getJobs().get(0);
+                    return describeResult.getJobs();
                 }
             } catch (Exception ex) {
-                LOGGER.error("Unable to determine the queue for jobId [" + jobId + "]", ex);
+                LOGGER.error("Unable to retrieve job details [" + jobIds.toString() + "]", ex);
             }
         }
 

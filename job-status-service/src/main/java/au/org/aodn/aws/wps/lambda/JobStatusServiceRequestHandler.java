@@ -3,6 +3,7 @@ package au.org.aodn.aws.wps.lambda;
 import au.org.aodn.aws.util.AWSBatchUtil;
 import au.org.aodn.aws.util.JobFileUtil;
 import au.org.aodn.aws.util.S3Utils;
+import au.org.aodn.aws.util.Utils;
 import au.org.aodn.aws.wps.status.JobStatusFormatEnum;
 import au.org.aodn.aws.wps.JobStatusRequest;
 import au.org.aodn.aws.wps.JobStatusRequestParameterParser;
@@ -20,6 +21,12 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import com.amazonaws.util.StringInputStream;
+import freemarker.cache.StringTemplateLoader;
+import freemarker.template.Configuration;
+import freemarker.template.DefaultObjectWrapper;
+import freemarker.template.Template;
+import freemarker.template.TemplateException;
+import freemarker.template.TemplateExceptionHandler;
 import net.opengis.wps.v_1_0_0.ExecuteResponse;
 import net.opengis.wps.v_1_0_0.StatusType;
 import org.apache.http.HttpStatus;
@@ -36,9 +43,15 @@ import javax.xml.transform.stream.StreamSource;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
-import java.util.Date;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static au.org.aodn.aws.wps.status.WpsConfig.GET_CAPABILITIES_TEMPLATE_S3_BUCKET_CONFIG_KEY;
+import static au.org.aodn.aws.wps.status.WpsConfig.GET_CAPABILITIES_TEMPLATE_S3_KEY_CONFIG_KEY;
+import static au.org.aodn.aws.wps.status.WpsConfig.QUEUE_VIEW_HTML_TEMPLATE_S3_BUCKET_CONFIG_KEY;
+import static au.org.aodn.aws.wps.status.WpsConfig.QUEUE_VIEW_HTML_TEMPLATE_S3_KEY_CONFIG_KEY;
 
 
 public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusRequest, JobStatusResponse> {
@@ -110,85 +123,113 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
             LOGGER.info("Queue contents requested.");
 
             AWSBatch batchClient = AWSBatchClientBuilder.defaultClient();
-            String queueName = "JavaDuckQueue1-cam";
+            String queueName = WpsConfig.getConfig(WpsConfig.AWS_BATCH_JOB_QUEUE_NAME_CONFIG_KEY);
 
             List<JobSummary> waitingJobSummaries = AWSBatchUtil.getWaitingJobs(batchClient, queueName);
             List<JobSummary> runningJobSummaries = AWSBatchUtil.getRunningJobs(batchClient, queueName);
             List<JobSummary> completedJobSummaries = AWSBatchUtil.getCompletedJobs(batchClient, queueName);
 
 
-            StringBuilder htmlBuilder = new StringBuilder();
-            htmlBuilder.append("<html>");
-            htmlBuilder.append("<body>");
-            htmlBuilder.append("<H2>WPS QUEUE CONTENTS: " + queueName + "</H2>");
-
-            htmlBuilder.append("<H3>Queued Jobs</H3>");
+            List<JobDetail> waitingJobDetails = null;
             LOGGER.info("Waiting jobs: " + waitingJobSummaries.size());
             if(waitingJobSummaries.size() > 0) {
-                htmlBuilder.append("<TABLE>");
-                int position = 1;
-                htmlBuilder.append("<TR><TH>Position</TH><TH>Job ID</TH><TH>Submitted</TH><TH>Status</TH>");
-                for(JobSummary currentJob : waitingJobSummaries) {
-                    JobDetail jobDetail = AWSBatchUtil.getJobDetail(batchClient, currentJob.getJobId());
-                    String status = jobDetail.getStatus();
-                    Long createdAt = jobDetail.getCreatedAt();
-                    Date createDate = new Date(createdAt);
-                    htmlBuilder.append("<TR><TD>" + position + "</TD><TD>" + jobDetail.getJobId() + "</TD><TD>" + createDate.toString() + "</TD><TD>" + status + "</TD></TR>");
-                    position++;
+
+                ArrayList<String> jobIds = new ArrayList<>();
+                for (JobSummary summary : waitingJobSummaries) {
+                    jobIds.add(summary.getJobId());
                 }
-                htmlBuilder.append("</TABLE>");
-            } else {
-                htmlBuilder.append("No jobs currently in the queue<BR/>");
+
+                waitingJobDetails = AWSBatchUtil.getJobDetails(batchClient, jobIds);
             }
 
-            htmlBuilder.append("<H3>Running Jobs</H3>");
+            List<JobDetail> runningJobDetails = null;
             LOGGER.info("Running jobs: " + runningJobSummaries.size());
             if(runningJobSummaries.size() > 0) {
 
-                htmlBuilder.append("<TABLE>");
-                int position = 1;
-                htmlBuilder.append("<TR><TH>Submitted</TH><TH>Job ID</TH><TH>Status</TH>");
-                for(JobSummary currentJob : runningJobSummaries) {
-                    JobDetail jobDetail = AWSBatchUtil.getJobDetail(batchClient, currentJob.getJobId());
-                    String status = jobDetail.getStatus();
-                    Long createdAt = jobDetail.getCreatedAt();
-                    Date createDate = new Date(createdAt);
-                    htmlBuilder.append("<TR><TD>" + createDate.toString() + "</TD><TD>" + jobDetail.getJobId() + "</TD><TD>" + status + "</TD></TR>");
-                    position++;
+                ArrayList<String> jobIds = new ArrayList<>();
+                for (JobSummary summary : runningJobSummaries) {
+                    jobIds.add(summary.getJobId());
                 }
-                htmlBuilder.append("</TABLE>");
-            } else {
-                htmlBuilder.append("No jobs currently running<BR/>");
+
+                runningJobDetails = AWSBatchUtil.getJobDetails(batchClient, jobIds);
             }
 
-            htmlBuilder.append("<H3>Completed Jobs</H3>");
+
+            List<JobDetail> completedJobDetails = null;
             LOGGER.info("Completed jobs: " + completedJobSummaries.size());
             if(completedJobSummaries.size() > 0) {
 
-                htmlBuilder.append("<TABLE>");
-                int position = 1;
-                htmlBuilder.append("<TR><TH>Submitted</TH><TH>Job ID</TH><TH>Completed</TH><TH>Status</TH>");
-                for(JobSummary currentJob : completedJobSummaries) {
-                    JobDetail jobDetail = AWSBatchUtil.getJobDetail(batchClient, currentJob.getJobId());
-                    String status = jobDetail.getStatus();
-                    Long createdAt = jobDetail.getCreatedAt();
-                    Date createDate = new Date(createdAt);
-                    Long stoppedAt = jobDetail.getStoppedAt();
-                    Date stopDate = new Date(stoppedAt);
-                    htmlBuilder.append("<TR><TD>" + createDate.toString() + "</TD><TD>" + jobDetail.getJobId() + "</TD><TD>" + stopDate.toString() + "</TD><TD>" + status + "</TD></TR>");
-                    position++;
+                ArrayList<String> jobIds = new ArrayList<>();
+                for (JobSummary summary : completedJobSummaries) {
+                    jobIds.add(summary.getJobId());
                 }
-                htmlBuilder.append("</TABLE>");
-            } else {
-                htmlBuilder.append("No completed jobs<BR/>");
+
+                completedJobDetails = AWSBatchUtil.getJobDetails(batchClient, jobIds);
             }
 
-            htmlBuilder.append("</body>");
-            htmlBuilder.append("</html>");
-            responseBody = htmlBuilder.toString();
 
+            //  Invoke freemarker template
+            try {
 
-            httpStatus = HttpStatus.SC_OK;
+                String templateS3Bucket = WpsConfig.getConfig(QUEUE_VIEW_HTML_TEMPLATE_S3_BUCKET_CONFIG_KEY);
+                String templateS3Key = WpsConfig.getConfig(QUEUE_VIEW_HTML_TEMPLATE_S3_KEY_CONFIG_KEY);
+
+                S3ObjectInputStream contentStream = S3Utils.getS3ObjectStream(templateS3Bucket, templateS3Key);
+
+                //  read file to String
+                String templateString =  Utils.inputStreamToString(contentStream);
+                LOGGER.info("Freemarker template: " + templateString);
+
+                StringTemplateLoader stringLoader = new StringTemplateLoader();
+                stringLoader.putTemplate("QueueViewHtmlTemplate", templateString);
+
+                Configuration config=new Configuration();
+                config.setClassForTemplateLoading(JobStatusServiceRequestHandler.class, "");
+                config.setObjectWrapper(new DefaultObjectWrapper());
+                config.setTemplateLoader(stringLoader);
+                config.setDefaultEncoding("UTF-8");
+                config.setTemplateExceptionHandler(TemplateExceptionHandler.RETHROW_HANDLER);
+
+                Map<String, Object> params = new HashMap<String, Object>();
+
+                params.put("bootstrapCssLocation", WpsConfig.getBootstrapCssS3ExternalURL());
+                params.put("aodnCssLocation", WpsConfig.getAodnCssS3ExternalURL());
+                params.put("aodnLogoLocation", WpsConfig.getAodnLogoS3ExternalURL());
+                params.put("queueName", queueName);
+
+                if(waitingJobDetails != null) {
+                    params.put("queuedJobsList", waitingJobDetails);
+                }
+
+                if(runningJobDetails != null) {
+                    params.put("runningJobsList", runningJobDetails);
+                }
+
+                if(completedJobDetails != null) {
+                    params.put("completedJobsList", completedJobDetails);
+                }
+
+                Template template = config.getTemplate("QueueViewHtmlTemplate");
+
+                LOGGER.info("Got template [QueueViewHtmlTemplate]");
+                StringWriter out = new StringWriter();
+
+                template.process(params, out);
+
+                LOGGER.info("Ran template.");
+
+                responseBody = out.toString();
+
+                httpStatus = HttpStatus.SC_OK;
+            }
+            catch(IOException | TemplateException ex)
+            {
+                String errorMessage = "Problem loading queue HTML template: " + ex.getMessage();
+                //  Bad stuff - blow up!
+                LOGGER.error(errorMessage, ex);
+                responseBody = errorMessage;
+                httpStatus = HttpStatus.SC_INTERNAL_SERVER_ERROR;
+            }
 
         } else {
             //  Read the status file for the jobId passed (if it exists)

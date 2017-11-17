@@ -50,6 +50,8 @@ public class WpsConfig {
 
     public static final String GET_CAPABILITIES_TEMPLATE_S3_BUCKET_CONFIG_KEY = "GET_CAPABILITIES_TEMPLATE_S3_BUCKET";
     public static final String GET_CAPABILITIES_TEMPLATE_S3_KEY_CONFIG_KEY = "GET_CAPABILITIES_TEMPLATE_S3_KEY";
+    public static final String QUEUE_VIEW_HTML_TEMPLATE_S3_BUCKET_CONFIG_KEY = "QUEUE_VIEW_HTML_TEMPLATE_S3_BUCKET";
+    public static final String QUEUE_VIEW_HTML_TEMPLATE_S3_KEY_CONFIG_KEY = "QUEUE_VIEW_HTML_TEMPLATE_S3_KEY";
     public static final String DESCRIBE_PROCESS_S3_BUCKET_CONFIG_KEY = "DESCRIBE_PROCESS_S3_BUCKET";
     public static final String DESCRIBE_PROCESS_S3_KEY_PREFIX_CONFIG_KEY = "DESCRIBE_PROCESS_S3_KEY_PREFIX";
     public static final String WPS_ENDPOINT_URL_CONFIG_KEY = "AWS_WPS_ENDPOINT_URL";
@@ -156,6 +158,8 @@ public class WpsConfig {
             setProperty(properties, AODN_CSS_FILENAME_CONFIG_KEY);
             setProperty(properties, AODN_LOGO_FILENAME_CONFIG_KEY);
             setProperty(properties, AWS_BATCH_CONFIG_S3_KEY);
+            setProperty(properties, QUEUE_VIEW_HTML_TEMPLATE_S3_BUCKET_CONFIG_KEY);
+            setProperty(properties, QUEUE_VIEW_HTML_TEMPLATE_S3_KEY_CONFIG_KEY);
         }
 
         return properties;

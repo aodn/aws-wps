@@ -96,7 +96,7 @@ public class SubsetParameters {
         return new SubsetParameters(bbox, calendarDateRange);
     }
 
-    private static class ParameterRange {
+    public static class ParameterRange {
         String start;
         String end;
 
