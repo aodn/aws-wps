@@ -501,12 +501,14 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
                     String inChunk = new String(inBytes, 0, bytesRead -1);
                     requestStringBuilder.append(inChunk);
                 }
-
+                
                 return requestStringBuilder.toString();
+            } else {
+                LOGGER.error("Request S3 object null.");
             }
 
         } catch (IOException ioex) {
-            LOGGER.error("Unable to read XSL file from S3. Bucket [" + configS3Bucket + "]: " + ioex.getMessage(), ioex);
+            LOGGER.error("Unable to read request file. Bucket [" + configS3Bucket + "]: " + ioex.getMessage(), ioex);
         }
 
         return null;

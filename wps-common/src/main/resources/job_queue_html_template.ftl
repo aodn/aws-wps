@@ -22,7 +22,22 @@
                 <TABLE BORDER>
                     <TR><TH>Position</TH><TH>Job ID</TH><TH>Submitted</TH><TH>Status</TH></TR>
                     <#list queuedJobsList as job>
-                        <TR><TD>${job_index}</TD><TD>${job.jobId}</TD><TD>${job.createdAt}</TD><TD>${job.status}</TD></TR>
+                        <TR><TD>${job_index}</TD>
+                            <TD>${job.jobId}</TD>
+                            <TD>
+                                <script type="text/javascript">
+                                    var timeParamValue = ${job.createdAt?c}/1000;
+                                    if(timeParamValue != -1) {
+                                        var submitTime = new Date(0);
+                                        submitTime.setUTCSeconds(timeParamValue);
+                                        document.write( submitTime.toString() );
+                                    } else {
+                                        document.write("Unknown");
+                                    }
+                                </script>
+                            </TD>
+                            <TD>${job.status}</TD>
+                        </TR>
                     </#list>
                 </TABLE>
             <#else>
@@ -35,7 +50,20 @@
                 <TABLE BORDER="1">
                 <TR><TH>Job ID</TH><TH>Submitted</TH><TH>Status</TH></TR>
                 <#list runningJobsList as job>
-                    <TR><TD>${job.jobId}</TD><TD>${job.createdAt}</TD><TD>${job.status}</TD></TR>
+                    <TR><TD>${job.jobId}</TD>
+                        <TD>
+                            <script type="text/javascript">
+                                var timeParamValue = ${job.createdAt?c}/1000;
+                                if(timeParamValue != -1) {
+                                    var submitTime = new Date(0);
+                                    submitTime.setUTCSeconds(timeParamValue);
+                                    document.write( submitTime.toString() );
+                                } else {
+                                    document.write("Unknown");
+                                }
+                            </script>
+                        </TD>
+                        <TD>${job.status}</TD></TR>
                 </#list>
                 </TABLE>
             <#else>
@@ -48,7 +76,32 @@
                 <TABLE BORDER="1">
                 <TR><TH>Submitted</TH><TH>Job ID</TH><TH>Completed</TH><TH>Status</TH></TR>
                 <#list completedJobsList as job>
-                <TR><TD>${job.createdAt}</TD><TD>${job.jobId}</TD><TD>${job.stoppedAt}</TD><TD>${job.status}</TD></TR>
+                <TR><TD>
+                        <script type="text/javascript">
+                            var timeParamValue = ${job.createdAt?c}/1000;
+                            if(timeParamValue != -1) {
+                                var submitTime = new Date(0);
+                                submitTime.setUTCSeconds(timeParamValue);
+                                document.write( submitTime.toString() );
+                            } else {
+                                document.write("Unknown");
+                            }
+                        </script>
+                    </TD>
+                    <TD>${job.jobId}</TD>
+                    <TD>
+                        <script type="text/javascript">
+                            var timeParamValue = ${job.stoppedAt?c}/1000;
+                            if(timeParamValue != -1) {
+                                var submitTime = new Date(0);
+                                submitTime.setUTCSeconds(timeParamValue);
+                                document.write( submitTime.toString() );
+                            } else {
+                                document.write("Unknown");
+                            }
+                        </script>
+                    </TD>
+                    <TD>${job.status}</TD></TR>
                 </#list>
             </TABLE>
             <#else>

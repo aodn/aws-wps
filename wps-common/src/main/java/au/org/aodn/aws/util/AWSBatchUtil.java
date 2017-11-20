@@ -84,6 +84,11 @@ public class AWSBatchUtil {
                 DescribeJobsResult describeResult = batchClient.describeJobs(describeRequest);
 
                 if (describeResult != null && describeResult.getJobs().size() > 0) {
+
+                    for(JobDetail jobDetail : describeResult.getJobs()) {
+                        LOGGER.info("Job [" + jobDetail.getJobId() + "] : Started [" + jobDetail.getStartedAt() + "[, Stopped [" + jobDetail.getStoppedAt() + "]");
+                    }
+
                     return describeResult.getJobs();
                 }
             } catch (Exception ex) {
