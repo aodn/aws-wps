@@ -10,6 +10,7 @@
         <xsl:param name="bootstrapCssLocation"/>
         <xsl:param name="aodnCssLocation"/>
         <xsl:param name="aodnLogoLocation"/>
+        <xsl:param name="requestXML"/>
 
         <xsl:variable name="result">
             <xsl:value-of select="ns3:ExecuteResponse/ns3:ProcessOutputs/ns3:Output[ns1:Identifier = 'result']/ns3:Reference/@href"/>
@@ -22,12 +23,13 @@
         </xsl:variable>
 
         <xsl:text disable-output-escaping='yes'>&lt;!DOCTYPE html&gt;</xsl:text>
+
         <html>
         <head>
             <link rel="stylesheet" href="{$bootstrapCssLocation}"/>
             <link rel="stylesheet" type="text/css" href="{$aodnCssLocation}"/>
 
-            <title>IMOS download - <xsl:value-of select="$jobid"/></title>
+            <title>IMOS Job Status - <xsl:value-of select="$jobid"/></title>
         </head>
         <body>
         <div class="portalheader">
@@ -93,6 +95,17 @@
                         </dd>
                     </xsl:if>
                 </xsl:otherwise>
+            </xsl:choose>
+            <xsl:choose>
+                <xsl:when test="$requestXML != ''">
+                    <dt>
+                        Request XML :
+                    </dt>
+                    <dd>
+                        <textarea rows="40" cols="180" readonly="true"><xsl:value-of select="$requestXML"/></textarea>
+                        <br />
+                    </dd>
+                </xsl:when>
             </xsl:choose>
         </dl>
         </div>
