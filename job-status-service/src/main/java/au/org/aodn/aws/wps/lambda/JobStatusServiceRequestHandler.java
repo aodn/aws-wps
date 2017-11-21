@@ -395,11 +395,11 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
         //  Currently just returns the content of the request file.
         //  Can be expanded to provide a richer HTML summary of the request for
         //  admin purposes (possible including links to logs etc).
-        try {
+
+        try (S3ObjectInputStream requestInputStream = requestFileObject.getObjectContent()) {
 
             if (requestFileObject != null) {
 
-                S3ObjectInputStream requestInputStream = requestFileObject.getObjectContent();
                 StringBuilder requestStringBuilder = new StringBuilder();
                 int chunkSizeBytes = 1024;
                 byte[] inBytes = new byte[chunkSizeBytes];
@@ -423,96 +423,70 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
 
 
     private String generateQueueViewHTML(AWSBatch batchClient, String queueName) throws IOException, TemplateException {
-        List<JobSummary> waitingJobSummaries = AWSBatchUtil.getWaitingJobs(batchClient, queueName);
-        List<JobSummary> runningJobSummaries = AWSBatchUtil.getRunningJobs(batchClient, queueName);
-        List<JobSummary> completedJobSummaries = AWSBatchUtil.getCompletedJobs(batchClient, queueName);
 
-
-        List<JobDetail> waitingJobDetails = null;
-        LOGGER.info("Waiting jobs: " + waitingJobSummaries.size());
-        if(waitingJobSummaries.size() > 0) {
-
-            ArrayList<String> jobIds = new ArrayList<>();
-            for (JobSummary summary : waitingJobSummaries) {
-                jobIds.add(summary.getJobId());
-            }
-
-            waitingJobDetails = AWSBatchUtil.getJobDetails(batchClient, jobIds);
+        List<JobDetail> waitingJobDetails = AWSBatchUtil.getJobDetails(batchClient, queueName, AWSBatchUtil.waitingQueueStatuses);
+        if(waitingJobDetails != null) {
+            LOGGER.info("Waiting jobs: " + waitingJobDetails.size());
         }
 
-        List<JobDetail> runningJobDetails = null;
-        LOGGER.info("Running jobs: " + runningJobSummaries.size());
-        if(runningJobSummaries.size() > 0) {
-
-            ArrayList<String> jobIds = new ArrayList<>();
-            for (JobSummary summary : runningJobSummaries) {
-                jobIds.add(summary.getJobId());
-            }
-
-            runningJobDetails = AWSBatchUtil.getJobDetails(batchClient, jobIds);
+        List<JobDetail> runningJobDetails = AWSBatchUtil.getJobDetails(batchClient, queueName, AWSBatchUtil.runningQueueStatuses);
+        if(runningJobDetails != null) {
+            LOGGER.info("Running jobs: " + runningJobDetails.size());
         }
 
-
-        List<JobDetail> completedJobDetails = null;
-        LOGGER.info("Completed jobs: " + completedJobSummaries.size());
-        if(completedJobSummaries.size() > 0) {
-
-            ArrayList<String> jobIds = new ArrayList<>();
-            for (JobSummary summary : completedJobSummaries) {
-                jobIds.add(summary.getJobId());
-            }
-
-            completedJobDetails = AWSBatchUtil.getJobDetails(batchClient, jobIds);
+        List<JobDetail> completedJobDetails = AWSBatchUtil.getJobDetails(batchClient, queueName, AWSBatchUtil.completedQueueStatuses);
+        if(completedJobDetails != null) {
+            LOGGER.info("Completed jobs: " + completedJobDetails.size());
         }
-
 
         //  Invoke freemarker template
         String templateS3Bucket = WpsConfig.getConfig(QUEUE_VIEW_HTML_TEMPLATE_S3_BUCKET_CONFIG_KEY);
         String templateS3Key = WpsConfig.getConfig(QUEUE_VIEW_HTML_TEMPLATE_S3_KEY_CONFIG_KEY);
 
-        S3ObjectInputStream contentStream = S3Utils.getS3ObjectStream(templateS3Bucket, templateS3Key);
+        try (S3ObjectInputStream contentStream = S3Utils.getS3ObjectStream(templateS3Bucket, templateS3Key)) {
 
-        //  read file to String
-        String templateString = Utils.inputStreamToString(contentStream);
+            //  read file to String
+            String templateString = Utils.inputStreamToString(contentStream);
 
-        StringTemplateLoader stringLoader = new StringTemplateLoader();
-        stringLoader.putTemplate("QueueViewHtmlTemplate", templateString);
+            StringTemplateLoader stringLoader = new StringTemplateLoader();
+            stringLoader.putTemplate("QueueViewHtmlTemplate", templateString);
 
-        Configuration config = new Configuration();
-        config.setClassForTemplateLoading(JobStatusServiceRequestHandler.class, "");
-        config.setObjectWrapper(new DefaultObjectWrapper());
-        config.setTemplateLoader(stringLoader);
-        config.setDefaultEncoding("UTF-8");
-        config.setTemplateExceptionHandler(TemplateExceptionHandler.RETHROW_HANDLER);
+            Configuration config = new Configuration();
+            config.setClassForTemplateLoading(JobStatusServiceRequestHandler.class, "");
+            config.setObjectWrapper(new DefaultObjectWrapper());
+            config.setTemplateLoader(stringLoader);
+            config.setDefaultEncoding("UTF-8");
+            config.setTemplateExceptionHandler(TemplateExceptionHandler.RETHROW_HANDLER);
 
-        Map<String, Object> params = new HashMap<String, Object>();
+            Map<String, Object> params = new HashMap<String, Object>();
 
-        params.put("bootstrapCssLocation", WpsConfig.getBootstrapCssS3ExternalURL());
-        params.put("aodnCssLocation", WpsConfig.getAodnCssS3ExternalURL());
-        params.put("aodnLogoLocation", WpsConfig.getAodnLogoS3ExternalURL());
-        params.put("queueName", queueName);
+            params.put("bootstrapCssLocation", WpsConfig.getBootstrapCssS3ExternalURL());
+            params.put("aodnCssLocation", WpsConfig.getAodnCssS3ExternalURL());
+            params.put("aodnLogoLocation", WpsConfig.getAodnLogoS3ExternalURL());
+            params.put("queueName", queueName);
 
-        if (waitingJobDetails != null) {
-            params.put("queuedJobsList", waitingJobDetails);
+            if (waitingJobDetails != null) {
+                params.put("queuedJobsList", waitingJobDetails);
+            }
+
+            if (runningJobDetails != null) {
+                params.put("runningJobsList", runningJobDetails);
+            }
+
+            if (completedJobDetails != null) {
+                params.put("completedJobsList", completedJobDetails);
+            }
+
+            Template template = config.getTemplate("QueueViewHtmlTemplate");
+
+            LOGGER.info("Got template [QueueViewHtmlTemplate]");
+            StringWriter out = new StringWriter();
+
+            template.process(params, out);
+
+            LOGGER.info("Ran template.");
+
+            return out.toString();
         }
-
-        if (runningJobDetails != null) {
-            params.put("runningJobsList", runningJobDetails);
-        }
-
-        if (completedJobDetails != null) {
-            params.put("completedJobsList", completedJobDetails);
-        }
-
-        Template template = config.getTemplate("QueueViewHtmlTemplate");
-
-        LOGGER.info("Got template [QueueViewHtmlTemplate]");
-        StringWriter out = new StringWriter();
-
-        template.process(params, out);
-
-        LOGGER.info("Ran template.");
-
-        return out.toString();
     }
 }

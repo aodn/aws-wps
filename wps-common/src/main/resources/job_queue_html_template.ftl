@@ -109,6 +109,8 @@
             </#if>
 
         </div>
+        <BR/>
+        <BR/>
         <div class="jumbotronFooter voffset5">
             <div class="container">
                 <footer class="row">
