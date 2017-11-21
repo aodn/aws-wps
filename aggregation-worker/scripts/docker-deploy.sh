@@ -1,5 +1,6 @@
 #!/bin/bash
 set -ex
-eval "$(aws ecr get-login --no-include-email --region us-east-1)"
-docker tag javaduck:latest 104044260116.dkr.ecr.us-east-1.amazonaws.com/javaduck:latest
-docker push 104044260116.dkr.ecr.us-east-1.amazonaws.com/javaduck:latest
+tag=${1:-latest}
+eval "$(aws ecr get-login --no-include-email --region ap-southeast-2)"
+docker tag javaduck:latest 615645230945.dkr.ecr.ap-southeast-2.amazonaws.com/javaduck:${tag}
+docker push 615645230945.dkr.ecr.ap-southeast-2.amazonaws.com/javaduck:${tag}
