@@ -32,6 +32,10 @@ Parameters:
     Type: String
     Description: "Lambda code file name ex: job-status-service-0.01-lambda-package.zip"
     Default: "job-status-service-lambda-package.zip"
+  customAmiId:
+    Type: String
+    Description: Custom AMI image id to use when creating the compute environment (optional)
+    Default: ""
   jobStatusCodeURL:
     Type: String
     Default: "http://imos-binary.s3-website-ap-southeast-2.amazonaws.com/jobs/aws_wps_prod/aws_wps_prod-latest.zip" # Need to update the default value
@@ -92,9 +96,10 @@ Parameters:
   maxVCPUs:
     Type: Number
     Default: 4
-  maxHeapSize:
+  jvmOptions:
+    Description: Options to be passed to the aggregator jvm on startup
     Type: String
-    Default: 512m
+    Default: '-Xmx512m'
   geoserver:
     Type: String
     Description: Geoserver from which to source files to aggregate
@@ -213,6 +218,7 @@ Conditions:
     - !Not [!Condition CreateEphemeralBucket]
   ConfigureSumoLogic: !Not [!Equals [ "", !Ref sumoEndpoint]]
   CreateWpsApiGatewayDomainName: !Not [ !Equals [!Ref wpsDomainName, '']]
+  UseCustomAmi: !Not [!Equals [!Ref customAmiId, ""]]
 Resources:
   PersistentS3Bucket:
     Type: "AWS::S3::Bucket"
@@ -338,9 +344,10 @@ Resources:
         Vcpus: !Ref jobVCPUs
         Memory: !Ref jobMemory
         JobRoleArn: !Ref JobInstanceRole
-        Command:
-          - !Join [ "", [ "-Xmx",  !Ref maxHeapSize] ]
         Environment:
+          -
+            Name: "JAVA_TOOL_OPTIONS"
+            Value: !Ref jvmOptions
           -
             Name: "OUTPUT_S3_FILENAME"
             Value: !FindInMap [ConfigurationFileMap, "Filename", "outputWithoutExtension"]
@@ -440,7 +447,7 @@ Resources:
     DeletionPolicy: Delete
     Properties:
       Type: MANAGED
-      ComputeEnvironmentName: !Sub 'JavaDuckSpotComputeEnvironment1-${AWS::StackName}'
+      ComputeEnvironmentName: !Sub 'JavaDuckSpotComputeEnvironment1-${customAmiId}-${AWS::StackName}'
       ComputeResources:
         Type: SPOT
         MinvCpus: 0
@@ -448,6 +455,7 @@ Resources:
         MaxvCpus: !Ref maxVCPUs
         InstanceTypes:
           - optimal
+        ImageId: !If [UseCustomAmi, !Ref customAmiId, !Ref "AWS::NoValue"]
         Subnets: !FindInMap [!Ref environment, !Ref "AWS::Region", subnets]
         SecurityGroupIds:
           - !Ref ComputeEnvironmentInstanceSecurityGroup
