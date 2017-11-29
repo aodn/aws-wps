@@ -197,6 +197,20 @@ Mappings:
         - subnet-9e0003e6
         - subnet-f82bcb91
         - subnet-5086a51a
+  systest:
+    ap-southeast-2:
+      vpc: vpc-7302ee16
+      subnets:
+        - subnet-7976213f
+        - subnet-54b3aa20
+        - subnet-d722d0b2
+  sandbox:
+    ap-southeast-2:
+      vpc: vpc-7302ee16
+      subnets:
+        - subnet-7976213f
+        - subnet-54b3aa20
+        - subnet-d722d0b2
   dev:
     ap-southeast-2:
       vpc: vpc-5e0e3a3a
