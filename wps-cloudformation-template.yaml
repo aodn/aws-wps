@@ -111,9 +111,6 @@ Parameters:
   workerDownloadAttempts:
     Type: Number
     Default: 4
-  workerDownloadDirectory:
-    Type: String
-    Default: '/tmp'
   workerLocalStorageLimitBytes:
     Type: Number
     Default: 104857600
@@ -163,6 +160,9 @@ Parameters:
       - us-west-2
       - eu-west-1
 Mappings:
+  Constants:
+    ConstantMap:
+      containerWorkingDir: "/mnt/work"
   EnvironmentMap:
     production:
       BucketName: "aws-wps-production"
@@ -358,6 +358,9 @@ Resources:
         Vcpus: !Ref jobVCPUs
         Memory: !Ref jobMemory
         JobRoleArn: !Ref JobInstanceRole
+        Volumes:
+          -
+            Name: "work"
         Environment:
           -
             Name: "JAVA_TOOL_OPTIONS"
@@ -399,8 +402,8 @@ Resources:
             Name: "DOWNLOAD_ATTEMPTS"
             Value: !Ref workerDownloadAttempts
           -
-            Name: "DOWNLOAD_DIRECTORY"
-            Value: !Ref workerDownloadDirectory
+            Name: "WORKING_DIR"
+            Value: !FindInMap [Constants, ConstantMap, containerWorkingDir]
           -
             Name: "LOCAL_STORAGE_LIMIT_BYTES"
             Value: !Ref workerLocalStorageLimitBytes
@@ -445,6 +448,11 @@ Resources:
                         !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}',
                         !Sub 'https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}'
                       ]
+        MountPoints:
+          -
+            SourceVolume: "work"
+            ContainerPath: !FindInMap [Constants, ConstantMap, containerWorkingDir]
+            ReadOnly: false
       RetryStrategy:
         Attempts: 2
     DependsOn:  JobInstanceRole

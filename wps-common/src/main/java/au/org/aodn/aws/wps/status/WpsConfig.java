@@ -36,7 +36,7 @@ public class WpsConfig {
 
     public static final String CHUNK_SIZE_KEY = "CHUNK_SIZE";
     public static final String DOWNLOAD_ATTEMPTS_CONFIG_KEY = "DOWNLOAD_ATTEMPTS";
-    public static final String DOWNLOAD_DIRECTORY_PROPERTY_KEY = "DOWNLOAD_DIRECTORY";
+    public static final String WORKING_DIR_CONFIG_KEY = "WORKING_DIR";
     public static final String LOCAL_STORAGE_LIMIT_PROPERTY_KEY = "LOCAL_STORAGE_LIMIT_BYTES";
     public static final String POOL_SIZE_CONFIG_KEY = "POOL_SIZE";
     public static final String RETRY_INTERVAL_CONFIG_KEY = "RETRY_INTERVAL_MS";
@@ -146,7 +146,7 @@ public class WpsConfig {
             setProperty(properties, PROVENANCE_TEMPLATE_S3_KEY_CONFIG_KEY);
             setProperty(properties, CHUNK_SIZE_KEY);
             setProperty(properties, DOWNLOAD_ATTEMPTS_CONFIG_KEY);
-            setProperty(properties, DOWNLOAD_DIRECTORY_PROPERTY_KEY);
+            setProperty(properties, WORKING_DIR_CONFIG_KEY);
             setProperty(properties, LOCAL_STORAGE_LIMIT_PROPERTY_KEY);
             setProperty(properties, POOL_SIZE_CONFIG_KEY);
             setProperty(properties, RETRY_INTERVAL_CONFIG_KEY);
