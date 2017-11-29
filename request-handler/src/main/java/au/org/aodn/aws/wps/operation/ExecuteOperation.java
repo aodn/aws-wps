@@ -60,6 +60,7 @@ public class ExecuteOperation implements Operation {
         JobMapper jobMapper = new JobMapper(processIdentifier);
         String jobDefinitionName = jobMapper.getJobDefinitionName();
 
+        LOGGER.info("Execute operation requested. Identifier [" + processIdentifier + "], Email [" + email + "]");
         LOGGER.info("Submitting job request...");
         SubmitJobRequest submitJobRequest = new SubmitJobRequest();
 
@@ -77,8 +78,8 @@ public class ExecuteOperation implements Operation {
 
         String jobId = result.getJobId();
 
-        LOGGER.info("Job submitted.  Job ID : " + jobId);
-        LOGGER.info("Writing job request to S3");
+        LOGGER.info("Batch job submitted. JobID [" + jobId + "], Identifier [" + processIdentifier + "], Email [" + email + "]");
+        LOGGER.info("Writing job request file to S3");
         S3JobFileManager s3JobFileManager = new S3JobFileManager(statusS3BucketName, jobFileS3KeyPrefix, jobId);
         try {
             s3JobFileManager.write(JobFileUtil.createXmlDocument(executeRequest), requestFileName, STATUS_FILE_MIME_TYPE);
