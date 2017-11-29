@@ -15,10 +15,8 @@ Parameters:
   requestHandlerFilename:
     Type: String
     Description: "Lambda code file name ex: request-handler-0.01-lambda-package.zip"
-    Default: "request-handler-lambda-package.zip"
   requestHandlerCodeURL:
     Type: String
-    Default: "http://imos-binary.s3-website-ap-southeast-2.amazonaws.com/jobs/aws_wps_prod/aws_wps_prod-latest.zip" # Need to update the default value
   requestHandlerApiPath:
     Type: String
     Default: 'wps'
@@ -31,38 +29,28 @@ Parameters:
   jobStatusFilename:
     Type: String
     Description: "Lambda code file name ex: job-status-service-0.01-lambda-package.zip"
-    Default: "job-status-service-lambda-package.zip"
   customAmiId:
     Type: String
     Description: Custom AMI image id to use when creating the compute environment (optional)
     Default: ""
   jobStatusCodeURL:
     Type: String
-    Default: "http://imos-binary.s3-website-ap-southeast-2.amazonaws.com/jobs/aws_wps_prod/aws_wps_prod-latest.zip" # Need to update the default value
   jobStatusHtmlTransformURL:
     Type: String
-    Default: 'https://raw.githubusercontent.com/aodn/aws-wps/master/wps-common/src/main/resources/job_status_html_transform.xsl'
   getCapabilitiesURL:
     Type: String
-    Default: 'https://raw.githubusercontent.com/aodn/aws-wps/master/wps-common/src/main/resources/config/GetCapabilities.ftl'
   jobQueueHtmlTemplateURL:
     Type: String
-    Default: 'https://raw.githubusercontent.com/aodn/aws-wps/admin_status_info/wps-common/src/main/resources/job_queue_html_template.ftl'
   gogduckURL:
     Type: String
-    Default: 'https://raw.githubusercontent.com/aodn/aws-wps/master/wps-common/src/main/resources/config/GoGoDuck.xml'
   netcdfOutputURL:
     Type: String
-    Default: 'https://raw.githubusercontent.com/aodn/aws-wps/master/wps-common/src/main/resources/config/NetcdfOutput.xml'
   templatesURL:
     Type: String
-    Default: 'https://raw.githubusercontent.com/aodn/aws-wps/master/wps-common/src/main/resources/config/templates.xml'
   provenanceTemplateGriddedURL:
     Type: String
-    Default: 'https://raw.githubusercontent.com/aodn/aws-wps/master/wps-common/src/main/resources/config/provenance_template_gridded.ftl'
   provenanceTemplateNonGriddedURL:
     Type: String
-    Default: 'https://raw.githubusercontent.com/aodn/aws-wps/master/wps-common/src/main/resources/config/provenance_template_non_gridded.ftl'
   sumoEndpoint:
     Type: String
     Default: ''
@@ -71,16 +59,12 @@ Parameters:
     Default: 'index.zip'
   sumologicLambdaCodeURL:
     Type: String
-    Default: 'https://github.com/aodn/aws-wps/raw/master/wps-common/src/main/resources/index.zip'
   bootstrapCssURL:
     Type: String
-    Default: 'https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css'
   aodnCssURL:
     Type: String
-    Default: 'https://raw.githubusercontent.com/aodn/aodn-portal/master/web-app/css/AODNTheme.css'
   aodnLogoURL:
     Type: String
-    Default: 'https://raw.githubusercontent.com/aodn/aodn-portal/master/web-app/images/AODN/AODN_logo_fullText.png'
   jobName:
     Type: String
     Default: 'javaduck'
