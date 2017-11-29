@@ -6,13 +6,13 @@
 
     <groupId>au.org.emii</groupId>
     <artifactId>job-status-service</artifactId>
-    <version>0.3.4</version>
+    <version>0.3.5</version>
 
     <parent>
         <groupId>au.org.emii</groupId>
         <artifactId>aws-wps</artifactId>
         <relativePath>../pom.xml</relativePath>
-        <version>0.3.4</version>
+        <version>0.3.5</version>
     </parent>
 
     <dependencies>
@@ -50,7 +50,7 @@
         <dependency>
             <groupId>au.org.emii</groupId>
             <artifactId>wps-common</artifactId>
-            <version>0.3.4</version>
+            <version>0.3.5</version>
         </dependency>
     </dependencies>
 
