@@ -83,6 +83,7 @@ public class AggregationRunner implements CommandLineRunner {
             statusFilename = WpsConfig.getConfig(STATUS_S3_FILENAME_CONFIG_KEY);
             requestFilename = WpsConfig.getConfig(REQUEST_S3_FILENAME_CONFIG_KEY);
             Path workingDir = Paths.get(WpsConfig.getConfig(WORKING_DIR_CONFIG_KEY));
+            Path jobDir = Files.createTempDirectory(workingDir, batchJobId);
 
             String aggregatorConfigS3Bucket = WpsConfig.getConfig(AGGREGATOR_CONFIG_S3_BUCKET_CONFIG_KEY);
             String aggregatorTemplateFileS3Key = WpsConfig.getConfig(AGGREGATOR_TEMPLATE_FILE_S3_KEY_CONFIG_KEY);
@@ -169,7 +170,7 @@ public class AggregationRunner implements CommandLineRunner {
             AggregationOverrides overrides = getAggregationOverrides(aggregatorConfigS3Bucket, aggregatorTemplateFileS3Key, layer);
 
             // Create a directory for downloads in working directory
-            downloadDirectory = workingDir.resolve("downloads");
+            downloadDirectory = jobDir.resolve("downloads");
             Files.createDirectory(downloadDirectory);
 
             //  Apply download configuration
@@ -178,7 +179,7 @@ public class AggregationRunner implements CommandLineRunner {
             //  Apply connect/read timeouts
             Downloader downloader = new Downloader(downloadConnectTimeout, downloadReadTimeout);
 
-            Path outputFile = Files.createTempFile(workingDir, "agg", ".nc");
+            Path outputFile = Files.createTempFile(jobDir, "agg", ".nc");
             Path convertedFile = null;
 
             long chunkSize = Long.valueOf(WpsConfig.getConfig(CHUNK_SIZE_KEY));
@@ -198,7 +199,7 @@ public class AggregationRunner implements CommandLineRunner {
                 //  Instantiate the correct converter for the requested mimeType & do the conversion
                 Converter converter = Converter.newInstance(resultMime);
 
-                convertedFile = workingDir.resolve("converted" + converter.getExtension());
+                convertedFile = jobDir.resolve("converted" + converter.getExtension());
                 converter.convert(outputFile, convertedFile);
 
                 S3JobFileManager outputFileManager = new S3JobFileManager(outputBucketName, jobFileS3KeyPrefix, batchJobId);
@@ -250,14 +251,8 @@ public class AggregationRunner implements CommandLineRunner {
                     emailService.sendCompletedJobEmail(email, batchJobId, resultUrl, WpsConfig.getJobExpiration());
                 }
             } finally {
-                if (convertedFile != null) {
-                    Files.deleteIfExists(convertedFile);
-                }
-                if (outputFile != null) {
-                    Files.deleteIfExists(outputFile);
-                }
-                if (downloadDirectory != null) {
-                    FileUtils.deleteDirectory(downloadDirectory.toFile());
+                if (jobDir != null) {
+                    FileUtils.deleteDirectory(jobDir.toFile());
                 }
             }
 
