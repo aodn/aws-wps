@@ -35,6 +35,8 @@ public class DescribeProcessOperation implements Operation {
 
         StringBuilder stringBuilder = new StringBuilder();
 
+        LOGGER.info("DescribeProcess operation requested. Process names [" + getProcessNames(identifiers) + "]");
+
         if (identifiers != null) {
             ProcessDescriptions outputProcessDescriptions = new ProcessDescriptions();
             outputProcessDescriptions.setLang(WpsConfig.getConfig(WpsConfig.LANGUAGE_KEY));
@@ -65,5 +67,23 @@ public class DescribeProcessOperation implements Operation {
         }
 
         return stringBuilder.toString();
+    }
+
+    private String getProcessNames(List<CodeType> identifiers) {
+        String codeList = "";
+
+        if(identifiers != null) {
+            if(identifiers.size() > 0) {
+                int index = 0;
+                for(CodeType code :identifiers) {
+                    codeList += code.getValue();
+                    if(index + 1 <= identifiers.size()) {
+                        codeList += ", ";
+                    }
+                    index++;
+                }
+            }
+        }
+        return codeList;
     }
 }

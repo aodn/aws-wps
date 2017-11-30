@@ -143,11 +143,7 @@ public class AggregationRunner implements CommandLineRunner {
                 emailService = new EmailService();
             }
 
-            logger.info("Command line parameters passed:");
-            logger.info("Layer name             = " + layer);
-            logger.info("Subset parameters      = " + subset);
-            logger.info("Request MIME type      = " + resultMime);
-            logger.info("Callback email address = " + email);
+            logger.info("Running aggregation job. JobID [" + batchJobId + "]. Layer [" + layer + "], Subset [" + subset + "], Result MIME [" + resultMime + "], Callback email [" + email + "]");
 
             //  TODO: Qa the parameters/settings passed?
 
@@ -214,6 +210,8 @@ public class AggregationRunner implements CommandLineRunner {
                 }
 
                 if (requestHelper.hasRequestedOutput("provenance")) {
+                    logger.info("Provenance output requested.");
+
                     //  Lookup the metadata URL for the layer
                     String catalogueURL = WpsConfig.getConfig(GEONETWORK_CATALOGUE_URL_CONFIG_KEY);
                     String layerSearchField = WpsConfig.getConfig(GEONETWORK_CATALOGUE_LAYER_FIELD_CONFIG_KEY);
@@ -244,6 +242,7 @@ public class AggregationRunner implements CommandLineRunner {
                     outputMap.put("provenance", provenanceUrl);
                 }
 
+                logger.info("Aggregation completed successfully. JobID [" + batchJobId + "], Callback email [" + email + "]");
                 statusDocument = statusBuilder.createResponseDocument(EnumStatus.SUCCEEDED, GOGODUCK_PROCESS_IDENTIFIER, null, null, outputMap);
                 statusFileManager.write(statusDocument, statusFilename, STATUS_FILE_MIME_TYPE);
 
@@ -258,6 +257,7 @@ public class AggregationRunner implements CommandLineRunner {
 
         } catch (Throwable e) {
             e.printStackTrace();
+            logger.error("Failed aggregation. JobID [" + batchJobId + "], Callback email [" + email + "] : " + e.getMessage(), e);
             if (statusFileManager != null) {
                 if (batchJobId != null) {
                     String statusDocument = null;
