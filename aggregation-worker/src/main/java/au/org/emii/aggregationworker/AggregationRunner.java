@@ -20,6 +20,7 @@ import au.org.emii.util.IntegerHelper;
 import au.org.emii.util.ProvenanceWriter;
 import freemarker.template.Configuration;
 import net.opengis.wps.v_1_0_0.Execute;
+import org.apache.commons.io.FileUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
@@ -32,6 +33,7 @@ import ucar.unidata.geoloc.LatLonRect;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -64,6 +66,7 @@ public class AggregationRunner implements CommandLineRunner {
         String batchJobId = null, email = null;
         EmailService emailService = null;
         ExecuteStatusBuilder statusBuilder = null;
+        Path downloadDirectory = null;
 
         try {
             //  Capture the AWS job specifics - they are passed to the docker runtime as
@@ -79,6 +82,8 @@ public class AggregationRunner implements CommandLineRunner {
             String jobFileS3KeyPrefix = WpsConfig.getConfig(AWS_BATCH_JOB_S3_KEY_PREFIX);
             statusFilename = WpsConfig.getConfig(STATUS_S3_FILENAME_CONFIG_KEY);
             requestFilename = WpsConfig.getConfig(REQUEST_S3_FILENAME_CONFIG_KEY);
+            Path workingDir = Paths.get(WpsConfig.getConfig(WORKING_DIR_CONFIG_KEY));
+            Path jobDir = Files.createTempDirectory(workingDir, batchJobId);
 
             String aggregatorConfigS3Bucket = WpsConfig.getConfig(AGGREGATOR_CONFIG_S3_BUCKET_CONFIG_KEY);
             String aggregatorTemplateFileS3Key = WpsConfig.getConfig(AGGREGATOR_TEMPLATE_FILE_S3_KEY_CONFIG_KEY);
@@ -164,13 +169,17 @@ public class AggregationRunner implements CommandLineRunner {
             //  Apply overrides (if provided)
             AggregationOverrides overrides = getAggregationOverrides(aggregatorConfigS3Bucket, aggregatorTemplateFileS3Key, layer);
 
+            // Create a directory for downloads in working directory
+            downloadDirectory = jobDir.resolve("downloads");
+            Files.createDirectory(downloadDirectory);
+
             //  Apply download configuration
-            DownloadConfig downloadConfig = getDownloadConfig();
+            DownloadConfig downloadConfig = getDownloadConfig(downloadDirectory);
 
             //  Apply connect/read timeouts
             Downloader downloader = new Downloader(downloadConnectTimeout, downloadReadTimeout);
 
-            Path outputFile = Files.createTempFile("agg", ".nc");
+            Path outputFile = Files.createTempFile(jobDir, "agg", ".nc");
             Path convertedFile = null;
 
             long chunkSize = Long.valueOf(WpsConfig.getConfig(CHUNK_SIZE_KEY));
@@ -186,14 +195,11 @@ public class AggregationRunner implements CommandLineRunner {
 
                 HashMap<String, String> outputMap = new HashMap<>();
 
-                //  Convert to required output
-                Path workingDir = downloadConfig.getDownloadDirectory();
-
                 //  Perform the conversion
                 //  Instantiate the correct converter for the requested mimeType & do the conversion
                 Converter converter = Converter.newInstance(resultMime);
 
-                convertedFile = workingDir.resolve("converted" + converter.getExtension());
+                convertedFile = jobDir.resolve("converted" + converter.getExtension());
                 converter.convert(outputFile, convertedFile);
 
                 S3JobFileManager outputFileManager = new S3JobFileManager(outputBucketName, jobFileS3KeyPrefix, batchJobId);
@@ -245,11 +251,8 @@ public class AggregationRunner implements CommandLineRunner {
                     emailService.sendCompletedJobEmail(email, batchJobId, resultUrl, WpsConfig.getJobExpiration());
                 }
             } finally {
-                if (convertedFile != null) {
-                    Files.deleteIfExists(convertedFile);
-                }
-                if (outputFile != null) {
-                    Files.deleteIfExists(outputFile);
+                if (jobDir != null) {
+                    FileUtils.deleteDirectory(jobDir.toFile());
                 }
             }
 
