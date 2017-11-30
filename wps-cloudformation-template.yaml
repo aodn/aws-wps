@@ -68,22 +68,12 @@ Parameters:
   jobName:
     Type: String
     Default: 'javaduck'
-  jobVCPUs:
-    Type: Number
-    Default: 1
-  jobMemory:
-    Type: Number
-    Default: 2000
   jobExpirationInDays:
     Type: Number
     Default: 7
   maxVCPUs:
     Type: Number
     Default: 4
-  jvmOptions:
-    Description: Options to be passed to the aggregator jvm on startup
-    Type: String
-    Default: '-Xmx512m'
   geoserver:
     Type: String
     Description: Geoserver from which to source files to aggregate
@@ -339,8 +329,8 @@ Resources:
       JobDefinitionName: !Sub 'JavaDuckSmall1-${AWS::StackName}'
       ContainerProperties:
         Image: !Ref dockerImage
-        Vcpus: !Ref jobVCPUs
-        Memory: !Ref jobMemory
+        Vcpus: 2
+        Memory: 2000
         JobRoleArn: !Ref JobInstanceRole
         Volumes:
           -
@@ -348,7 +338,7 @@ Resources:
         Environment:
           -
             Name: "JAVA_TOOL_OPTIONS"
-            Value: !Ref jvmOptions
+            Value: '-Xmx512m'
           -
             Name: "OUTPUT_S3_FILENAME"
             Value: !FindInMap [ConfigurationFileMap, "Filename", "outputWithoutExtension"]
@@ -453,14 +443,19 @@ Resources:
     DeletionPolicy: Delete
     Properties:
       Type: MANAGED
-      ComputeEnvironmentName: !Sub 'JavaDuckSpotComputeEnvironment1-${customAmiId}-${AWS::StackName}'
+      ComputeEnvironmentName: !Sub 'JavaDuckSpotComputeEnvironment-${customAmiId}-${AWS::StackName}'
       ComputeResources:
         Type: SPOT
         MinvCpus: 0
         DesiredvCpus: 0
         MaxvCpus: !Ref maxVCPUs
         InstanceTypes:
-          - optimal
+          - 'c3.large'
+          - 'c4.large'
+          - 'm3.large'
+          - 'm4.large'
+          - 'r4.large'
+          - 'r3.large'
         ImageId: !If [UseCustomAmi, !Ref customAmiId, !Ref "AWS::NoValue"]
         Subnets: !FindInMap [!Ref environment, !Ref "AWS::Region", subnets]
         SecurityGroupIds:
