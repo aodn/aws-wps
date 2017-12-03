@@ -462,7 +462,7 @@ Resources:
           - !Ref ComputeEnvironmentInstanceSecurityGroup
         InstanceRole: !Ref IamInstanceProfile
         SpotIamFleetRole: !Ref SpotIamFleetRole
-        BidPercentage: 20
+        BidPercentage: 100
       ServiceRole: !Ref BatchServiceRole
   ComputeEnvironmentInstanceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
