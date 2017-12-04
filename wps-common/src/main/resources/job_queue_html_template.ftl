@@ -3,6 +3,27 @@
         <link rel="stylesheet" href="${bootstrapCssLocation}"/>
         <link rel="stylesheet" type="text/css" href="${aodnCssLocation}"/>
 
+        <script type="text/javascript">
+            function formatTime(timeStamp) {
+                if (timeStamp != -1) {
+                    var submitTime = new Date(0);
+                    submitTime.setUTCSeconds(timeParamValue);
+                    var dateString = ('0' + submitTime.getDate()).slice(-2) + "/" +
+                                     ('0' + (submitTime.getMonth() + 1)).slice(-2) + "/" +
+                                     submitTime.getFullYear() + " " +
+                                     ('0' + submitTime.getHours()).slice(-2) + ":" +
+                                     ('0' + submitTime.getMinutes()).slice(-2) + ":" +
+                                     ('0' + submitTime.getSeconds()).slice(-2);
+                    return dateString;
+                } else {
+                    return "Unknown";
+                }
+            }
+
+            function openJobStatusLink(jobId) {
+                window.open('${statusServiceBaseLink}' + '&jobId=' + jobId,'_blank');
+            }
+        </SCRIPT>
         <title>WPS QUEUE CONTENTS: ${queueName}</title>
     </head>
     <body>
@@ -23,17 +44,11 @@
                     <TR><TH>Position</TH><TH>Job ID</TH><TH>Submitted</TH><TH>Status</TH></TR>
                     <#list queuedJobsList as job>
                         <TR><TD>${job_index}</TD>
-                            <TD>${job.jobId}</TD>
+                            <TD><A HREF="javascript:openJobStatusLink('${job.jobId}');">${job.jobId}</A></TD>
                             <TD>
                                 <script type="text/javascript">
                                     var timeParamValue = ${job.createdAt?c}/1000;
-                                    if(timeParamValue != -1) {
-                                        var submitTime = new Date(0);
-                                        submitTime.setUTCSeconds(timeParamValue);
-                                        document.write( submitTime.toString() );
-                                    } else {
-                                        document.write("Unknown");
-                                    }
+                                    document.write(formatTime(timeParamValue));
                                 </script>
                             </TD>
                             <TD>${job.status}</TD>
@@ -48,19 +63,19 @@
 
             <#if runningJobsList??>
                 <TABLE BORDER="1">
-                <TR><TH>Job ID</TH><TH>Submitted</TH><TH>Status</TH></TR>
+                <TR><TH>Job ID</TH><TH>Submitted</TH><TH>Started</TH><TH>Status</TH></TR>
                 <#list runningJobsList as job>
-                    <TR><TD>${job.jobId}</TD>
+                    <TR><TD><A HREF="javascript:openJobStatusLink('${job.jobId}');">${job.jobId}</A></TD>
+                        <TD>
+                            <script type="text/javascript">
+                                var timeParamValue = ${job.startedAt?c}/1000;
+                                document.write(formatTime(timeParamValue));
+                            </script>
+                        </TD>
                         <TD>
                             <script type="text/javascript">
                                 var timeParamValue = ${job.createdAt?c}/1000;
-                                if(timeParamValue != -1) {
-                                    var submitTime = new Date(0);
-                                    submitTime.setUTCSeconds(timeParamValue);
-                                    document.write( submitTime.toString() );
-                                } else {
-                                    document.write("Unknown");
-                                }
+                                document.write(formatTime(timeParamValue));
                             </script>
                         </TD>
                         <TD>${job.status}</TD></TR>
@@ -74,31 +89,25 @@
 
             <#if completedJobsList??>
                 <TABLE BORDER="1">
-                <TR><TH>Submitted</TH><TH>Job ID</TH><TH>Completed</TH><TH>Status</TH></TR>
+                <TR><TH>Job ID</TH><TH>Submitted</TH><TH>Started</TH><TH>Completed</TH><TH>Status</TH></TR>
                 <#list completedJobsList as job>
-                <TR><TD>
+                <TR><TD><A HREF="javascript:openJobStatusLink('${job.jobId}');">${job.jobId}</A></TD>
+                    <TD>
                         <script type="text/javascript">
                             var timeParamValue = ${job.createdAt?c}/1000;
-                            if(timeParamValue != -1) {
-                                var submitTime = new Date(0);
-                                submitTime.setUTCSeconds(timeParamValue);
-                                document.write( submitTime.toString() );
-                            } else {
-                                document.write("Unknown");
-                            }
+                            document.write(formatTime(timeParamValue));
                         </script>
                     </TD>
-                    <TD>${job.jobId}</TD>
+                    <TD>
+                        <script type="text/javascript">
+                            var timeParamValue = ${job.startedAt?c}/1000;
+                            document.write(formatTime(timeParamValue));
+                        </script>
+                    </TD>
                     <TD>
                         <script type="text/javascript">
                             var timeParamValue = ${job.stoppedAt?c}/1000;
-                            if(timeParamValue != -1) {
-                                var submitTime = new Date(0);
-                                submitTime.setUTCSeconds(timeParamValue);
-                                document.write( submitTime.toString() );
-                            } else {
-                                document.write("Unknown");
-                            }
+                            document.write(formatTime(timeParamValue));
                         </script>
                     </TD>
                     <TD>${job.status}</TD></TR>

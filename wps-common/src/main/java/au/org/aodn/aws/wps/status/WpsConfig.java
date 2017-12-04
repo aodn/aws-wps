@@ -189,6 +189,11 @@ public class WpsConfig {
         return String.format("%s?%s=%s&%s=%s", statusServiceEndpoint, STATUS_SERVICE_JOB_ID_PARAMETER_NAME, jobUuid, STATUS_SERVICE_FORMAT_PARAMETER_NAME, format);
     }
 
+    public static String getBaseStatusServiceAdminLink() {
+        String statusServiceEndpoint = getConfig(STATUS_SERVICE_ENDPOINT_KEY);
+        return String.format("%s?%s=%s", statusServiceEndpoint, STATUS_SERVICE_FORMAT_PARAMETER_NAME, "ADMIN");
+    }
+
     public static String getAwsWpsEndpointUrl() {
         return getConfig(WPS_ENDPOINT_URL_CONFIG_KEY);
     }

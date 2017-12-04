@@ -464,6 +464,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
             params.put("aodnCssLocation", WpsConfig.getAodnCssS3ExternalURL());
             params.put("aodnLogoLocation", WpsConfig.getAodnLogoS3ExternalURL());
             params.put("queueName", queueName);
+            params.put("statusServiceBaseLink", WpsConfig.getBaseStatusServiceAdminLink());
 
             if (waitingJobDetails != null) {
                 params.put("queuedJobsList", waitingJobDetails);
