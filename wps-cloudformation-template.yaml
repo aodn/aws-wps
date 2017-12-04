@@ -79,9 +79,6 @@ Parameters:
     Description: Geoserver from which to source files to aggregate
   dockerImage:
     Type: String
-  chunkSize:
-    Type: Number
-    Default: 10000000
   workerDownloadAttempts:
     Type: Number
     Default: 4
@@ -371,7 +368,7 @@ Resources:
             Value: !Ref geoserver
           -
             Name: "CHUNK_SIZE"
-            Value: !Ref chunkSize
+            Value: 100000000
           -
             Name: "DOWNLOAD_ATTEMPTS"
             Value: !Ref workerDownloadAttempts
