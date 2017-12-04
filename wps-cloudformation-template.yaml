@@ -443,7 +443,7 @@ Resources:
     DeletionPolicy: Delete
     Properties:
       Type: MANAGED
-      ComputeEnvironmentName: !Sub 'JavaDuckSpotComputeEnvironment-${customAmiId}-${AWS::StackName}'
+      ComputeEnvironmentName: !Sub 'JavaDuckSpotComputeEnvironment-v1-${AWS::StackName}'
       ComputeResources:
         Type: SPOT
         MinvCpus: 0
