@@ -99,16 +99,20 @@
                         </script>
                     </TD>
                     <TD>
-                        <script type="text/javascript">
-                            var timeParamValue = ${job.startedAt?c}/1000;
-                            document.write(formatTime(timeParamValue));
-                        </script>
+                        <#if (job.startedAt)??>
+                            <script type="text/javascript">
+                                var timeParamValue = ${job.startedAt?c}/1000;
+                                document.write(formatTime(timeParamValue));
+                            </script>
+                        </#if>
                     </TD>
                     <TD>
-                        <script type="text/javascript">
-                            var timeParamValue = ${job.stoppedAt?c}/1000;
-                            document.write(formatTime(timeParamValue));
-                        </script>
+                        <#if (job.stoppedAt)??>
+                            <script type="text/javascript">
+                                var timeParamValue = ${job.stoppedAt?c}/1000;
+                                document.write(formatTime(timeParamValue));
+                            </script>
+                        </#if>
                     </TD>
                     <TD>${job.status}</TD></TR>
                 </#list>
