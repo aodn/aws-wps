@@ -11,6 +11,7 @@
         <xsl:param name="aodnCssLocation"/>
         <xsl:param name="aodnLogoLocation"/>
         <xsl:param name="requestXML"/>
+        <xsl:param name="logFileLink"/>
 
         <xsl:variable name="result">
             <xsl:value-of select="ns3:ExecuteResponse/ns3:ProcessOutputs/ns3:Output[ns1:Identifier = 'result']/ns3:Reference/@href"/>
@@ -103,6 +104,17 @@
                     </dt>
                     <dd>
                         <textarea rows="40" cols="180" readonly="true"><xsl:value-of select="$requestXML"/></textarea>
+                        <br />
+                    </dd>
+                </xsl:when>
+            </xsl:choose>
+            <xsl:choose>
+                <xsl:when test="$logFileLink != ''">
+                    <dt>
+                        Log file :
+                    </dt>
+                    <dd>
+                        <A HREF="{$logFileLink}">Log file</A>
                         <br />
                     </dd>
                 </xsl:when>

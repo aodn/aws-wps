@@ -1,6 +1,7 @@
 package au.org.aodn.aws.util;
 
 import com.amazonaws.services.batch.AWSBatch;
+import com.amazonaws.services.batch.AWSBatchClientBuilder;
 import com.amazonaws.services.batch.model.DescribeJobsRequest;
 import com.amazonaws.services.batch.model.DescribeJobsResult;
 import com.amazonaws.services.batch.model.JobDetail;
@@ -54,6 +55,18 @@ public class AWSBatchUtil {
         }
 
         return new QueuePosition(jobPosition, allJobs.size());
+    }
+
+
+    public static String getJobLogStream(String jobId) {
+        AWSBatch batchClient = AWSBatchClientBuilder.defaultClient();
+        JobDetail jobDetail = getJobDetail(batchClient, jobId);
+
+        if(jobDetail != null && jobDetail.getContainer() != null) {
+            return jobDetail.getContainer().getLogStreamName();
+        }
+
+        return null;
     }
 
 
@@ -142,4 +155,5 @@ public class AWSBatchUtil {
 
         return null;
     }
+
 }

@@ -18,6 +18,7 @@ import au.org.emii.geoserver.client.HttpIndexReader;
 import au.org.emii.geoserver.client.SubsetParameters;
 import au.org.emii.util.IntegerHelper;
 import au.org.emii.util.ProvenanceWriter;
+import com.amazonaws.AmazonServiceException;
 import freemarker.template.Configuration;
 import net.opengis.wps.v_1_0_0.Execute;
 import org.apache.commons.io.FileUtils;
@@ -203,7 +204,7 @@ public class AggregationRunner implements CommandLineRunner {
                 outputFileManager.upload(convertedFile.toFile(), fullOutputFilename, resultMime);
 
                 String resultUrl = WpsConfig.getS3ExternalURL(outputBucketName,
-                    outputFileManager.getJobFileKey(fullOutputFilename));
+                        outputFileManager.getJobFileKey(fullOutputFilename));
 
                 if (requestHelper.hasRequestedOutput("result")) {
                     outputMap.put("result", resultUrl);
@@ -233,11 +234,10 @@ public class AggregationRunner implements CommandLineRunner {
                     String provenanceDocument = ProvenanceWriter.write(aggregatorConfigS3Bucket, aggregatorProvenanceTemplateS3Key, params);
 
                     //  Upload provenance document to S3
-                    //  TODO: configurable provenance filename?
                     outputFileManager.write(provenanceDocument, "provenance.xml", PROVENANCE_FILE_MIME_TYPE);
 
                     String provenanceUrl = WpsConfig.getS3ExternalURL(outputBucketName,
-                        outputFileManager.getJobFileKey("provenance.xml"));
+                            outputFileManager.getJobFileKey("provenance.xml"));
 
                     outputMap.put("provenance", provenanceUrl);
                 }
@@ -255,6 +255,17 @@ public class AggregationRunner implements CommandLineRunner {
                 }
             }
 
+        } catch(AmazonServiceException se) {
+            String errorMessage = "An amazon service exception occurred processing job [" + batchJobId + "] : " +
+                                  "Message [" + se.getMessage() + "]" +
+                                  ", ErrorCode [" + se.getErrorCode() + "]" +
+                                  ", ErrorMessage [" + se.getErrorMessage() + "]" +
+                                  ", ErrorType [" + se.getErrorType().name() + "]";
+
+            logger.error(errorMessage, se);
+            //  Exit with a failed return code - means batch job will retry (unless max retries reached)
+            System.exit(1);
+
         } catch (Throwable e) {
             e.printStackTrace();
             logger.error("Failed aggregation. JobID [" + batchJobId + "], Callback email [" + email + "] : " + e.getMessage(), e);
@@ -265,7 +276,7 @@ public class AggregationRunner implements CommandLineRunner {
                         statusDocument = statusBuilder.createResponseDocument(EnumStatus.FAILED, GOGODUCK_PROCESS_IDENTIFIER,"Exception occurred during aggregation :" + e.getMessage(), "AggregationError", null);
                         statusFileManager.write(statusDocument, statusFilename, STATUS_FILE_MIME_TYPE);
                     } catch (IOException ioe) {
-                        logger.error("Unable to update status. Status: " + statusDocument);
+                        logger.error("Unable to update status for job [" + batchJobId + "]. Status: " + statusDocument);
                         ioe.printStackTrace();
                     }
                 }
@@ -278,7 +289,8 @@ public class AggregationRunner implements CommandLineRunner {
                     logger.error(ex.getMessage(), ex);
                 }
             }
-            System.exit(1);
+            //  Exit with a 'success' return code - will mean job will not retry
+            System.exit(0);
         }
     }
 }

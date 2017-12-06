@@ -1,5 +1,6 @@
 package au.org.aodn.aws.wps.status;
 
+import au.org.aodn.aws.util.AWSBatchUtil;
 import com.amazonaws.services.kms.AWSKMS;
 import com.amazonaws.services.kms.AWSKMSClientBuilder;
 import com.amazonaws.services.kms.model.DecryptRequest;
@@ -25,6 +26,7 @@ public class WpsConfig {
     public static final String AWS_BATCH_JOB_NAME_CONFIG_KEY = "AWS_BATCH_JOB_NAME";
     public static final String AWS_BATCH_JOB_QUEUE_NAME_CONFIG_KEY = "AWS_BATCH_JOB_QUEUE_NAME";
     public static final String AWS_BATCH_JOB_DEFINITION_NAME_CONFIG_KEY = "AWS_BATCH_JOB_DEFINITION_NAME";
+    public static final String AWS_BATCH_LOG_GROUP_NAME_CONFIG_KEY = "AWS_BATCH_LOG_GROUP_NAME";
 
     public static final String AWS_REGION_CONFIG_KEY = "AWS_REGION";
     public static final String AWS_REGION_SES_CONFIG_KEY = "AWS_REGION_SES";
@@ -160,6 +162,7 @@ public class WpsConfig {
             setProperty(properties, AWS_BATCH_CONFIG_S3_KEY);
             setProperty(properties, QUEUE_VIEW_HTML_TEMPLATE_S3_BUCKET_CONFIG_KEY);
             setProperty(properties, QUEUE_VIEW_HTML_TEMPLATE_S3_KEY_CONFIG_KEY);
+            setProperty(properties, AWS_BATCH_LOG_GROUP_NAME_CONFIG_KEY);
         }
 
         return properties;
@@ -246,6 +249,7 @@ public class WpsConfig {
         String region = getConfig(WpsConfig.AWS_REGION_CONFIG_KEY);
         return String.format("https://s3-%s.amazonaws.com/%s/%s", region, s3Bucket, s3Key);
     }
+
 
     /**
      * Decrypt the value of a named environment variable.
