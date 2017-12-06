@@ -50,6 +50,8 @@ public class AggregationRunner implements CommandLineRunner {
     public static final int DEFAULT_CONNECT_TIMEOUT_MS = 60000;
     public static final int DEFAULT_READ_TIMEOUT_MS = 60000;
 
+    private static final String PROVENANCE_TEMPLATE_GRIDDED = "provenance_template_gridded.ftl";
+
     private static final Logger logger = LoggerFactory.getLogger(au.org.emii.aggregationworker.AggregationRunner.class);
 
     private String statusS3Bucket = null, statusFilename = null, requestFilename = null;
@@ -88,7 +90,6 @@ public class AggregationRunner implements CommandLineRunner {
 
             String aggregatorConfigS3Bucket = WpsConfig.getConfig(AGGREGATOR_CONFIG_S3_BUCKET_CONFIG_KEY);
             String aggregatorTemplateFileS3Key = WpsConfig.getConfig(AGGREGATOR_TEMPLATE_FILE_S3_KEY_CONFIG_KEY);
-            String aggregatorProvenanceTemplateS3Key = WpsConfig.getConfig(PROVENANCE_TEMPLATE_S3_KEY_CONFIG_KEY);
 
             //  Parse connect timeout
             String downloadConnectTimeoutString = WpsConfig.getConfig(DOWNLOAD_CONNECT_TIMEOUT_CONFIG_KEY);
@@ -231,7 +232,7 @@ public class AggregationRunner implements CommandLineRunner {
                     params.put("layer", layer);
                     params.put("parameters", subsetParams);
                     params.put("sourceMetadataUrl", catalogueReader.getMetadataUrl(layer));
-                    String provenanceDocument = ProvenanceWriter.write(aggregatorConfigS3Bucket, aggregatorProvenanceTemplateS3Key, params);
+                    String provenanceDocument = ProvenanceWriter.write(PROVENANCE_TEMPLATE_GRIDDED, params);
 
                     //  Upload provenance document to S3
                     outputFileManager.write(provenanceDocument, "provenance.xml", PROVENANCE_FILE_MIME_TYPE);

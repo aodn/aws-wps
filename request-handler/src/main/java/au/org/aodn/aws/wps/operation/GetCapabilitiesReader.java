@@ -23,38 +23,31 @@ import java.util.Map;
 public class GetCapabilitiesReader {
 
     private static final Logger logger = LoggerFactory.getLogger(GetCapabilitiesReader.class);
+    private static final String GET_CAPABILITIES_TEMPLATE = "/templates/GetCapabilities.ftl";
 
     private final Configuration freemarkerConfig;
 
-    public GetCapabilitiesReader(String templateS3Bucket, String templateS3Key, String s3RegionName) throws IOException
+    public GetCapabilitiesReader() throws IOException
     {
-        //  Get from S3 bucket location
-        AmazonS3Client s3Client = new AmazonS3Client();
-        Region region = Region.getRegion(Regions.fromName(s3RegionName));
-        s3Client.setRegion(region);
+        try (InputStream inputStream = this.getClass().getResourceAsStream(GET_CAPABILITIES_TEMPLATE)) {
+            //  read file to String
+            String templateString;
+            try {
+                templateString = Utils.inputStreamToString(inputStream);
+                logger.info("Freemarker template: " + templateString);
+            } catch (IOException ioex) {
+                //  Bad stuff - blow up!
+                logger.error("Problem loading tempate: ", ioex);
+                throw ioex;
+            }
 
-        S3Object templateObject = s3Client.getObject(templateS3Bucket, templateS3Key);
-        S3ObjectInputStream contentStream = templateObject.getObjectContent();
-
-        //  read file to String
-        String templateString = null;
-        try {
-            templateString = Utils.inputStreamToString(contentStream);
-            logger.info("Freemarker template: " + templateString);
+            StringTemplateLoader stringLoader = new StringTemplateLoader();
+            stringLoader.putTemplate("GetCapabilitiesTemplate", templateString);
+            freemarkerConfig = new Configuration();
+            freemarkerConfig.setTemplateLoader(stringLoader);
+            freemarkerConfig.setDefaultEncoding("UTF-8");
+            freemarkerConfig.setTemplateExceptionHandler(TemplateExceptionHandler.RETHROW_HANDLER);
         }
-        catch(IOException ioex)
-        {
-            //  Bad stuff - blow up!
-            logger.error("Problem loading tempate: ", ioex);
-            throw ioex;
-        }
-
-        StringTemplateLoader stringLoader = new StringTemplateLoader();
-        stringLoader.putTemplate("GetCapabilitiesTemplate", templateString);
-        freemarkerConfig = new Configuration();
-        freemarkerConfig.setTemplateLoader(stringLoader);
-        freemarkerConfig.setDefaultEncoding("UTF-8");
-        freemarkerConfig.setTemplateExceptionHandler(TemplateExceptionHandler.RETHROW_HANDLER);
     }
 
     public String read(Map<String, String> parameters) throws Exception {

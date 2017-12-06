@@ -1,6 +1,5 @@
 package au.org.aodn.aws.wps.status;
 
-import au.org.aodn.aws.util.AWSBatchUtil;
 import com.amazonaws.services.kms.AWSKMS;
 import com.amazonaws.services.kms.AWSKMSClientBuilder;
 import com.amazonaws.services.kms.model.DecryptRequest;
@@ -50,12 +49,6 @@ public class WpsConfig {
     public static final String AWS_BATCH_CONFIG_S3_KEY = "CONFIG_S3_KEY";
     private static final String AWS_BATCH_JOB_EXPIRATION_IN_DAYS = "JOB_EXPIRATION_IN_DAYS";
 
-    public static final String GET_CAPABILITIES_TEMPLATE_S3_BUCKET_CONFIG_KEY = "GET_CAPABILITIES_TEMPLATE_S3_BUCKET";
-    public static final String GET_CAPABILITIES_TEMPLATE_S3_KEY_CONFIG_KEY = "GET_CAPABILITIES_TEMPLATE_S3_KEY";
-    public static final String QUEUE_VIEW_HTML_TEMPLATE_S3_BUCKET_CONFIG_KEY = "QUEUE_VIEW_HTML_TEMPLATE_S3_BUCKET";
-    public static final String QUEUE_VIEW_HTML_TEMPLATE_S3_KEY_CONFIG_KEY = "QUEUE_VIEW_HTML_TEMPLATE_S3_KEY";
-    public static final String DESCRIBE_PROCESS_S3_BUCKET_CONFIG_KEY = "DESCRIBE_PROCESS_S3_BUCKET";
-    public static final String DESCRIBE_PROCESS_S3_KEY_PREFIX_CONFIG_KEY = "DESCRIBE_PROCESS_S3_KEY_PREFIX";
     public static final String WPS_ENDPOINT_URL_CONFIG_KEY = "AWS_WPS_ENDPOINT_URL";
     public static final String GEOSERVER_CATALOGUE_ENDPOINT_URL_CONFIG_KEY = "GEOSERVER_CATALOGUE_ENDPOINT_URL";
     public static final String WPS_ENDPOINT_TEMPLATE_KEY = "wpsEndpointURL";
@@ -69,12 +62,8 @@ public class WpsConfig {
     public static final String GEONETWORK_CATALOGUE_URL_CONFIG_KEY = "GEONETWORK_CATALOGUE_URL";
     public static final String GEONETWORK_CATALOGUE_LAYER_FIELD_CONFIG_KEY = "GEONETWORK_LAYER_SEARCH_FIELD";
 
-    public static final String PROVENANCE_TEMPLATE_S3_KEY_CONFIG_KEY = "PROVENANCE_TEMPLATE_S3_KEY";
-
     public static final String STATUS_SERVICE_JOB_ID_PARAMETER_NAME = "jobId";
     public static final String STATUS_SERVICE_FORMAT_PARAMETER_NAME = "format";
-    public static final String STATUS_SERVICE_CONFIG_S3_BUCKET_CONFIG_KEY = "STATUS_SERVICE_CONFIG_S3_BUCKET";
-    public static final String STATUS_HTML_XSL_S3_KEY_CONFIG_KEY = "STATUS_HTML_XSL_S3_KEY";
     public static final String STATUS_SERVICE_ENDPOINT_KEY = "STATUS_SERVICE_ENDPOINT_URL";
 
     public static final String SITE_ACRONYM = "siteAcronym";
@@ -134,10 +123,6 @@ public class WpsConfig {
             setProperty(properties, AWS_BATCH_JOB_EXPIRATION_IN_DAYS);
             setProperty(properties, AWS_BATCH_JOB_S3_KEY_PREFIX);
 
-            setProperty(properties, GET_CAPABILITIES_TEMPLATE_S3_BUCKET_CONFIG_KEY);
-            setProperty(properties, GET_CAPABILITIES_TEMPLATE_S3_KEY_CONFIG_KEY);
-            setProperty(properties, DESCRIBE_PROCESS_S3_BUCKET_CONFIG_KEY);
-            setProperty(properties, DESCRIBE_PROCESS_S3_KEY_PREFIX_CONFIG_KEY);
             setProperty(properties, WPS_ENDPOINT_URL_CONFIG_KEY);
             setProperty(properties, AGGREGATOR_CONFIG_S3_BUCKET_CONFIG_KEY);
             setProperty(properties, AGGREGATOR_TEMPLATE_FILE_S3_KEY_CONFIG_KEY);
@@ -145,23 +130,18 @@ public class WpsConfig {
             setProperty(properties, GEOSERVER_CATALOGUE_ENDPOINT_URL_CONFIG_KEY);
             setProperty(properties, GEONETWORK_CATALOGUE_URL_CONFIG_KEY);
             setProperty(properties, GEONETWORK_CATALOGUE_LAYER_FIELD_CONFIG_KEY);
-            setProperty(properties, PROVENANCE_TEMPLATE_S3_KEY_CONFIG_KEY);
             setProperty(properties, CHUNK_SIZE_KEY);
             setProperty(properties, DOWNLOAD_ATTEMPTS_CONFIG_KEY);
             setProperty(properties, WORKING_DIR_CONFIG_KEY);
             setProperty(properties, LOCAL_STORAGE_LIMIT_PROPERTY_KEY);
             setProperty(properties, POOL_SIZE_CONFIG_KEY);
             setProperty(properties, RETRY_INTERVAL_CONFIG_KEY);
-            setProperty(properties, STATUS_SERVICE_CONFIG_S3_BUCKET_CONFIG_KEY);
-            setProperty(properties, STATUS_HTML_XSL_S3_KEY_CONFIG_KEY);
             setProperty(properties, STATUS_SERVICE_ENDPOINT_KEY);
 
             setProperty(properties, BOOTSTRAP_CSS_FILENAME_CONFIG_KEY);
             setProperty(properties, AODN_CSS_FILENAME_CONFIG_KEY);
             setProperty(properties, AODN_LOGO_FILENAME_CONFIG_KEY);
             setProperty(properties, AWS_BATCH_CONFIG_S3_KEY);
-            setProperty(properties, QUEUE_VIEW_HTML_TEMPLATE_S3_BUCKET_CONFIG_KEY);
-            setProperty(properties, QUEUE_VIEW_HTML_TEMPLATE_S3_KEY_CONFIG_KEY);
             setProperty(properties, AWS_BATCH_LOG_GROUP_NAME_CONFIG_KEY);
         }
 
