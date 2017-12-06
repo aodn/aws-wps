@@ -150,10 +150,29 @@ public class AWSBatchUtil {
 
             jobDetails = AWSBatchUtil.getJobDetails(batchClient, jobIds);
 
-            return jobDetails;
+            return sortByTimestamp(jobDetails);
         }
 
         return null;
     }
 
+
+    private static List<JobDetail> sortByTimestamp(List<JobDetail> jobList) {
+        JobDetail temp;
+        for(int step=0; step < jobList.size() - 1; ++step) {
+            for(int index = 0; index < jobList.size() - step - 1; index++) {
+                LOGGER.info("Index [" + index + "], Step [" + step + "]");
+                if(jobList.get(index).getCreatedAt() < jobList.get(index + 1).getCreatedAt()) {
+
+                    LOGGER.info("Swap [" + jobList.get(index).getCreatedAt() +"] with [" + jobList.get(index + 1).getCreatedAt() + "]");
+                    temp = jobList.get(index);
+                    jobList.set(index, jobList.get(index + 1));
+                    jobList.set(index + 1, temp);
+
+                }
+            }
+        }
+
+        return jobList;
+    }
 }
