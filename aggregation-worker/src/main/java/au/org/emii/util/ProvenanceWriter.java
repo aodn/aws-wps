@@ -1,11 +1,6 @@
 package au.org.emii.util;
 
 import au.org.aodn.aws.util.Utils;
-import com.amazonaws.regions.Region;
-import com.amazonaws.regions.Regions;
-import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.S3Object;
-import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import freemarker.cache.StringTemplateLoader;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
@@ -15,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.StringWriter;
 import java.util.Map;
 
@@ -22,18 +18,15 @@ public class ProvenanceWriter {
 
     private static final Logger logger = LoggerFactory.getLogger(ProvenanceWriter.class);
     private static final String PROVENANCE_TEMPLATE_NAME = "ProvenanceTemplate";
+    private static final String TEMPLATE_DIRECTORY = "/templates";
 
-    public static String write(String s3Bucket, String s3Key, Map<String, Object> parameters) {
+    public static String write(String templateFile, Map<String, Object> parameters) {
 
         Configuration config;
 
-        try {
-            //  Get from S3 bucket location
-            AmazonS3Client s3Client = new AmazonS3Client();
+        String templatePath = TEMPLATE_DIRECTORY + "/" + templateFile;
 
-            S3Object templateObject = s3Client.getObject(s3Bucket, s3Key);
-            S3ObjectInputStream contentStream = templateObject.getObjectContent();
-
+        try (InputStream contentStream = ProvenanceWriter.class.getResourceAsStream(templatePath)) {
             //  read file to String
             String templateString = null;
             try {
@@ -63,7 +56,7 @@ public class ProvenanceWriter {
             logger.error("No template (" + PROVENANCE_TEMPLATE_NAME + ") found for provenance document");
             return "Provenance template '" + PROVENANCE_TEMPLATE_NAME + "' not found";
         } catch (TemplateException | IOException e) {
-            logger.error("Error loading provenance document. S3 bucket [" + s3Bucket + ", S3 Key [" + s3Key + "]");
+            logger.error("Error loading provenance document.  Template path [" + templatePath + "]");
             return "Error loading provenance template '" + PROVENANCE_TEMPLATE_NAME + "' not found";
         }
     }

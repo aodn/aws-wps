@@ -10,9 +10,6 @@
         <fileSet>
             <directory>${project.build.directory}/classes</directory>
             <outputDirectory>/</outputDirectory>
-            <includes>
-                <include>**/*.class</include>
-            </includes>
         </fileSet>
         <fileSet>
             <outputDirectory>extras</outputDirectory>

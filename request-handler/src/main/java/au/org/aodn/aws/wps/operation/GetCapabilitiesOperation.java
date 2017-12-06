@@ -25,11 +25,6 @@ public class GetCapabilitiesOperation implements Operation {
 
     @Override
     public String execute() {
-
-        //  Read freemarker template location
-        String templateS3Bucket = WpsConfig.getConfig(GET_CAPABILITIES_TEMPLATE_S3_BUCKET_CONFIG_KEY);
-        String templateS3Key = WpsConfig.getConfig(GET_CAPABILITIES_TEMPLATE_S3_KEY_CONFIG_KEY);
-        String s3Region = WpsConfig.getConfig(AWS_REGION_CONFIG_KEY);
         String wpsEndpointUrl = WpsConfig.getConfig(WPS_ENDPOINT_URL_CONFIG_KEY);
 
         GetCapabilitiesReader capabilitiesReader;
@@ -37,7 +32,7 @@ public class GetCapabilitiesOperation implements Operation {
 
         try
         {
-            capabilitiesReader = new GetCapabilitiesReader(templateS3Bucket, templateS3Key, s3Region);
+            capabilitiesReader = new GetCapabilitiesReader();
             HashMap<String, String> parameters = new HashMap<>();
             parameters.put(WPS_ENDPOINT_TEMPLATE_KEY, wpsEndpointUrl);
 

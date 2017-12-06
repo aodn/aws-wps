@@ -35,21 +35,7 @@ Parameters:
     Default: ""
   jobStatusCodeURL:
     Type: String
-  jobStatusHtmlTransformURL:
-    Type: String
-  getCapabilitiesURL:
-    Type: String
-  jobQueueHtmlTemplateURL:
-    Type: String
-  gogduckURL:
-    Type: String
-  netcdfOutputURL:
-    Type: String
   templatesURL:
-    Type: String
-  provenanceTemplateGriddedURL:
-    Type: String
-  provenanceTemplateNonGriddedURL:
     Type: String
   sumoEndpoint:
     Type: String
@@ -151,15 +137,8 @@ Mappings:
     Filename:
       outputWithoutExtension: "output"
       status: "status.xml"
-      statusTransform: "job_status_html_transform.xsl"
-      queueHtmlTemplate: "job_queue_html_template.ftl"
       request: "request.xml"
       templates: "templates.xml"
-      getCapabilities: "GetCapabilities.ftl"
-      gogoduck: "GoGoDuck.xml"
-      netcdf: "NetcdfOutput.xml"
-      provenanceTemplateGridded: "provenance_template_gridded.ftl"
-      provenanceTemplateNonGridded: "provenance_template_non_gridded.ftl"
       bootstrapCss: "bootstrap.min.css"
       aodnCss: "AODNTheme.css"
       aodnLogo: "AODN_logo_fullText.png"
@@ -394,20 +373,11 @@ Resources:
             Name: "GEONETWORK_LAYER_SEARCH_FIELD"
             Value: !Ref geonetworkLayerSearchField
           -
-            Name: "PROVENANCE_TEMPLATE_S3_KEY"
-            Value: !Join [ "", [ !Ref s3configKey,  !FindInMap [ConfigurationFileMap, "Filename", "provenanceTemplateGridded"]] ]
-          -
             Name: "JOB_EXPIRATION_IN_DAYS"
             Value: !Ref jobExpirationInDays
           -
             Name: "JOB_S3_KEY"
             Value: !Ref s3jobKey
-          -
-            Name: "DESCRIBE_PROCESS_S3_KEY_PREFIX"
-            Value: !Ref s3configKey
-          -
-            Name: "DESCRIBE_PROCESS_S3_BUCKET"
-            Value: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
           -
             Name: "STATUS_SERVICE_ENDPOINT_URL"
             Value: !If [
@@ -617,10 +587,6 @@ Resources:
           STATUS_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
           STATUS_S3_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "status"]
           REQUEST_S3_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "request"]
-          GET_CAPABILITIES_TEMPLATE_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
-          GET_CAPABILITIES_TEMPLATE_S3_KEY: !Join [ "", [ !Ref s3configKey, !FindInMap [ConfigurationFileMap, "Filename", "getCapabilities"] ] ]
-          DESCRIBE_PROCESS_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
-          DESCRIBE_PROCESS_S3_KEY_PREFIX: !Ref s3configKey
           AWS_WPS_ENDPOINT_URL: !If [
             CreateWpsApiGatewayDomainName,
             !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}',
@@ -725,13 +691,9 @@ Resources:
         S3Key: !Join [ "", [ !Ref s3configKey,  !Ref jobStatusFilename] ]
       Environment:
         Variables:
-          STATUS_HTML_XSL_S3_KEY: !Join ['', [!Ref s3configKey, !FindInMap [ConfigurationFileMap, "Filename", "statusTransform"]]]
-          QUEUE_VIEW_HTML_TEMPLATE_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
-          QUEUE_VIEW_HTML_TEMPLATE_S3_KEY: !Join ['', [!Ref s3configKey, !FindInMap [ConfigurationFileMap, "Filename", "queueHtmlTemplate"]]]
           STATUS_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
           STATUS_S3_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "status"]
           REQUEST_S3_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "request"]
-          STATUS_SERVICE_CONFIG_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
           JOB_S3_KEY: !Ref s3jobKey
           CONFIG_S3_KEY: !Ref s3configKey
           BOOTSTRAP_CSS_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "bootstrapCss"]
@@ -970,26 +932,12 @@ Resources:
           CONFIG_LOCATION: !Ref s3configKey
           FILENAME_SUFFIX: 'FILENAME'
           HTTP_FILE_PREFIX: 'HTTP_FILE'
-          HTTP_FILE_QUEUE_HTML_TEMPLATE: !Ref jobQueueHtmlTemplateURL
-          HTTP_FILE_QUEUE_HTML_TEMPLATE_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "queueHtmlTemplate"]
-          HTTP_FILE_GET_CAPABILITIES: !Ref getCapabilitiesURL
-          HTTP_FILE_GET_CAPABILITIES_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "getCapabilities"]
-          HTTP_FILE_GOGODUCK: !Ref gogduckURL
-          HTTP_FILE_GOGODUCK_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "gogoduck"]
-          HTTP_FILE_NETCDF_OUTPUT: !Ref netcdfOutputURL
-          HTTP_FILE_NETCDF_OUTPUT_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "netcdf"]
           HTTP_FILE_TEMPLATES: !Ref templatesURL
           HTTP_FILE_TEMPLATES_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "templates"]
-          HTTP_FILE_PROVENANCE_TEMPLATE_GRIDDED: !Ref provenanceTemplateGriddedURL
-          HTTP_FILE_PROVENANCE_TEMPLATE_GRIDDED_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "provenanceTemplateGridded"]
-          HTTP_FILE_PROVENANCE_TEMPLATE_NON_GRIDDED: !Ref provenanceTemplateNonGriddedURL
-          HTTP_FILE_PROVENANCE_TEMPLATE_NON_GRIDDED_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "provenanceTemplateNonGridded"]
           HTTP_FILE_WPS_REQUEST_HANDLER: !Ref requestHandlerCodeURL
           HTTP_FILE_WPS_REQUEST_HANDLER_FILENAME: !Ref requestHandlerFilename
           HTTP_FILE_WPS_JOB_STATUS: !Ref jobStatusCodeURL
           HTTP_FILE_WPS_JOB_STATUS_FILENAME: !Ref jobStatusFilename
-          HTTP_FILE_JOB_STATUS_TRANSFORM: !Ref jobStatusHtmlTransformURL
-          HTTP_FILE_JOB_STATUS_TRANSFORM_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "statusTransform"]
           HTTP_FILE_SUMOLOGIC_LAMBDA: !Ref sumologicLambdaCodeURL
           HTTP_FILE_SUMOLOGIC_LAMBDA_FILENAME: !Ref sumologicLambdaCodeFilename
           HTTP_FILE_BOOTSTRAP_CSS: !Ref bootstrapCssURL
