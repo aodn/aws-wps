@@ -13,14 +13,12 @@ import au.org.aodn.aws.wps.status.WpsConfig;
 import com.amazonaws.services.batch.AWSBatch;
 import com.amazonaws.services.batch.AWSBatchClientBuilder;
 import com.amazonaws.services.batch.model.JobDetail;
-import com.amazonaws.services.batch.model.JobSummary;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
-import com.amazonaws.util.StringInputStream;
 import freemarker.cache.StringTemplateLoader;
 import freemarker.template.Configuration;
 import freemarker.template.DefaultObjectWrapper;
@@ -41,18 +39,12 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static au.org.aodn.aws.wps.status.WpsConfig.GET_CAPABILITIES_TEMPLATE_S3_BUCKET_CONFIG_KEY;
-import static au.org.aodn.aws.wps.status.WpsConfig.GET_CAPABILITIES_TEMPLATE_S3_KEY_CONFIG_KEY;
-import static au.org.aodn.aws.wps.status.WpsConfig.QUEUE_VIEW_HTML_TEMPLATE_S3_BUCKET_CONFIG_KEY;
-import static au.org.aodn.aws.wps.status.WpsConfig.QUEUE_VIEW_HTML_TEMPLATE_S3_KEY_CONFIG_KEY;
-
 
 public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusRequest, JobStatusResponse> {
 
@@ -64,14 +56,14 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
     private static final String SUCCEEDED_STATUS_DESCRIPTION = "Download ready";
     private static final String PAUSED_STATUS_DESCRIPTION = "Job processing paused";
     private static final String UNKNOWN_STATUS_DESCRIPTION = "Job status unknown";
+    private static final String JOB_STATUS_HTML_TRANSFORM_XSL = "/templates/job_status_html_transform.xsl";
+    private static final String JOB_QUEUE_HTML_TEMPLATE = "/templates/job_queue_html_template.ftl";
 
     private Logger LOGGER = LoggerFactory.getLogger(JobStatusServiceRequestHandler.class);
 
     private String statusFilename = WpsConfig.getConfig(WpsConfig.STATUS_S3_FILENAME_CONFIG_KEY);
     private String jobFileS3KeyPrefix = WpsConfig.getConfig(WpsConfig.AWS_BATCH_JOB_S3_KEY_PREFIX);
     private String statusS3Bucket = WpsConfig.getConfig(WpsConfig.STATUS_S3_BUCKET_CONFIG_KEY);
-    private String configS3Bucket = WpsConfig.getConfig(WpsConfig.STATUS_SERVICE_CONFIG_S3_BUCKET_CONFIG_KEY);
-    private String statusXslS3Key = WpsConfig.getConfig(WpsConfig.STATUS_HTML_XSL_S3_KEY_CONFIG_KEY);
     private String requestFilename = WpsConfig.getConfig(WpsConfig.REQUEST_S3_FILENAME_CONFIG_KEY);
 
 
@@ -283,12 +275,8 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
     private String generateStatusHTML(ExecuteResponse xmlStatus, String statusDescription, String jobId, boolean includeRequestDetails) {
         // Create Transformer
         TransformerFactory tf = TransformerFactory.newInstance();
-        String statusXslString;
 
-        try {
-            //  Read XSL from S3
-            statusXslString = S3Utils.readS3ObjectAsString(configS3Bucket, statusXslS3Key);
-            StringInputStream statusXslInputStream = new StringInputStream(statusXslString);
+        try (InputStream statusXslInputStream = this.getClass().getResourceAsStream(JOB_STATUS_HTML_TRANSFORM_XSL)) {
             StreamSource statusXsltSource = new StreamSource(statusXslInputStream);
 
             Transformer statusFileTransformer = tf.newTransformer(statusXsltSource);
@@ -353,7 +341,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
         } catch (UnsupportedEncodingException uex) {
             LOGGER.error("Unable to generate JAXB context : " + uex.getMessage(), uex);
         } catch (IOException ioex) {
-            LOGGER.error("Unable to read status XSL file from S3. Bucket [" + configS3Bucket + "], Key [" + statusXslS3Key + "]: " + ioex.getMessage(), ioex);
+            LOGGER.error("Unable to read status XSL file from classpath. Path [" + JOB_STATUS_HTML_TRANSFORM_XSL + "]: " + ioex.getMessage(), ioex);
         }
 
         return null;
@@ -415,7 +403,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
             }
 
         } catch (IOException ioex) {
-            LOGGER.error("Unable to read request file. Bucket [" + configS3Bucket + "]: " + ioex.getMessage(), ioex);
+            LOGGER.error("Unable to read request file. Bucket [" + requestFileObject.getBucketName() + "]: " + ioex.getMessage(), ioex);
         }
 
         return null;
@@ -440,10 +428,8 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
         }
 
         //  Invoke freemarker template
-        String templateS3Bucket = WpsConfig.getConfig(QUEUE_VIEW_HTML_TEMPLATE_S3_BUCKET_CONFIG_KEY);
-        String templateS3Key = WpsConfig.getConfig(QUEUE_VIEW_HTML_TEMPLATE_S3_KEY_CONFIG_KEY);
 
-        try (S3ObjectInputStream contentStream = S3Utils.getS3ObjectStream(templateS3Bucket, templateS3Key)) {
+        try (InputStream contentStream = this.getClass().getResourceAsStream(JOB_QUEUE_HTML_TEMPLATE)) {
 
             //  read file to String
             String templateString = Utils.inputStreamToString(contentStream);

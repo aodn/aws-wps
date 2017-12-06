@@ -1,5 +1,6 @@
 package au.org.emii.wps.it;
 
+import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.junit.Assert.*;
@@ -33,9 +34,6 @@ import static au.org.emii.wps.util.NcmlValidatable.getNcml;
 import static com.jayway.awaitility.Awaitility.await;
 import static com.jayway.restassured.RestAssured.get;
 import static com.jayway.restassured.RestAssured.given;
-import static org.hamcrest.CoreMatchers.anyOf;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.xml.HasXPath.hasXPath;
 
@@ -328,17 +326,49 @@ public class ExecuteIT {
             .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"));
     }
 
+    @Test
+    public void testHtmlStatusPagesUpdated() throws IOException {
+        // Create longer running request
+        Execute request = new ExecuteRequestBuilder()
+                .identifer("gs:GoGoDuck")
+                .input("layer", "srs_ghrsst_l3s_1d_day_url")
+                .input("subset", "TIME,2017-10-19T03:20:00.000Z,2017-10-19T03:20:00.000Z;LATITUDE,-90.0,90.0;LONGITUDE,-180.0,180.0")
+                .input("callbackParams", "imos-wps-testing@mailinator.com")
+                .output("result", "application/x-netcdf")
+                .build();
+
+        // Submit request
+        String statusUrl = submit(request);
+        String jobId = getJobId(statusUrl);
+
+        // Should have a html status page for the job
+
+        String htmlStatusUrl = statusUrl.replaceFirst("XML$", "HTML");
+        hasPageContainingJobId(htmlStatusUrl, jobId);
+
+        // Should have an admin page for the job
+
+        String htmlAdminUrl = statusUrl.replaceFirst("XML$", "ADMIN");
+        hasPageContainingJobId(htmlAdminUrl, jobId);
+
+        // Job should appear on QUEUE page
+
+        String htmlQueueUrl = statusUrl.replaceFirst("jobId.*$", "format=QUEUE");
+        hasPageContainingJobId(htmlQueueUrl, jobId);
+    }
+
+    private void hasPageContainingJobId(String pageUrl, String jobId) {
+        given()
+                .spec(spec)
+                .when()
+                .get(pageUrl)
+                .then()
+                .statusCode(200)
+                .body(containsString(jobId));
+    }
+
     private String submitAndWaitToComplete(Execute request, Duration maxWait) {
-        String statusUrl = given()
-            .spec(spec)
-            .content(request, ObjectMapperType.JAXB)
-        .when()
-            .post()
-        .then()
-            .statusCode(200)
-            .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
-        .extract()
-            .path("ExecuteResponse.@statusLocation");
+        String statusUrl = submit(request);
 
         await().atMost(maxWait).until(() ->
             get(statusUrl).then()
@@ -349,6 +379,19 @@ public class ExecuteIT {
         );
 
         return statusUrl;
+    }
+
+    private String submit(Execute request) {
+        return given()
+                .spec(spec)
+                .content(request, ObjectMapperType.JAXB)
+                .when()
+                .post()
+                .then()
+                .statusCode(200)
+                .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
+                .extract()
+                .path("ExecuteResponse.@statusLocation");
     }
 
     private String getJobId(String statusUrl) {
