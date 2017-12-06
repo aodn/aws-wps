@@ -307,12 +307,10 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
                             statusFileTransformer.setParameter("requestXML", "" + requestSummary);
                         }
 
-                        //  Add a link to the log file if the job has started processing or has completed
-                        if(JobFileUtil.isJobRunning(xmlStatus.getStatus()) || JobFileUtil.isJobCompleted(xmlStatus.getStatus())) {
-                            String logFileLink = getBatchLogFileLink(jobId);
-                            if(logFileLink != null) {
-                                statusFileTransformer.setParameter("logFileLink", logFileLink);
-                            }
+                        String logFileLink = getBatchLogFileLink(jobId);
+                        LOGGER.info("Adding log file link to status page: " + logFileLink);
+                        if(logFileLink != null) {
+                            statusFileTransformer.setParameter("logFileLink", logFileLink);
                         }
                     }
                 }
