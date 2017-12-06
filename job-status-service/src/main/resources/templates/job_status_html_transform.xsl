@@ -103,7 +103,7 @@
                         Request XML :
                     </dt>
                     <dd>
-                        <textarea rows="40" cols="180" readonly="true"><xsl:value-of select="$requestXML"/></textarea>
+                        <textarea rows="1" cols="120" onfocus="this.rows=15;" onblur="this.rows=1;" style="resize: none;" readonly="true"><xsl:value-of select="$requestXML"/></textarea>
                         <br />
                     </dd>
                 </xsl:when>
