@@ -230,7 +230,6 @@ public class WpsConfig {
         return String.format("https://s3-%s.amazonaws.com/%s/%s", region, s3Bucket, s3Key);
     }
 
-
     /**
      * Decrypt the value of a named environment variable.
      *
