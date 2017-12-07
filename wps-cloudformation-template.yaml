@@ -460,10 +460,11 @@ Resources:
     Properties:
       DeploymentId: !Ref WpsApiGatewayDeployment
       MethodSettings:
-          DataTraceEnabled: true
-          HttpMethod: "*"
-          LoggingLevel: INFO
-          ResourcePath: /*
+          -
+            DataTraceEnabled: true
+            HttpMethod: "*"
+            LoggingLevel: INFO
+            ResourcePath: /*
       RestApiId: !Ref WPSRestApi
       StageName: !Ref wpsApiStage
   WpsApiGatewayDomainName:
