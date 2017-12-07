@@ -162,9 +162,9 @@ public class AWSBatchUtil {
 
     private static List<JobDetail> sortByTimestampDescending(List<JobDetail> jobList) {
 
+        //  Sorts into ascending order - so we reverse after the sort
         Collections.sort(jobList, comparing(JobDetail::getCreatedAt));
         Collections.reverse(jobList);
-        //Collections.sort(jobList, (a, b) -> a.getCreatedAt() < b.getCreatedAt() ? 1 : 0);
 
         return jobList;
     }
