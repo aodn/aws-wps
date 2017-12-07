@@ -15,7 +15,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+
+import static java.util.Comparator.comparing;
 
 public class AWSBatchUtil {
 
@@ -150,28 +153,18 @@ public class AWSBatchUtil {
 
             jobDetails = AWSBatchUtil.getJobDetails(batchClient, jobIds);
 
-            return sortByTimestamp(jobDetails);
+            return sortByTimestampDescending(jobDetails);
         }
 
         return null;
     }
 
 
-    private static List<JobDetail> sortByTimestamp(List<JobDetail> jobList) {
-        JobDetail temp;
-        for(int step=0; step < jobList.size() - 1; ++step) {
-            for(int index = 0; index < jobList.size() - step - 1; index++) {
-                LOGGER.info("Index [" + index + "], Step [" + step + "]");
-                if(jobList.get(index).getCreatedAt() < jobList.get(index + 1).getCreatedAt()) {
+    private static List<JobDetail> sortByTimestampDescending(List<JobDetail> jobList) {
 
-                    LOGGER.info("Swap [" + jobList.get(index).getCreatedAt() +"] with [" + jobList.get(index + 1).getCreatedAt() + "]");
-                    temp = jobList.get(index);
-                    jobList.set(index, jobList.get(index + 1));
-                    jobList.set(index + 1, temp);
-
-                }
-            }
-        }
+        Collections.sort(jobList, comparing(JobDetail::getCreatedAt));
+        Collections.reverse(jobList);
+        //Collections.sort(jobList, (a, b) -> a.getCreatedAt() < b.getCreatedAt() ? 1 : 0);
 
         return jobList;
     }
