@@ -47,7 +47,7 @@ Parameters:
     Type: String
   bootstrapCssURL:
     Type: String
-  jobStatusCssURL:
+  aodnCssURL:
     Type: String
   aodnLogoURL:
     Type: String
@@ -460,9 +460,8 @@ Resources:
     Properties:
       DeploymentId: !Ref WpsApiGatewayDeployment
       MethodSettings:
-        -
           DataTraceEnabled: true
-          HttpMethod: GET
+          HttpMethod: "*"
           LoggingLevel: INFO
           ResourcePath: /*
       RestApiId: !Ref WPSRestApi
@@ -941,7 +940,7 @@ Resources:
           HTTP_FILE_WPS_REQUEST_HANDLER_FILENAME: !Ref requestHandlerFilename
           HTTP_FILE_WPS_JOB_STATUS: !Ref jobStatusCodeURL
           HTTP_FILE_WPS_JOB_STATUS_FILENAME: !Ref jobStatusFilename
-          HTTP_FILE_JOB_STATUS_CSS: !Ref jobStatusCssURL
+          HTTP_FILE_JOB_STATUS_CSS: !Ref aodnCssURL
           HTTP_FILE_JOB_STATUS_CSS_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "jobStatusCss"]
           HTTP_FILE_SUMOLOGIC_LAMBDA: !Ref sumologicLambdaCodeURL
           HTTP_FILE_SUMOLOGIC_LAMBDA_FILENAME: !Ref sumologicLambdaCodeFilename
