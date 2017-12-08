@@ -1,6 +1,7 @@
 package au.org.aodn.aws.util;
 
 import com.amazonaws.services.batch.AWSBatch;
+import com.amazonaws.services.batch.AWSBatchClientBuilder;
 import com.amazonaws.services.batch.model.DescribeJobsRequest;
 import com.amazonaws.services.batch.model.DescribeJobsResult;
 import com.amazonaws.services.batch.model.JobDetail;
@@ -14,7 +15,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+
+import static java.util.Comparator.comparing;
 
 public class AWSBatchUtil {
 
@@ -57,6 +61,18 @@ public class AWSBatchUtil {
     }
 
 
+    public static String getJobLogStream(String jobId) {
+        AWSBatch batchClient = AWSBatchClientBuilder.defaultClient();
+        JobDetail jobDetail = getJobDetail(batchClient, jobId);
+
+        if(jobDetail != null && jobDetail.getContainer() != null) {
+            return jobDetail.getContainer().getLogStreamName();
+        }
+
+        return null;
+    }
+
+
     public static JobDetail getJobDetail(AWSBatch batchClient, String jobId) {
 
         if (batchClient != null && jobId != null) {
@@ -90,7 +106,7 @@ public class AWSBatchUtil {
                 if (describeResult != null && describeResult.getJobs().size() > 0) {
 
                     for(JobDetail jobDetail : describeResult.getJobs()) {
-                        LOGGER.info("Job [" + jobDetail.getJobId() + "] : Started [" + jobDetail.getStartedAt() + "[, Stopped [" + jobDetail.getStoppedAt() + "]");
+                        LOGGER.info("Job [" + jobDetail.getJobId() + "] : Submitted [" + jobDetail.getCreatedAt() + "], Started [" + jobDetail.getStartedAt() + "], Stopped [" + jobDetail.getStoppedAt() + "]");
                     }
 
                     return describeResult.getJobs();
@@ -137,9 +153,19 @@ public class AWSBatchUtil {
 
             jobDetails = AWSBatchUtil.getJobDetails(batchClient, jobIds);
 
-            return jobDetails;
+            return sortByTimestampDescending(jobDetails);
         }
 
         return null;
+    }
+
+
+    private static List<JobDetail> sortByTimestampDescending(List<JobDetail> jobList) {
+
+        //  Sorts into ascending order - so we reverse after the sort
+        Collections.sort(jobList, comparing(JobDetail::getCreatedAt));
+        Collections.reverse(jobList);
+
+        return jobList;
     }
 }

@@ -170,7 +170,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
                      //  started, completed or failed - then we will update the position indicator.
 
 
-                     if(isJobWaiting(currentStatus)) {
+                     if(AWSBatchUtil.isJobWaiting(currentStatus)) {
                      AWSBatch batchClient = AWSBatchClientBuilder.defaultClient();
 
                      LOGGER.info("Updating XML with progress description for jobId [" + jobId + "]");
@@ -272,7 +272,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
 
 
 
-    private String generateStatusHTML(ExecuteResponse xmlStatus, String statusDescription, String jobId, boolean includeRequestDetails) {
+    private String generateStatusHTML(ExecuteResponse xmlStatus, String statusDescription, String jobId, boolean includeAdminDetails) {
         // Create Transformer
         TransformerFactory tf = TransformerFactory.newInstance();
 
@@ -299,12 +299,18 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
                     unixTimestampSeconds = lastModifiedTimestamp / 1000;
                     LOGGER.info("Request xml file timestamp = " + unixTimestampSeconds);
 
-                    if(includeRequestDetails) {
+                    if(includeAdminDetails) {
                         //  Generate request summary details
                         LOGGER.info("Generating request summary HTML for request [" + jobId + "]");
                         String requestSummary = getRequestSummary(requestS3Object);
                         if(requestSummary != null) {
                             statusFileTransformer.setParameter("requestXML", "" + requestSummary);
+                        }
+
+                        String logFileLink = getBatchLogFileLink(jobId);
+                        LOGGER.info("Adding log file link to status page: " + logFileLink);
+                        if(logFileLink != null) {
+                            statusFileTransformer.setParameter("logFileLink", logFileLink);
                         }
                     }
                 }
@@ -347,16 +353,6 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
         return null;
     }
 
-
-    private boolean isJobWaiting(StatusType currentStatus) {
-        //  WPS status will be ProcessAccepted from the time the job is submitted & when it is
-        //  picked up for processing.
-        if (currentStatus.isSetProcessAccepted() &&
-                (!currentStatus.isSetProcessFailed() && !currentStatus.isSetProcessStarted() && !currentStatus.isSetProcessSucceeded())) {
-            return true;
-        }
-        return false;
-    }
 
 
     private String getStatusDescription(StatusType currentStatus) {
@@ -475,5 +471,22 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
 
             return out.toString();
         }
+    }
+
+
+    private String getBatchLogFileLink(String jobId) {
+        //  Cloudwatch links are of this form:
+        //  https://ap-southeast-2.console.aws.amazon.com/cloudwatch/home?region=ap-southeast-2#logEventViewer:group=/aws/batch/job;stream=JavaDuckSmall1-dev-cam/default/7714fa46-0b24-4e21-a4ff-45f1160d1ba0
+        //  ie: https://<AWS_REGION>.console.aws.amazon.com/cloudwatch/home?region=<AWS_REGION>#logEventViewer:group=<LOG_GROUP_NAME>;stream=<LOG_STREAM_NAME>/default/<JOB_ID>
+        String awsRegion = WpsConfig.getConfig(WpsConfig.AWS_REGION_CONFIG_KEY);
+        String logGroup = WpsConfig.getConfig(WpsConfig.AWS_BATCH_LOG_GROUP_NAME_CONFIG_KEY);
+        String logStream = AWSBatchUtil.getJobLogStream(jobId);
+        if(logStream != null) {
+            String logUrl = "https://" + awsRegion + ".console.aws.amazon.com/cloudwatch/home?region=" + awsRegion + "#logEventViewer:group=" + logGroup + ";stream=" + logStream;
+            return logUrl;
+        }
+
+        LOGGER.info("Unable to get log file link for job [" + jobId + "]. Region [" + awsRegion + "], LogGroup [" + logGroup + "], LogStream [" + logStream + "]");
+        return null;
     }
 }

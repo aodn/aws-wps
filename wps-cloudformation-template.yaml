@@ -137,7 +137,7 @@ Mappings:
       request: "request.xml"
       templates: "templates.xml"
       bootstrapCss: "bootstrap.min.css"
-      aodnCss: "AODNTheme.css"
+      jobStatusCss: "AODNStatusPage.css"
       aodnLogo: "AODN_logo_fullText.png"
   production:
     ap-southeast-2:
@@ -460,11 +460,11 @@ Resources:
     Properties:
       DeploymentId: !Ref WpsApiGatewayDeployment
       MethodSettings:
-        -
-          DataTraceEnabled: true
-          HttpMethod: GET
-          LoggingLevel: INFO
-          ResourcePath: /*
+          -
+            DataTraceEnabled: true
+            HttpMethod: "*"
+            LoggingLevel: INFO
+            ResourcePath: /*
       RestApiId: !Ref WPSRestApi
       StageName: !Ref wpsApiStage
   WpsApiGatewayDomainName:
@@ -694,9 +694,15 @@ Resources:
           JOB_S3_KEY: !Ref s3jobKey
           CONFIG_S3_KEY: !Ref s3configKey
           BOOTSTRAP_CSS_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "bootstrapCss"]
-          AODN_CSS_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "aodnCss"]
+          AODN_CSS_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "jobStatusCss"]
           AODN_LOGO_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "aodnLogo"]
           AWS_BATCH_JOB_QUEUE_NAME: !Ref JobQueue
+          AWS_BATCH_LOG_GROUP_NAME: "/aws/batch/job"
+          STATUS_SERVICE_ENDPOINT_URL: !If [
+                      CreateWpsApiGatewayDomainName,
+                      !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}/${jobStatusApiPath}',
+                      !Sub 'https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}/${jobStatusApiPath}'
+                    ]
     DependsOn: S3PutConfigurationFiles
   JobStatusLambdaExecutionRole:
     Type: AWS::IAM::Role
@@ -935,12 +941,12 @@ Resources:
           HTTP_FILE_WPS_REQUEST_HANDLER_FILENAME: !Ref requestHandlerFilename
           HTTP_FILE_WPS_JOB_STATUS: !Ref jobStatusCodeURL
           HTTP_FILE_WPS_JOB_STATUS_FILENAME: !Ref jobStatusFilename
+          HTTP_FILE_JOB_STATUS_CSS: !Ref aodnCssURL
+          HTTP_FILE_JOB_STATUS_CSS_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "jobStatusCss"]
           HTTP_FILE_SUMOLOGIC_LAMBDA: !Ref sumologicLambdaCodeURL
           HTTP_FILE_SUMOLOGIC_LAMBDA_FILENAME: !Ref sumologicLambdaCodeFilename
           HTTP_FILE_BOOTSTRAP_CSS: !Ref bootstrapCssURL
           HTTP_FILE_BOOTSTRAP_CSS_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "bootstrapCss"]
-          HTTP_FILE_AODN_CSS: !Ref aodnCssURL
-          HTTP_FILE_AODN_CSS_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "aodnCss"]
           HTTP_FILE_AODN_LOGO: !Ref aodnLogoURL
           HTTP_FILE_AODN_LOGO_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "aodnLogo"]
   S3PutConfigurationFiles:

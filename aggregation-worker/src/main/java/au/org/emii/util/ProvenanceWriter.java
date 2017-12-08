@@ -31,7 +31,7 @@ public class ProvenanceWriter {
             String templateString = null;
             try {
                 templateString = Utils.inputStreamToString(contentStream);
-                logger.info("Provenance template: " + templateString);
+                logger.info("Loaded provenance template.");
             } catch (IOException ioex) {
                 //  Bad stuff - blow up!
                 logger.error("Problem loading template: ", ioex);

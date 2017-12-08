@@ -4,6 +4,7 @@ import com.amazonaws.util.StringInputStream;
 import net.opengis.ows.v_1_1_0.ExceptionReport;
 import net.opengis.ows.v_1_1_0.ExceptionType;
 import net.opengis.wps.v_1_0_0.ExecuteResponse;
+import net.opengis.wps.v_1_0_0.StatusType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -116,4 +117,33 @@ public class JobFileUtil {
         }
     }
 
+    public static boolean isJobWaiting(StatusType currentStatus) {
+        //  WPS status will be ProcessAccepted from the time the job is submitted & when it is
+        //  picked up for processing.
+        if (currentStatus.isSetProcessAccepted() &&
+                (!currentStatus.isSetProcessFailed() && !currentStatus.isSetProcessStarted() && !currentStatus.isSetProcessSucceeded())) {
+            return true;
+        }
+        return false;
+    }
+
+
+    public static boolean isJobRunning(StatusType currentStatus) {
+        //  WPS status will be ProcessAccepted from the time the job is submitted & when it is
+        //  picked up for processing.
+        if (currentStatus.isSetProcessStarted()) {
+            return true;
+        }
+        return false;
+    }
+
+
+    public static boolean isJobCompleted(StatusType currentStatus) {
+        //  WPS status will be ProcessAccepted from the time the job is submitted & when it is
+        //  picked up for processing.
+        if (currentStatus.isSetProcessSucceeded() || currentStatus.isSetProcessFailed()) {
+            return true;
+        }
+        return false;
+    }
 }
