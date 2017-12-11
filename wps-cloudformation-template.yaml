@@ -49,8 +49,6 @@ Parameters:
     Type: String
   aodnCssURL:
     Type: String
-  aodnLogoURL:
-    Type: String
   jobName:
     Type: String
     Default: 'javaduck'
@@ -132,7 +130,8 @@ Mappings:
       templates: "templates.xml"
       bootstrapCss: "bootstrap.min.css"
       jobStatusCss: "AODNStatusPage.css"
-      aodnLogo: "AODN_logo_fullText.png"
+    Url:
+      aodnLogo: "https://s3-ap-southeast-2.amazonaws.com/static.emii.org.au/images/logo/AODN_logo_fullText.png"
   production:
     ap-southeast-2:
       vpc: vpc-7302ee16
@@ -674,7 +673,7 @@ Resources:
           CONFIG_S3_KEY: !Ref s3configKey
           BOOTSTRAP_CSS_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "bootstrapCss"]
           AODN_CSS_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "jobStatusCss"]
-          AODN_LOGO_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "aodnLogo"]
+          AODN_LOGO_URL: !FindInMap [ConfigurationFileMap, "Url", "aodnLogo"]
           AWS_BATCH_JOB_QUEUE_NAME: !Ref JobQueue
           AWS_BATCH_LOG_GROUP_NAME: "/aws/batch/job"
           STATUS_SERVICE_ENDPOINT_URL: !If [
@@ -926,8 +925,6 @@ Resources:
           HTTP_FILE_SUMOLOGIC_LAMBDA_FILENAME: !Ref sumologicLambdaCodeFilename
           HTTP_FILE_BOOTSTRAP_CSS: !Ref bootstrapCssURL
           HTTP_FILE_BOOTSTRAP_CSS_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "bootstrapCss"]
-          HTTP_FILE_AODN_LOGO: !Ref aodnLogoURL
-          HTTP_FILE_AODN_LOGO_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "aodnLogo"]
   S3PutConfigurationFiles:
     Type: "Custom::S3PutObject"
     Properties:
