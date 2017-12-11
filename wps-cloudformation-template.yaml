@@ -105,7 +105,8 @@ Parameters:
 Mappings:
   Constants:
     ConstantMap:
-      containerWorkingDir: /mnt/work
+      ContainerWorkingDir: /mnt/work
+      CloudfrontHostedZoneId: Z2FDTNDATAQYW2
   AccountConstants:
     '615645230945':  # non-production
       CertificateArn: arn:aws:acm:us-east-1:615645230945:certificate/06e50848-29a7-47c3-8a3f-c3212b608a8d
@@ -346,7 +347,7 @@ Resources:
             Value: !Ref workerDownloadAttempts
           -
             Name: WORKING_DIR
-            Value: !FindInMap [Constants, ConstantMap, containerWorkingDir]
+            Value: !FindInMap [Constants, ConstantMap, ContainerWorkingDir]
           -
             Name: LOCAL_STORAGE_LIMIT_BYTES
             Value: !Ref workerLocalStorageLimitBytes
@@ -385,7 +386,7 @@ Resources:
         MountPoints:
           -
             SourceVolume: work
-            ContainerPath: !FindInMap [Constants, ConstantMap, containerWorkingDir]
+            ContainerPath: !FindInMap [Constants, ConstantMap, ContainerWorkingDir]
             ReadOnly: false
       RetryStrategy:
         Attempts: 2
@@ -482,7 +483,7 @@ Resources:
     Properties:
       AliasTarget:
         DNSName: !GetAtt WpsApiGatewayDomainName.DistributionDomainName
-        HostedZoneId: !FindInMap [AccountConstants, !Ref 'AWS::AccountId', HostedZoneId]
+        HostedZoneId: !FindInMap [Constants, ConstantMap, CloudfrontHostedZoneId]
       HostedZoneName: !FindInMap [AccountConstants, !Ref 'AWS::AccountId', HostedZoneName]
       Name: !Join ['.', [!Ref wpsDomainName, !FindInMap [AccountConstants, !Ref 'AWS::AccountId', DomainSuffix]]]
       Type: 'A'
