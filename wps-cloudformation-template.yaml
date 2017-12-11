@@ -77,14 +77,6 @@ Parameters:
   workerRetryIntervalMs:
     Type: Number
     Default: 60000
-  acmCertificate:
-    Type: String
-    Default: ''
-    Description: An Amazon Certificate Manager Certificate ARN located in US-East-1 region.
-  hostedZoneName:
-    Type: String
-    Default: ''
-    Description: A Route53 Hosted Zone name, without the trailing dot. To be used for the API Gateway endpoint
   wpsDomainName:
     Type: String
     Default: ''
@@ -114,6 +106,15 @@ Mappings:
   Constants:
     ConstantMap:
       containerWorkingDir: "/mnt/work"
+  AccountConstants:
+    "615645230945":  # non-production
+      CertificateArn: arn:aws:acm:us-east-1:615645230945:certificate/06e50848-29a7-47c3-8a3f-c3212b608a8d
+      HostedZoneId: Z3JIUIKOQNPOWH
+      HostedZoneName: dev.aodn.org.au.
+    "104044260116":  # production
+      CertificateArn: arn:aws:acm:us-east-1:104044260116:certificate/58773098-aaa7-42b5-bc58-8ba2a938f951
+      HostedZoneId: ZYU7JVFK6NXWM
+      HostedZoneName: aodn.org.au.
   EnvironmentMap:
     production:
       BucketName: "aws-wps-production"
@@ -457,7 +458,7 @@ Resources:
     Type: 'AWS::ApiGateway::DomainName'
     Condition: CreateWpsApiGatewayDomainName
     Properties:
-      CertificateArn: !Ref acmCertificate
+      CertificateArn: !FindInMap [ AccountConstants, !Ref 'AWS::AccountId', CertificateArn ]
       DomainName: !Join ['.', [!Ref wpsDomainName,!Ref hostedZoneName]]
   WpsDomainToAPIMapping:
     Type: 'AWS::ApiGateway::BasePathMapping'
@@ -475,8 +476,8 @@ Resources:
     Properties:
       AliasTarget:
         DNSName: !GetAtt WpsApiGatewayDomainName.DistributionDomainName
-        HostedZoneId: 'Z2FDTNDATAQYW2'
-      HostedZoneName: !Sub '${hostedZoneName}.'
+        HostedZoneId: !FindInMap [ AccountConstants, !Ref 'AWS::AccountId', HostedZoneId ]
+      HostedZoneName: !FindInMap [ AccountConstants, !Ref 'AWS::AccountId', HostedZoneName ]
       Name: !Join ['.', [!Ref wpsDomainName, !Ref hostedZoneName]]
       Type: "A"
   WpsApiGatewayCloudWatchLogsRole:
