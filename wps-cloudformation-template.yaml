@@ -103,12 +103,6 @@ Parameters:
       - systest
       - sandbox
       - dev
-  createPersistentBucket:
-    Type: String
-    Default: false
-    AllowedValues:
-      - true
-      - false
   awsRegionSes:
     Type: String
     Default: us-east-1
@@ -177,25 +171,10 @@ Conditions:
   CreateEphemeralBucket: !And
     - !Equals [ !Ref environment, dev ]
     - !Not [!Equals [!Ref 'AWS::AccountId', !FindInMap [EnvironmentMap, production, AccountId]]]
-  CreatePersistentBucket: !And
-    - !Equals [!Ref createPersistentBucket, true]
-    - !Not [!Condition CreateEphemeralBucket]
   ConfigureSumoLogic: !Not [!Equals [ "", !Ref sumoEndpoint]]
   CreateWpsApiGatewayDomainName: !Not [ !Equals [!Ref wpsDomainName, '']]
   UseCustomAmi: !Not [!Equals [!Ref customAmiId, ""]]
 Resources:
-  PersistentS3Bucket:
-    Type: "AWS::S3::Bucket"
-    Condition: CreatePersistentBucket
-    DeletionPolicy: "Retain"
-    Properties:
-      BucketName: !FindInMap [EnvironmentMap, !Ref environment, BucketName]
-      LifecycleConfiguration:
-        Rules:
-          - Id: "JobExpirationInDays"
-            Prefix: !Ref s3jobKey
-            Status: Enabled
-            ExpirationInDays: !Ref jobExpirationInDays
   EphemeralS3Bucket:
     Type: "AWS::S3::Bucket"
     Condition: CreateEphemeralBucket
@@ -214,7 +193,7 @@ Resources:
   S3BucketPolicy:
     Type: "AWS::S3::BucketPolicy"
     Properties:
-      Bucket: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !If [CreatePersistentBucket, !Ref PersistentS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]]
+      Bucket: !If [ CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [ EnvironmentMap, !Ref environment, BucketName ] ]
       PolicyDocument:
         Statement:
           -
@@ -931,7 +910,7 @@ Resources:
       Timeout: 60
       Environment:
         Variables:
-          BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !If [CreatePersistentBucket, !Ref PersistentS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]]
+          BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
           CONFIG_LOCATION: !Ref s3configKey
           FILENAME_SUFFIX: 'FILENAME'
           HTTP_FILE_PREFIX: 'HTTP_FILE'
