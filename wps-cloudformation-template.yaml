@@ -109,10 +109,12 @@ Mappings:
   AccountConstants:
     '615645230945':  # non-production
       CertificateArn: arn:aws:acm:us-east-1:615645230945:certificate/06e50848-29a7-47c3-8a3f-c3212b608a8d
+      DomainSuffix: dev.aodn.org.au
       HostedZoneId: Z3JIUIKOQNPOWH
       HostedZoneName: dev.aodn.org.au.
     '104044260116':  # production
       CertificateArn: arn:aws:acm:us-east-1:104044260116:certificate/58773098-aaa7-42b5-bc58-8ba2a938f951
+      DomainSuffix: aodn.org.au
       HostedZoneId: ZYU7JVFK6NXWM
       HostedZoneName: aodn.org.au.
   EnvironmentMap:
@@ -463,7 +465,7 @@ Resources:
     Condition: CreateWpsApiGatewayDomainName
     Properties:
       CertificateArn: !FindInMap [AccountConstants, !Ref 'AWS::AccountId', CertificateArn]
-      DomainName: !Join ['.', [!Ref wpsDomainName, !Ref hostedZoneName]]
+      DomainName: !Join ['.', [!Ref wpsDomainName, !FindInMap [AccountConstants, !Ref 'AWS::AccountId', DomainSuffix]]]
   WpsDomainToAPIMapping:
     Type: AWS::ApiGateway::BasePathMapping
     Condition: CreateWpsApiGatewayDomainName
@@ -482,7 +484,7 @@ Resources:
         DNSName: !GetAtt WpsApiGatewayDomainName.DistributionDomainName
         HostedZoneId: !FindInMap [AccountConstants, !Ref 'AWS::AccountId', HostedZoneId]
       HostedZoneName: !FindInMap [AccountConstants, !Ref 'AWS::AccountId', HostedZoneName]
-      Name: !Join ['.', [!Ref wpsDomainName, !Ref hostedZoneName]]
+      Name: !Join ['.', [!Ref wpsDomainName, !FindInMap [AccountConstants, !Ref 'AWS::AccountId', DomainSuffix]]]
       Type: 'A'
   WpsApiGatewayCloudWatchLogsRole:
     Type: AWS::IAM::Role
@@ -573,8 +575,8 @@ Resources:
           AWS_BATCH_JOB_QUEUE_NAME: !Ref JobQueue
           AWS_BATCH_JOB_DEFINITION_NAME: !Select [1, !Split ['/', !Ref JobDefinition]]
           STATUS_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
-          STATUS_S3_FILENAME: !FindInMap [ConfigurationFileMap, Filename", status]
-          REQUEST_S3_FILENAME: !FindInMap [ConfigurationFileMap, Filename", request]
+          STATUS_S3_FILENAME: !FindInMap [ConfigurationFileMap, Filename, status]
+          REQUEST_S3_FILENAME: !FindInMap [ConfigurationFileMap, Filename, request]
           AWS_WPS_ENDPOINT_URL: !If [
             CreateWpsApiGatewayDomainName,
             !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}',
@@ -691,7 +693,7 @@ Resources:
           JOB_S3_KEY: !Ref s3jobKey
           CONFIG_S3_KEY: !Ref s3configKey
           BOOTSTRAP_CSS_FILENAME: !FindInMap [ConfigurationFileMap, Filename, bootstrapCss]
-          AODN_CSS_FILENAME: !FindInMap [ConfigurationFileMap, Filename", jobStatusCss]
+          AODN_CSS_FILENAME: !FindInMap [ConfigurationFileMap, Filename, jobStatusCss]
           AODN_LOGO_FILENAME: !FindInMap [ConfigurationFileMap, Filename, aodnLogo]
           AWS_BATCH_JOB_QUEUE_NAME: !Ref JobQueue
           AWS_BATCH_LOG_GROUP_NAME: /aws/batch/job
@@ -949,7 +951,7 @@ Resources:
           HTTP_FILE_SUMOLOGIC_LAMBDA: !Ref sumologicLambdaCodeURL
           HTTP_FILE_SUMOLOGIC_LAMBDA_FILENAME: !Ref sumologicLambdaCodeFilename
           HTTP_FILE_BOOTSTRAP_CSS: !Ref bootstrapCssURL
-          HTTP_FILE_BOOTSTRAP_CSS_FILENAME: !FindInMap [ConfigurationFileMap, Filename", bootstrapCss]
+          HTTP_FILE_BOOTSTRAP_CSS_FILENAME: !FindInMap [ConfigurationFileMap, Filename, bootstrapCss]
           HTTP_FILE_AODN_LOGO: !Ref aodnLogoURL
           HTTP_FILE_AODN_LOGO_FILENAME: !FindInMap [ConfigurationFileMap, Filename, aodnLogo]
   S3PutConfigurationFiles:
