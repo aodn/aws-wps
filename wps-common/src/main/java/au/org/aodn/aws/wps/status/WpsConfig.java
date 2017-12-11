@@ -81,7 +81,7 @@ public class WpsConfig {
 
     private static final String BOOTSTRAP_CSS_FILENAME_CONFIG_KEY = "BOOTSTRAP_CSS_FILENAME";
     private static final String AODN_CSS_FILENAME_CONFIG_KEY = "AODN_CSS_FILENAME";
-    private static final String AODN_LOGO_FILENAME_CONFIG_KEY = "AODN_LOGO_FILENAME";
+    private static final String AODN_LOGO_URL_CONFIG_KEY = "AODN_LOGO_URL";
 
     public static final String LANGUAGE_KEY = "language";
 
@@ -140,7 +140,7 @@ public class WpsConfig {
 
             setProperty(properties, BOOTSTRAP_CSS_FILENAME_CONFIG_KEY);
             setProperty(properties, AODN_CSS_FILENAME_CONFIG_KEY);
-            setProperty(properties, AODN_LOGO_FILENAME_CONFIG_KEY);
+            setProperty(properties, AODN_LOGO_URL_CONFIG_KEY);
             setProperty(properties, AWS_BATCH_CONFIG_S3_KEY);
             setProperty(properties, AWS_BATCH_LOG_GROUP_NAME_CONFIG_KEY);
         }
@@ -190,7 +190,7 @@ public class WpsConfig {
     }
 
     public static String getAodnLogoS3ExternalURL() {
-        return getConfigFileS3ExternalURL(AODN_LOGO_FILENAME_CONFIG_KEY);
+        return getConfig(WpsConfig.AODN_LOGO_URL_CONFIG_KEY);
     }
 
     private static String getConfigFileS3ExternalURL(String filename) {
