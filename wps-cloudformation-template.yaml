@@ -4,35 +4,35 @@ Description: >-
 Parameters:
   version:
     Type: String
-    Description: "Build/Code version"
-    Default: "0"
+    Description: Build/Code version
+    Default: '0'
   s3configKey:
     Type: String
-    Default: 'config/'
+    Default: config/
   s3jobKey:
     Type: String
-    Default: 'jobs/'
+    Default: jobs/
   requestHandlerFilename:
     Type: String
-    Description: "Lambda code file name ex: request-handler-0.01-lambda-package.zip"
+    Description: Lambda code file name, e.g. request-handler-0.01-lambda-package.zip
   requestHandlerCodeURL:
     Type: String
   requestHandlerApiPath:
     Type: String
-    Default: 'wps'
+    Default: wps
   jobStatusApiPath:
     Type: String
-    Default: 'jobStatus'
+    Default: jobStatus
   wpsApiStage:
     Type: String
-    Default: 'LATEST'
+    Default: LATEST
   jobStatusFilename:
     Type: String
-    Description: "Lambda code file name ex: job-status-service-0.01-lambda-package.zip"
+    Description: Lambda code file name, e.g. job-status-service-0.01-lambda-package.zip
   customAmiId:
     Type: String
     Description: Custom AMI image id to use when creating the compute environment (optional)
-    Default: ""
+    Default: ''
   jobStatusCodeURL:
     Type: String
   templatesURL:
@@ -42,7 +42,7 @@ Parameters:
     Default: ''
   sumologicLambdaCodeFilename:
     Type: String
-    Default: 'index.zip'
+    Default: index.zip
   sumologicLambdaCodeURL:
     Type: String
   bootstrapCssURL:
@@ -53,7 +53,7 @@ Parameters:
     Type: String
   jobName:
     Type: String
-    Default: 'javaduck'
+    Default: javaduck
   jobExpirationInDays:
     Type: Number
     Default: 7
@@ -77,24 +77,16 @@ Parameters:
   workerRetryIntervalMs:
     Type: Number
     Default: 60000
-  acmCertificate:
-    Type: String
-    Default: ''
-    Description: An Amazon Certificate Manager Certificate ARN located in US-East-1 region.
-  hostedZoneName:
-    Type: String
-    Default: ''
-    Description: A Route53 Hosted Zone name, without the trailing dot. To be used for the API Gateway endpoint
   wpsDomainName:
     Type: String
     Default: ''
-    Description: The WPS API Gateway endpoint's domain name, exluding the hostedZoneName section
+    Description: The WPS API Gateway endpoint's domain name prefix (excluding the domain)
   geonetworkCatalogueURL:
     Type: String
-    Default: 'https://catalogue-imos.aodn.org.au/geonetwork'
+    Default: https://catalogue-imos.aodn.org.au/geonetwork
   geonetworkLayerSearchField:
     Type: String
-    Default: 'layer'
+    Default: layer
   environment:
     Type: String
     Default: dev
@@ -113,26 +105,38 @@ Parameters:
 Mappings:
   Constants:
     ConstantMap:
-      containerWorkingDir: "/mnt/work"
+      ContainerWorkingDir: /mnt/work
+      CloudfrontHostedZoneId: Z2FDTNDATAQYW2
+  AccountConstants:
+    '615645230945':  # non-production
+      CertificateArn: arn:aws:acm:us-east-1:615645230945:certificate/06e50848-29a7-47c3-8a3f-c3212b608a8d
+      DomainSuffix: dev.aodn.org.au
+      HostedZoneId: Z3JIUIKOQNPOWH
+      HostedZoneName: dev.aodn.org.au.
+    '104044260116':  # production
+      CertificateArn: arn:aws:acm:us-east-1:104044260116:certificate/58773098-aaa7-42b5-bc58-8ba2a938f951
+      DomainSuffix: aodn.org.au
+      HostedZoneId: ZYU7JVFK6NXWM
+      HostedZoneName: aodn.org.au.
   EnvironmentMap:
     production:
-      BucketName: "aws-wps-production"
+      BucketName: aws-wps-production
       AccountId: 104044260116
     systest:
-      BucketName: "aws-wps-systest"
+      BucketName: aws-wps-systest
     sandbox:
-      BucketName: "aws-wps-sandbox"
+      BucketName: aws-wps-sandbox
     dev:
-      BucketName: "aws-wps-dev"
+      BucketName: aws-wps-dev
   ConfigurationFileMap:
     Filename:
-      outputWithoutExtension: "output"
-      status: "status.xml"
-      request: "request.xml"
-      templates: "templates.xml"
-      bootstrapCss: "bootstrap.min.css"
-      jobStatusCss: "AODNStatusPage.css"
-      aodnLogo: "AODN_logo_fullText.png"
+      outputWithoutExtension: output
+      status: status.xml
+      request: request.xml
+      templates: templates.xml
+      bootstrapCss: bootstrap.min.css
+      jobStatusCss: AODNStatusPage.css
+      aodnLogo: AODN_logo_fullText.png
   production:
     ap-southeast-2:
       vpc: vpc-7302ee16
@@ -169,41 +173,43 @@ Mappings:
         - subnet-19956d7e
 Conditions:
   CreateEphemeralBucket: !And
-    - !Equals [ !Ref environment, dev ]
+    - !Equals [!Ref environment, dev]
     - !Not [!Equals [!Ref 'AWS::AccountId', !FindInMap [EnvironmentMap, production, AccountId]]]
-  ConfigureSumoLogic: !Not [!Equals [ "", !Ref sumoEndpoint]]
-  CreateWpsApiGatewayDomainName: !Not [ !Equals [!Ref wpsDomainName, '']]
-  UseCustomAmi: !Not [!Equals [!Ref customAmiId, ""]]
+  ConfigureSumoLogic: !Not [!Equals [ '', !Ref sumoEndpoint]]
+  CreateWpsApiGatewayDomainName: !Not [!Equals [!Ref wpsDomainName, '']]
+  UseCustomAmi: !Not [!Equals [!Ref customAmiId, '']]
 Resources:
   EphemeralS3Bucket:
-    Type: "AWS::S3::Bucket"
+    Type: AWS::S3::Bucket
     Condition: CreateEphemeralBucket
-    DeletionPolicy: "Delete"
+    DeletionPolicy: Delete
     Properties:
-      BucketName: !Join ["-", [!FindInMap [EnvironmentMap, !Ref environment, BucketName], !Ref 'AWS::StackName']]
+      BucketName: !Join ['-', [!FindInMap [EnvironmentMap, !Ref environment, BucketName], !Ref 'AWS::StackName']]
       LifecycleConfiguration:
         Rules:
-          - Id: "JobExpirationInDays"
+          - Id: JobExpirationInDays
             Prefix: !Ref s3jobKey
             Status: Enabled
             ExpirationInDays: !Ref jobExpirationInDays
       Tags:
-        - Key: "EphemeralBucket"
-          Value: "true"
+        - Key: EphemeralBucket
+          Value: true
   S3BucketPolicy:
-    Type: "AWS::S3::BucketPolicy"
+    Type: AWS::S3::BucketPolicy
     Properties:
-      Bucket: !If [ CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [ EnvironmentMap, !Ref environment, BucketName ] ]
+      Bucket: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
       PolicyDocument:
         Statement:
           -
             Action:
-              - "s3:GetObject"
-            Effect: "Allow"
-            Resource: !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]],"/", !Ref s3jobKey,"*"]]
-            Principal: "*"
+              - s3:GetObject
+            Effect: Allow
+            Resource: !Sub
+              - 'arn:aws:s3:::${BucketName}/${s3jobKey}*'
+              - { BucketName: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]] }
+            Principal: '*'
   BatchServiceRole:
-    Type: 'AWS::IAM::Role'
+    Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -211,11 +217,11 @@ Resources:
           - Effect: Allow
             Principal:
               Service: batch.amazonaws.com
-            Action: 'sts:AssumeRole'
+            Action: sts:AssumeRole
       ManagedPolicyArns:
-        - 'arn:aws:iam::aws:policy/service-role/AWSBatchServiceRole'
+        - arn:aws:iam::aws:policy/service-role/AWSBatchServiceRole
   SpotIamFleetRole:
-    Type: 'AWS::IAM::Role'
+    Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -223,16 +229,16 @@ Resources:
           - Effect: Allow
             Principal:
               Service: spotfleet.amazonaws.com
-            Action: 'sts:AssumeRole'
+            Action: sts:AssumeRole
       ManagedPolicyArns:
-        - 'arn:aws:iam::aws:policy/service-role/AmazonEC2SpotFleetRole'
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2SpotFleetRole
   IamInstanceProfile:
-    Type: 'AWS::IAM::InstanceProfile'
+    Type: AWS::IAM::InstanceProfile
     Properties:
       Roles:
         - !Ref EcsInstanceRole
   EcsInstanceRole:
-    Type: 'AWS::IAM::Role'
+    Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
         Version: 2008-10-17
@@ -241,12 +247,11 @@ Resources:
             Effect: Allow
             Principal:
               Service: ec2.amazonaws.com
-            Action: 'sts:AssumeRole'
+            Action: sts:AssumeRole
       ManagedPolicyArns:
-        - >-
-          arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
   JobInstanceRole:
-    Type: 'AWS::IAM::Role'
+    Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
         Version: 2008-10-17
@@ -255,30 +260,38 @@ Resources:
             Effect: Allow
             Principal:
               Service: ecs-tasks.amazonaws.com
-            Action: 'sts:AssumeRole'
+            Action: sts:AssumeRole
       Policies:
         -
-          PolicyName: "wps-job-s3-access"
+          PolicyName: wps-job-s3-access
           PolicyDocument:
-            Version: "2012-10-17"
+            Version: 2012-10-17
             Statement:
               -
-                Effect: "Allow"
-                Action: "s3:*"
-                Resource: [
-                  !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]]],
-                  !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]],"/*"]]
-                ]
+                Effect: Allow
+                Action:
+                  - s3:Get*
+                  - s3:List*
+                  - s3:PutObject
+                Resource:
+                  - !Sub
+                    - 'arn:aws:s3:::${BucketName}'
+                    - { BucketName: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]] }
+                  - !Sub
+                    - 'arn:aws:s3:::${BucketName}/*'
+                    - { BucketName: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]] }
               -
-                Effect: "Allow"
-                Action: ["ses:SendEmail"]
-                Resource: ["*"]
+                Effect: Allow
+                Action:
+                  - ses:SendEmail
+                Resource: '*'
               -
-                Effect: "Allow"
-                Action: ["ses:SendRawEmail"]
-                Resource: ["*"]
+                Effect: Allow
+                Action:
+                  - ses:SendRawEmail
+                Resource: '*'
   JobDefinition:
-    Type: 'AWS::Batch::JobDefinition'
+    Type: AWS::Batch::JobDefinition
     Properties:
       Type: container
       JobDefinitionName: !Sub 'JavaDuckSmall1-${AWS::StackName}'
@@ -289,95 +302,97 @@ Resources:
         JobRoleArn: !Ref JobInstanceRole
         Volumes:
           -
-            Name: "work"
+            Name: work
         Environment:
           -
-            Name: "JAVA_TOOL_OPTIONS"
-            Value: '-Xmx512m'
+            Name: JAVA_TOOL_OPTIONS
+            Value: -Xmx512m
           -
-            Name: "OUTPUT_S3_FILENAME"
-            Value: !FindInMap [ConfigurationFileMap, "Filename", "outputWithoutExtension"]
+            Name: OUTPUT_S3_FILENAME
+            Value: !FindInMap [ConfigurationFileMap, Filename, outputWithoutExtension]
           -
-            Name: "OUTPUT_S3_BUCKET"
+            Name: OUTPUT_S3_BUCKET
+            Value: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [ EnvironmentMap, !Ref environment, BucketName]]
+          -
+            Name: STATUS_S3_BUCKET
             Value: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
           -
-            Name: "STATUS_S3_BUCKET"
-            Value: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
+            Name: STATUS_S3_FILENAME
+            Value: !FindInMap [ConfigurationFileMap, Filename, status]
           -
-            Name: "STATUS_S3_FILENAME"
-            Value: !FindInMap [ConfigurationFileMap, "Filename", "status"]
+            Name: REQUEST_S3_FILENAME
+            Value: !FindInMap [ConfigurationFileMap, Filename, request]
           -
-            Name: "REQUEST_S3_FILENAME"
-            Value: !FindInMap [ConfigurationFileMap, "Filename", "request"]
+            Name: AWS_REGION
+            Value: !Ref 'AWS::Region'
           -
-            Name: "AWS_REGION"
-            Value: !Ref "AWS::Region"
-          -
-            Name: "AWS_REGION_SES"
+            Name: AWS_REGION_SES
             Value: !Ref awsRegionSes
           -
-            Name: "AGGREGATOR_TEMPLATE_FILE_S3_KEY"
-            Value: !Join [ "", [ !Ref s3configKey,  !FindInMap [ConfigurationFileMap, "Filename", "templates"]] ]
+            Name: AGGREGATOR_TEMPLATE_FILE_S3_KEY
+            Value: !Sub
+              - '${s3configKey}${ConfigFile}'
+              - { ConfigFile: !FindInMap [ConfigurationFileMap, Filename, templates] }
           -
-            Name: "AGGREGATOR_CONFIG_S3_BUCKET"
+            Name: AGGREGATOR_CONFIG_S3_BUCKET
             Value: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
           -
-            Name: "GEOSERVER_CATALOGUE_ENDPOINT_URL"
+            Name: GEOSERVER_CATALOGUE_ENDPOINT_URL
             Value: !Ref geoserver
           -
-            Name: "CHUNK_SIZE"
+            Name: CHUNK_SIZE
             Value: 100000000
           -
-            Name: "DOWNLOAD_ATTEMPTS"
+            Name: DOWNLOAD_ATTEMPTS
             Value: !Ref workerDownloadAttempts
           -
-            Name: "WORKING_DIR"
-            Value: !FindInMap [Constants, ConstantMap, containerWorkingDir]
+            Name: WORKING_DIR
+            Value: !FindInMap [Constants, ConstantMap, ContainerWorkingDir]
           -
-            Name: "LOCAL_STORAGE_LIMIT_BYTES"
+            Name: LOCAL_STORAGE_LIMIT_BYTES
             Value: !Ref workerLocalStorageLimitBytes
           -
-            Name: "POOL_SIZE"
+            Name: POOL_SIZE
             Value: !Ref workerPoolSize
           -
-            Name: "RETRY_INTERVAL_MS"
+            Name: RETRY_INTERVAL_MS
             Value: !Ref workerRetryIntervalMs
           -
-            Name: "GEONETWORK_CATALOGUE_URL"
+            Name: GEONETWORK_CATALOGUE_URL
             Value: !Ref geonetworkCatalogueURL
           -
-            Name: "GEONETWORK_LAYER_SEARCH_FIELD"
+            Name: GEONETWORK_LAYER_SEARCH_FIELD
             Value: !Ref geonetworkLayerSearchField
           -
-            Name: "JOB_EXPIRATION_IN_DAYS"
+            Name: JOB_EXPIRATION_IN_DAYS
             Value: !Ref jobExpirationInDays
           -
-            Name: "JOB_S3_KEY"
+            Name: JOB_S3_KEY
             Value: !Ref s3jobKey
           -
-            Name: "STATUS_SERVICE_ENDPOINT_URL"
+            Name: STATUS_SERVICE_ENDPOINT_URL
             Value: !If [
               CreateWpsApiGatewayDomainName,
               !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}/${jobStatusApiPath}',
               !Sub 'https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}/${jobStatusApiPath}'
             ]
           -
-            Name: "AWS_WPS_ENDPOINT_URL"
+            Name: AWS_WPS_ENDPOINT_URL
             Value: !If [
-                        CreateWpsApiGatewayDomainName,
-                        !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}',
-                        !Sub 'https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}'
-                      ]
+              CreateWpsApiGatewayDomainName,
+              !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}',
+              !Sub 'https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}'
+            ]
         MountPoints:
           -
-            SourceVolume: "work"
-            ContainerPath: !FindInMap [Constants, ConstantMap, containerWorkingDir]
+            SourceVolume: work
+            ContainerPath: !FindInMap [Constants, ConstantMap, ContainerWorkingDir]
             ReadOnly: false
       RetryStrategy:
         Attempts: 2
     DependsOn:  JobInstanceRole
   JobQueue:
-    Type: 'AWS::Batch::JobQueue'
+    Type: AWS::Batch::JobQueue
     Properties:
       JobQueueName: !Sub 'JavaDuckQueue1-${AWS::StackName}'
       Priority: 2
@@ -385,7 +400,7 @@ Resources:
         - Order: 1
           ComputeEnvironment: !Ref ComputeEnvironment
   ComputeEnvironment:
-    Type: 'AWS::Batch::ComputeEnvironment'
+    Type: AWS::Batch::ComputeEnvironment
     DeletionPolicy: Delete
     Properties:
       Type: MANAGED
@@ -396,14 +411,14 @@ Resources:
         DesiredvCpus: 0
         MaxvCpus: !Ref maxVCPUs
         InstanceTypes:
-          - 'c3.large'
-          - 'c4.large'
-          - 'm3.large'
-          - 'm4.large'
-          - 'r4.large'
-          - 'r3.large'
-        ImageId: !If [UseCustomAmi, !Ref customAmiId, !Ref "AWS::NoValue"]
-        Subnets: !FindInMap [!Ref environment, !Ref "AWS::Region", subnets]
+          - c3.large
+          - c4.large
+          - m3.large
+          - m4.large
+          - r4.large
+          - r3.large
+        ImageId: !If [UseCustomAmi, !Ref customAmiId, !Ref 'AWS::NoValue']
+        Subnets: !FindInMap [!Ref environment, !Ref 'AWS::Region', subnets]
         SecurityGroupIds:
           - !Ref ComputeEnvironmentInstanceSecurityGroup
         InstanceRole: !Ref IamInstanceProfile
@@ -414,7 +429,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Allow http to client host
-      VpcId: !FindInMap [!Ref environment, !Ref "AWS::Region", vpc]
+      VpcId: !FindInMap [!Ref environment, !Ref 'AWS::Region', vpc]
       SecurityGroupIngress:
       - IpProtocol: '-1'
         FromPort: '-1'
@@ -428,7 +443,7 @@ Resources:
   WPSRestApi:
     Type: AWS::ApiGateway::RestApi
     Properties:
-      Name: !Join ["",["WPS API-",!Ref  "AWS::StackName" ]]
+      Name: !Sub 'WPS API-${AWS::StackName}'
       Description: API used for WPS requests
       FailOnWarnings: true
   WpsApiGatewayStage:
@@ -441,37 +456,37 @@ Resources:
       MethodSettings:
           -
             DataTraceEnabled: true
-            HttpMethod: "*"
+            HttpMethod: '*'
             LoggingLevel: INFO
             ResourcePath: /*
       RestApiId: !Ref WPSRestApi
       StageName: !Ref wpsApiStage
   WpsApiGatewayDomainName:
-    Type: 'AWS::ApiGateway::DomainName'
+    Type: AWS::ApiGateway::DomainName
     Condition: CreateWpsApiGatewayDomainName
     Properties:
-      CertificateArn: !Ref acmCertificate
-      DomainName: !Join ['.', [!Ref wpsDomainName,!Ref hostedZoneName]]
+      CertificateArn: !FindInMap [AccountConstants, !Ref 'AWS::AccountId', CertificateArn]
+      DomainName: !Join ['.', [!Ref wpsDomainName, !FindInMap [AccountConstants, !Ref 'AWS::AccountId', DomainSuffix]]]
   WpsDomainToAPIMapping:
-    Type: 'AWS::ApiGateway::BasePathMapping'
+    Type: AWS::ApiGateway::BasePathMapping
     Condition: CreateWpsApiGatewayDomainName
     DependsOn:
-    - WpsApiGatewayStage
-    - WpsRoute53RecordSet
+      - WpsApiGatewayStage
+      - WpsRoute53RecordSet
     Properties:
       DomainName: !Ref WpsApiGatewayDomainName
       RestApiId: !Ref WPSRestApi
       Stage: !Ref wpsApiStage
   WpsRoute53RecordSet:
-    Type: 'AWS::Route53::RecordSet'
+    Type: AWS::Route53::RecordSet
     Condition: CreateWpsApiGatewayDomainName
     Properties:
       AliasTarget:
         DNSName: !GetAtt WpsApiGatewayDomainName.DistributionDomainName
-        HostedZoneId: 'Z2FDTNDATAQYW2'
-      HostedZoneName: !Join ['', [!Ref hostedZoneName, '.']]
-      Name: !Join ['.', [!Ref wpsDomainName, !Ref hostedZoneName]]
-      Type: "A"
+        HostedZoneId: !FindInMap [Constants, ConstantMap, CloudfrontHostedZoneId]
+      HostedZoneName: !FindInMap [AccountConstants, !Ref 'AWS::AccountId', HostedZoneName]
+      Name: !Join ['.', [!Ref wpsDomainName, !FindInMap [AccountConstants, !Ref 'AWS::AccountId', DomainSuffix]]]
+      Type: 'A'
   WpsApiGatewayCloudWatchLogsRole:
     Type: AWS::IAM::Role
     Properties:
@@ -483,7 +498,7 @@ Resources:
               Service:
                 - apigateway.amazonaws.com
             Action:
-              - 'sts:AssumeRole'
+              - sts:AssumeRole
       Policies:
         -
           PolicyName: ApiGatewayLogsPolicy
@@ -492,13 +507,13 @@ Resources:
             Statement:
               Effect: Allow
               Action:
-                - 'logs:CreateLogGroup'
-                - 'logs:CreateLogStream'
-                - 'logs:DescribeLogGroups'
-                - 'logs:DescribeLogStreams'
-                - 'logs:PutLogEvents'
-                - 'logs:GetLogEvents'
-                - 'logs:FilterLogEvents'
+                - logs:CreateLogGroup
+                - logs:CreateLogStream
+                - logs:DescribeLogGroups
+                - logs:DescribeLogStreams
+                - logs:PutLogEvents
+                - logs:GetLogEvents
+                - logs:FilterLogEvents
               Resource: '*'
   WpsApiGatewayAccount:
     Type: AWS::ApiGateway::Account
@@ -526,9 +541,9 @@ Resources:
       Integration:
         Type: AWS_PROXY
         IntegrationHttpMethod: POST
-        Uri: !Join ["",
-          ["arn:aws:apigateway:", !Ref "AWS::Region", ":lambda:path/2015-03-31/functions/", !GetAtt RequestHandlerLambdaFunction.Arn, "/invocations"]
-        ]
+        Uri: !Sub
+          - 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FunctionArn}/invocations'
+          - { FunctionArn: !GetAtt RequestHandlerLambdaFunction.Arn }
         IntegrationResponses:
           - StatusCode: 200
       ResourceId: !Ref RequestHandlerApiGatewayResource
@@ -541,28 +556,28 @@ Resources:
       Action: lambda:invokeFunction
       FunctionName: !GetAtt RequestHandlerLambdaFunction.Arn
       Principal: apigateway.amazonaws.com
-      SourceArn: !Join ["", ["arn:aws:execute-api:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":", !Ref WPSRestApi, "/*"]]
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WPSRestApi}/*'
   RequestHandlerLambdaFunction:
-    Type: 'AWS::Lambda::Function'
+    Type: AWS::Lambda::Function
     Properties:
       Description: Make a wps request
       FunctionName: !Sub 'wps-request-handler-${AWS::StackName}'
-      Handler: 'au.org.aodn.aws.wps.lambda.WpsLambdaRequestHandler'
+      Handler: au.org.aodn.aws.wps.lambda.WpsLambdaRequestHandler
       MemorySize: 1536
       Role: !GetAtt RequestHandlerLambdaExecutionRole.Arn
       Runtime: java8
       Timeout: 60
       Code:
         S3Bucket: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
-        S3Key: !Join [ "", [ !Ref s3configKey,  !Ref requestHandlerFilename] ]
+        S3Key: !Sub '${s3configKey}${requestHandlerFilename}'
       Environment:
         Variables:
           AWS_BATCH_JOB_NAME: !Ref jobName
           AWS_BATCH_JOB_QUEUE_NAME: !Ref JobQueue
-          AWS_BATCH_JOB_DEFINITION_NAME: !Select [1, !Split ["/", !Ref JobDefinition]]
+          AWS_BATCH_JOB_DEFINITION_NAME: !Select [1, !Split ['/', !Ref JobDefinition]]
           STATUS_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
-          STATUS_S3_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "status"]
-          REQUEST_S3_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "request"]
+          STATUS_S3_FILENAME: !FindInMap [ConfigurationFileMap, Filename, status]
+          REQUEST_S3_FILENAME: !FindInMap [ConfigurationFileMap, Filename, request]
           AWS_WPS_ENDPOINT_URL: !If [
             CreateWpsApiGatewayDomainName,
             !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}',
@@ -577,7 +592,7 @@ Resources:
           ]
     DependsOn: S3PutConfigurationFiles
   RequestHandlerLambdaExecutionRole:
-    Type: 'AWS::IAM::Role'
+    Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -587,11 +602,11 @@ Resources:
               Service:
                 - lambda.amazonaws.com
             Action:
-              - 'sts:AssumeRole'
+              - sts:AssumeRole
       Path: /
       ManagedPolicyArns:
-        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
-        - 'arn:aws:iam::aws:policy/AWSBatchFullAccess'
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSBatchFullAccess
       Policies:
         - PolicyName: PublishVersion
           PolicyDocument:
@@ -599,26 +614,32 @@ Resources:
             Statement:
               - Effect: Allow
                 Action:
-                  - 'lambda:PublishVersion'
+                  - lambda:PublishVersion
                 Resource: '*'
         - PolicyName: S3Access
           PolicyDocument:
             Version: 2012-10-17
             Statement:
-              - Effect: "Allow"
-                Action: "s3:*"
-                Resource: [
-                  !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]]],
-                  !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]],"/*"]]
-                ]
+              - Effect: Allow
+                Action:
+                  - s3:*
+                Resource:
+                  - !Sub
+                    - 'arn:aws:s3:::${BucketName}'
+                    - { BucketName: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]] }
+                  - !Sub
+                    - 'arn:aws:s3:::${BucketName}/*'
+                    - { BucketName: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]] }
               -
-                Effect: "Allow"
-                Action: ["ses:SendEmail"]
-                Resource: ["*"]
+                Effect: Allow
+                Action:
+                  - ses:SendEmail
+                Resource: '*'
               -
-                Effect: "Allow"
-                Action: ["ses:SendRawEmail"]
-                Resource: ["*"]
+                Effect: Allow
+                Action:
+                  - ses:SendRawEmail
+                Resource: '*'
   JobStatusApiGatewayResource:
     Type: AWS::ApiGateway::Resource
     Properties:
@@ -636,9 +657,9 @@ Resources:
       Integration:
         Type: AWS_PROXY
         IntegrationHttpMethod: POST
-        Uri: !Join ["",
-          ["arn:aws:apigateway:", !Ref "AWS::Region", ":lambda:path/2015-03-31/functions/", !GetAtt JobStatusLambdaFunction.Arn, "/invocations"]
-        ]
+        Uri: !Sub
+          - 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FunctionArn}/invocations'
+          - { FunctionArn: !GetAtt JobStatusLambdaFunction.Arn }
         IntegrationResponses:
           - StatusCode: 200
       ResourceId: !Ref JobStatusApiGatewayResource
@@ -651,37 +672,37 @@ Resources:
       Action: lambda:invokeFunction
       FunctionName: !GetAtt JobStatusLambdaFunction.Arn
       Principal: apigateway.amazonaws.com
-      SourceArn: !Join ["", ["arn:aws:execute-api:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":", !Ref WPSRestApi, "/*"]]
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WPSRestApi}/*'
   JobStatusLambdaFunction:
     Type: AWS::Lambda::Function
     Properties:
       Description: Return wps job status
       FunctionName: !Sub 'wps-job-status-${AWS::StackName}'
-      Handler: 'au.org.aodn.aws.wps.lambda.JobStatusServiceRequestHandler'
+      Handler: au.org.aodn.aws.wps.lambda.JobStatusServiceRequestHandler
       MemorySize: 1536
       Role: !GetAtt JobStatusLambdaExecutionRole.Arn
       Runtime: java8
       Timeout: 60
       Code:
         S3Bucket: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
-        S3Key: !Join [ "", [ !Ref s3configKey,  !Ref jobStatusFilename] ]
+        S3Key: !Sub '${s3configKey}${jobStatusFilename}'
       Environment:
         Variables:
           STATUS_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
-          STATUS_S3_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "status"]
-          REQUEST_S3_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "request"]
+          STATUS_S3_FILENAME: !FindInMap [ConfigurationFileMap, Filename, status]
+          REQUEST_S3_FILENAME: !FindInMap [ConfigurationFileMap, Filename, request]
           JOB_S3_KEY: !Ref s3jobKey
           CONFIG_S3_KEY: !Ref s3configKey
-          BOOTSTRAP_CSS_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "bootstrapCss"]
-          AODN_CSS_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "jobStatusCss"]
-          AODN_LOGO_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "aodnLogo"]
+          BOOTSTRAP_CSS_FILENAME: !FindInMap [ConfigurationFileMap, Filename, bootstrapCss]
+          AODN_CSS_FILENAME: !FindInMap [ConfigurationFileMap, Filename, jobStatusCss]
+          AODN_LOGO_FILENAME: !FindInMap [ConfigurationFileMap, Filename, aodnLogo]
           AWS_BATCH_JOB_QUEUE_NAME: !Ref JobQueue
-          AWS_BATCH_LOG_GROUP_NAME: "/aws/batch/job"
+          AWS_BATCH_LOG_GROUP_NAME: /aws/batch/job
           STATUS_SERVICE_ENDPOINT_URL: !If [
-                      CreateWpsApiGatewayDomainName,
-                      !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}/${jobStatusApiPath}',
-                      !Sub 'https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}/${jobStatusApiPath}'
-                    ]
+            CreateWpsApiGatewayDomainName,
+            !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}/${jobStatusApiPath}',
+            !Sub 'https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}/${jobStatusApiPath}'
+          ]
     DependsOn: S3PutConfigurationFiles
   JobStatusLambdaExecutionRole:
     Type: AWS::IAM::Role
@@ -694,11 +715,11 @@ Resources:
               Service:
                 - lambda.amazonaws.com
             Action:
-              - 'sts:AssumeRole'
+              - sts:AssumeRole
       Path: /
       ManagedPolicyArns:
-        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
-        - 'arn:aws:iam::aws:policy/AWSBatchFullAccess'
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSBatchFullAccess
       Policies:
         - PolicyName: PublishVersion
           PolicyDocument:
@@ -706,20 +727,24 @@ Resources:
             Statement:
               - Effect: Allow
                 Action:
-                  - 'lambda:PublishVersion'
+                  - lambda:PublishVersion
                 Resource: '*'
         - PolicyName: S3Access
           PolicyDocument:
             Version: 2012-10-17
             Statement:
-              - Effect: "Allow"
-                Action: "s3:*"
-                Resource: [
-                  !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]]],
-                  !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]],"/*"]]
-                ]
+              - Effect: Allow
+                Action:
+                  - s3:*
+                Resource:
+                  - !Sub
+                    - 'arn:aws:s3:::${BucketName}'
+                    - { BucketName: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]] }
+                  - !Sub
+                    - 'arn:aws:s3:::${BucketName}/*'
+                    - { BucketName: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]] }
   ReloadLambdaCodeFunctionRole:
-    Type: 'AWS::IAM::Role'
+    Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -729,10 +754,10 @@ Resources:
               Service:
                 - lambda.amazonaws.com
             Action:
-              - 'sts:AssumeRole'
+              - sts:AssumeRole
       Path: /
       ManagedPolicyArns:
-        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
         - PolicyName: UpdateVersion
           PolicyDocument:
@@ -740,14 +765,12 @@ Resources:
             Statement:
               - Effect: Allow
                 Action:
-                  - 'lambda:UpdateFunctionCode'
-                Resource: '*'
-                Resource: [
-                  !Join ["", ["arn:aws:lambda:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":function:", !Ref JobStatusLambdaFunction]],
-                  !Join ["", ["arn:aws:lambda:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":function:", !Ref RequestHandlerLambdaFunction]]
-                ]
+                  - lambda:UpdateFunctionCode
+                Resource:
+                  - !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${JobStatusLambdaFunction}'
+                  - !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${RequestHandlerLambdaFunction}'
   ReloadLambdaCodeFunction:
-    Type: "AWS::Lambda::Function"
+    Type: AWS::Lambda::Function
     Properties:
       Code:
         ZipFile: |
@@ -795,30 +818,30 @@ Resources:
                   return cfnresponse.send(event, context, cfnresponse.FAILED, responseData, 'ReloadLambdaCodeFunction')
 
       FunctionName: !Sub 'ReloadLambdaCode-${AWS::StackName}'
-      Handler: 'index.handler'
+      Handler: index.handler
       Role: !GetAtt ReloadLambdaCodeFunctionRole.Arn
       Runtime: python2.7
       MemorySize: 128
       Timeout: 60
       Environment:
         Variables:
-          FUNCTION_NAME_SUFFIX: 'Function'
-          S3_BUCKET_SUFFIX: 'S3Bucket'
-          S3_KEY_SUFFIX: 'S3Key'
+          FUNCTION_NAME_SUFFIX: Function
+          S3_BUCKET_SUFFIX: S3Bucket
+          S3_KEY_SUFFIX: S3Key
           RequestHandler_Function: !Ref RequestHandlerLambdaFunction
           RequestHandler_S3Bucket: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
-          RequestHandler_S3Key: !Join [ "", [ !Ref s3configKey,  !Ref requestHandlerFilename] ]
+          RequestHandler_S3Key: !Join [ '', [!Ref s3configKey,  !Ref requestHandlerFilename]]
           JobStatus_Function: !Ref JobStatusLambdaFunction
           JobStatus_S3Bucket: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
-          JobStatus_S3Key: !Join [ "", [ !Ref s3configKey,  !Ref jobStatusFilename] ]
+          JobStatus_S3Key: !Join [ '', [!Ref s3configKey,  !Ref jobStatusFilename]]
   ReloadLambdaCode:
-    Type: "Custom::ReloadLambdaCode"
+    Type: Custom::ReloadLambdaCode
     Properties:
       ServiceToken: !GetAtt ReloadLambdaCodeFunction.Arn
       Version: !Ref version
     DependsOn: S3PutConfigurationFiles
   S3PutObjectLambdaFunctionRole:
-    Type: 'AWS::IAM::Role'
+    Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -828,10 +851,10 @@ Resources:
               Service:
                 - lambda.amazonaws.com
             Action:
-              - 'sts:AssumeRole'
+              - sts:AssumeRole
       Path: /
       ManagedPolicyArns:
-        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
         - PolicyName: PublishVersion
           PolicyDocument:
@@ -839,20 +862,24 @@ Resources:
             Statement:
               - Effect: Allow
                 Action:
-                  - 'lambda:PublishVersion'
+                  - lambda:PublishVersion
                 Resource: '*'
         - PolicyName: S3Access
           PolicyDocument:
             Version: 2012-10-17
             Statement:
-              - Effect: "Allow"
-                Action: "s3:Put*"
-                Resource: [
-                  !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]]],
-                  !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]], "/*"]]
-                ]
+              - Effect: Allow
+                Action:
+                  - s3:Put*
+                Resource:
+                  - !Sub
+                    - 'arn:aws:s3:::${BucketName}'
+                    - { BucketName: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]] }
+                  - !Sub
+                    - 'arn:aws:s3:::${BucketName}/*'
+                    - { BucketName: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]] }
   S3PutObjectLambdaFunction:
-    Type: "AWS::Lambda::Function"
+    Type: AWS::Lambda::Function
     Properties:
       Code:
         ZipFile: |
@@ -901,9 +928,9 @@ Resources:
               else:
                   s3c.put_object(Bucket=target_bucket, ACL='public-read', Key='{}{}'.format(config_location, filename), Body=file_contents)
               print('Downloaded url : {}'.format(url))
-      Description: "Used to put objects into S3."
+      Description: Used to put objects into S3.
       FunctionName: !Sub 'S3PutObject-${AWS::StackName}'
-      Handler: 'index.handler'
+      Handler: index.handler
       Role: !GetAtt S3PutObjectLambdaFunctionRole.Arn
       Runtime: python2.7
       MemorySize: 256
@@ -912,29 +939,29 @@ Resources:
         Variables:
           BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
           CONFIG_LOCATION: !Ref s3configKey
-          FILENAME_SUFFIX: 'FILENAME'
-          HTTP_FILE_PREFIX: 'HTTP_FILE'
+          FILENAME_SUFFIX: FILENAME
+          HTTP_FILE_PREFIX: HTTP_FILE
           HTTP_FILE_TEMPLATES: !Ref templatesURL
-          HTTP_FILE_TEMPLATES_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "templates"]
+          HTTP_FILE_TEMPLATES_FILENAME: !FindInMap [ConfigurationFileMap, Filename, templates]
           HTTP_FILE_WPS_REQUEST_HANDLER: !Ref requestHandlerCodeURL
           HTTP_FILE_WPS_REQUEST_HANDLER_FILENAME: !Ref requestHandlerFilename
           HTTP_FILE_WPS_JOB_STATUS: !Ref jobStatusCodeURL
           HTTP_FILE_WPS_JOB_STATUS_FILENAME: !Ref jobStatusFilename
           HTTP_FILE_JOB_STATUS_CSS: !Ref aodnCssURL
-          HTTP_FILE_JOB_STATUS_CSS_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "jobStatusCss"]
+          HTTP_FILE_JOB_STATUS_CSS_FILENAME: !FindInMap [ConfigurationFileMap, Filename, jobStatusCss]
           HTTP_FILE_SUMOLOGIC_LAMBDA: !Ref sumologicLambdaCodeURL
           HTTP_FILE_SUMOLOGIC_LAMBDA_FILENAME: !Ref sumologicLambdaCodeFilename
           HTTP_FILE_BOOTSTRAP_CSS: !Ref bootstrapCssURL
-          HTTP_FILE_BOOTSTRAP_CSS_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "bootstrapCss"]
+          HTTP_FILE_BOOTSTRAP_CSS_FILENAME: !FindInMap [ConfigurationFileMap, Filename, bootstrapCss]
           HTTP_FILE_AODN_LOGO: !Ref aodnLogoURL
-          HTTP_FILE_AODN_LOGO_FILENAME: !FindInMap [ConfigurationFileMap, "Filename", "aodnLogo"]
+          HTTP_FILE_AODN_LOGO_FILENAME: !FindInMap [ConfigurationFileMap, Filename, aodnLogo]
   S3PutConfigurationFiles:
-    Type: "Custom::S3PutObject"
+    Type: Custom::S3PutObject
     Properties:
       ServiceToken: !GetAtt S3PutObjectLambdaFunction.Arn
       Version: !Ref version
   EmptyBucketLambdaFunction:
-    Type: "AWS::Lambda::Function"
+    Type: AWS::Lambda::Function
     Condition: CreateEphemeralBucket
     Properties:
       Code:
@@ -961,9 +988,9 @@ Resources:
                except Exception as e:
                   print(e)
                   cfnresponse.send(event, context, cfnresponse.FAILED, {'Data': 'OK'}, 'EmptyBucketLambdaFunction')
-      Description: "Used to put objects into S3."
+      Description: Used to put objects into S3.
       FunctionName: !Sub 'EmptyBucket-${AWS::StackName}'
-      Handler: 'index.handler'
+      Handler: index.handler
       Role: !GetAtt EmptyBucketLambdaFunctionRole.Arn
       Runtime: python2.7
       Timeout: 60
@@ -973,12 +1000,12 @@ Resources:
           CONFIG_KEY: !Ref s3configKey
           JOBS_KEY: !Ref s3jobKey
   EmptyBucket:
-    Type: "Custom::EmptyBucket"
+    Type: Custom::EmptyBucket
     Condition: CreateEphemeralBucket
     Properties:
       ServiceToken: !GetAtt EmptyBucketLambdaFunction.Arn
   EmptyBucketLambdaFunctionRole:
-      Type: 'AWS::IAM::Role'
+      Type: AWS::IAM::Role
       Condition: CreateEphemeralBucket
       Properties:
         AssumeRolePolicyDocument:
@@ -989,10 +1016,10 @@ Resources:
                 Service:
                   - lambda.amazonaws.com
               Action:
-                - 'sts:AssumeRole'
+                - sts:AssumeRole
         Path: /
         ManagedPolicyArns:
-          - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+          - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
         Policies:
           - PolicyName: PublishVersion
             PolicyDocument:
@@ -1000,33 +1027,31 @@ Resources:
               Statement:
                 - Effect: Allow
                   Action:
-                    - 'lambda:PublishVersion'
+                    - lambda:PublishVersion
                   Resource: '*'
           - PolicyName: S3Access
             PolicyDocument:
               Version: 2012-10-17
               Statement:
-                - Effect: "Allow"
-                  Action: [
-                    "s3:Delete*",
-                    "s3:List*",
-                    "s3:Get*"
-                  ]
-                  Resource: [
-                    !Join ["", ["arn:aws:s3:::", !Ref EphemeralS3Bucket]],
-                    !Join ["", ["arn:aws:s3:::", !Ref EphemeralS3Bucket, "/*"]]
-                  ]
+                - Effect: Allow
+                  Action:
+                    - s3:Delete*
+                    - s3:List*
+                    - s3:Get*
+                  Resource:
+                    - !Sub 'arn:aws:s3:::${EphemeralS3Bucket}'
+                    - !Sub 'arn:aws:s3:::${EphemeralS3Bucket}/*'
   SumoLogicLambdaFunction:
-    Type: "AWS::Lambda::Function"
-    Condition: "ConfigureSumoLogic"
+    Type: AWS::Lambda::Function
+    Condition: ConfigureSumoLogic
     DependsOn: S3PutConfigurationFiles
     Properties:
       Code:
         S3Bucket: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
-        S3Key: !Join [ "", [ !Ref s3configKey,  !Ref sumologicLambdaCodeFilename] ]
-      Description: "Push batch logs to SumoLogic"
+        S3Key: !Join [ '', [ !Ref s3configKey,  !Ref sumologicLambdaCodeFilename] ]
+      Description: Push batch logs to SumoLogic
       FunctionName: !Sub 'SumoLogic-WPS-${AWS::StackName}'
-      Handler: 'index.handler'
+      Handler: index.handler
       Role: !GetAtt SumoLogicLambdaFunctionRole.Arn
       Runtime: nodejs4.3
       Timeout: 3
@@ -1034,8 +1059,8 @@ Resources:
         Variables:
           SUMO_ENDPOINT: !Ref sumoEndpoint
   SumoLogicLambdaFunctionRole:
-      Type: 'AWS::IAM::Role'
-      Condition: "ConfigureSumoLogic"
+      Type: AWS::IAM::Role
+      Condition: ConfigureSumoLogic
       Properties:
         AssumeRolePolicyDocument:
           Version: 2012-10-17
@@ -1045,66 +1070,66 @@ Resources:
                 Service:
                   - lambda.amazonaws.com
               Action:
-                - 'sts:AssumeRole'
+                - sts:AssumeRole
         Path: /
         ManagedPolicyArns:
-          - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+          - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
   BatchJobLogsLambdaPermission:
     Type: AWS::Lambda::Permission
-    Condition: "ConfigureSumoLogic"
+    Condition: ConfigureSumoLogic
     Properties:
       Action: lambda:invokeFunction
       FunctionName: !GetAtt SumoLogicLambdaFunction.Arn
       Principal: !Sub 'logs.${AWS::Region}.amazonaws.com'
-      SourceArn: !Join ["", ["arn:aws:logs:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":log-group:/aws/batch/job:*"]]
+      SourceArn: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/batch/job:*'
   BatchJobLogsSubscriptionFilter:
-    Type: "AWS::Logs::SubscriptionFilter"
-    Condition: "ConfigureSumoLogic"
+    Type: AWS::Logs::SubscriptionFilter
+    Condition: ConfigureSumoLogic
     DependsOn: BatchJobLogsLambdaPermission
     Properties:
       DestinationArn: !GetAtt SumoLogicLambdaFunction.Arn
-      FilterPattern: "" # Will need to update the filter pattern or create a log stream. Currently all the batch job logs will be fetched.
-      LogGroupName: "/aws/batch/job"
+      FilterPattern: '' # Will need to update the filter pattern or create a log stream. Currently all the batch job logs will be fetched.
+      LogGroupName: /aws/batch/job
   RequestHandlerLogsLambdaPermission:
     Type: AWS::Lambda::Permission
-    Condition: "ConfigureSumoLogic"
+    Condition: ConfigureSumoLogic
     Properties:
       Action: lambda:invokeFunction
       FunctionName: !GetAtt SumoLogicLambdaFunction.Arn
       Principal: !Sub 'logs.${AWS::Region}.amazonaws.com'
-      SourceArn: !Join ["", ["arn:aws:logs:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":log-group:", !Ref RequestHandlerLogGroup,":*"]]
+      SourceArn: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${RequestHandlerLogGroup}:*'
   RequestHandlerLambdaLogsSubscriptionFilter:
-    Type: "AWS::Logs::SubscriptionFilter"
-    Condition: "ConfigureSumoLogic"
+    Type: AWS::Logs::SubscriptionFilter
+    Condition: ConfigureSumoLogic
     DependsOn: RequestHandlerLogsLambdaPermission
     Properties:
       DestinationArn: !GetAtt SumoLogicLambdaFunction.Arn
-      FilterPattern: ""
+      FilterPattern: ''
       LogGroupName: !Ref RequestHandlerLogGroup
   JobStatusLogsLambdaPermission:
     Type: AWS::Lambda::Permission
-    Condition: "ConfigureSumoLogic"
+    Condition: ConfigureSumoLogic
     Properties:
       Action: lambda:invokeFunction
       FunctionName: !GetAtt SumoLogicLambdaFunction.Arn
       Principal: !Sub 'logs.${AWS::Region}.amazonaws.com'
-      SourceArn: !Join ["", ["arn:aws:logs:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":log-group:", !Ref JobStatusLogGroup,":*"]]
+      SourceArn: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${JobStatusLogGroup}:*'
   JobStatusLambdaLogsSubscriptionFilter:
-    Type: "AWS::Logs::SubscriptionFilter"
-    Condition: "ConfigureSumoLogic"
+    Type: AWS::Logs::SubscriptionFilter
+    Condition: ConfigureSumoLogic
     DependsOn: JobStatusLogsLambdaPermission
     Properties:
       DestinationArn: !GetAtt SumoLogicLambdaFunction.Arn
-      FilterPattern: ""
+      FilterPattern: ''
       LogGroupName: !Ref JobStatusLogGroup
   JobStatusLogGroup:
-    Type: "AWS::Logs::LogGroup"
+    Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Join ["", ["/aws/lambda/", !Ref JobStatusLambdaFunction]]
+      LogGroupName: !Sub '/aws/lambda/${JobStatusLambdaFunction}'
   RequestHandlerLogGroup:
-    Type: "AWS::Logs::LogGroup"
+    Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Join ["", ["/aws/lambda/", !Ref RequestHandlerLambdaFunction]]
+      LogGroupName: !Sub '/aws/lambda/${RequestHandlerLambdaFunction}'
 Outputs:
   RequestHandlerApiGatewayUrl:
     Value: !If [
