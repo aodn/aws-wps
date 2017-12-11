@@ -200,7 +200,9 @@ Resources:
             Action:
               - "s3:GetObject"
             Effect: "Allow"
-            Resource: !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]],"/", !Ref s3jobKey,"*"]]
+            Resource: !Sub
+              - 'arn:aws:s3:::${BucketName}/${s3jobKey}*'
+              - { BucketName: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]] }
             Principal: "*"
   BatchServiceRole:
     Type: 'AWS::IAM::Role'
@@ -264,11 +266,14 @@ Resources:
             Statement:
               -
                 Effect: "Allow"
-                Action: "s3:*"
-                Resource: [
-                  !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]]],
-                  !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]],"/*"]]
-                ]
+                Action: ["s3:Get*", "s3:List*", "s3:PutObject"]
+                Resource:
+                  - !Sub
+                    - 'arn:aws:s3:::${BucketName}'
+                    - { BucketName: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]] }
+                  - !Sub
+                    - 'arn:aws:s3:::${BucketName}/*'
+                    - { BucketName: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]] }
               -
                 Effect: "Allow"
                 Action: ["ses:SendEmail"]
@@ -317,7 +322,9 @@ Resources:
             Value: !Ref awsRegionSes
           -
             Name: "AGGREGATOR_TEMPLATE_FILE_S3_KEY"
-            Value: !Join [ "", [ !Ref s3configKey,  !FindInMap [ConfigurationFileMap, "Filename", "templates"]] ]
+            Value: !Sub
+              - "${s3configKey}${ConfigFile}"
+              - { ConfigFile: !FindInMap [ConfigurationFileMap, "Filename", "templates"] }
           -
             Name: "AGGREGATOR_CONFIG_S3_BUCKET"
             Value: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
@@ -428,7 +435,7 @@ Resources:
   WPSRestApi:
     Type: AWS::ApiGateway::RestApi
     Properties:
-      Name: !Join ["",["WPS API-",!Ref  "AWS::StackName" ]]
+      Name: !Sub 'WPS API-${AWS::StackName}'
       Description: API used for WPS requests
       FailOnWarnings: true
   WpsApiGatewayStage:
@@ -469,7 +476,7 @@ Resources:
       AliasTarget:
         DNSName: !GetAtt WpsApiGatewayDomainName.DistributionDomainName
         HostedZoneId: 'Z2FDTNDATAQYW2'
-      HostedZoneName: !Join ['', [!Ref hostedZoneName, '.']]
+      HostedZoneName: !Sub '${hostedZoneName}.'
       Name: !Join ['.', [!Ref wpsDomainName, !Ref hostedZoneName]]
       Type: "A"
   WpsApiGatewayCloudWatchLogsRole:
@@ -526,9 +533,9 @@ Resources:
       Integration:
         Type: AWS_PROXY
         IntegrationHttpMethod: POST
-        Uri: !Join ["",
-          ["arn:aws:apigateway:", !Ref "AWS::Region", ":lambda:path/2015-03-31/functions/", !GetAtt RequestHandlerLambdaFunction.Arn, "/invocations"]
-        ]
+        Uri: !Sub
+          - 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FunctionArn}/invocations'
+          - { FunctionArn: !GetAtt RequestHandlerLambdaFunction.Arn }
         IntegrationResponses:
           - StatusCode: 200
       ResourceId: !Ref RequestHandlerApiGatewayResource
@@ -541,7 +548,7 @@ Resources:
       Action: lambda:invokeFunction
       FunctionName: !GetAtt RequestHandlerLambdaFunction.Arn
       Principal: apigateway.amazonaws.com
-      SourceArn: !Join ["", ["arn:aws:execute-api:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":", !Ref WPSRestApi, "/*"]]
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WPSRestApi}/*'
   RequestHandlerLambdaFunction:
     Type: 'AWS::Lambda::Function'
     Properties:
@@ -554,7 +561,7 @@ Resources:
       Timeout: 60
       Code:
         S3Bucket: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
-        S3Key: !Join [ "", [ !Ref s3configKey,  !Ref requestHandlerFilename] ]
+        S3Key: !Sub '${s3configKey}${requestHandlerFilename}'
       Environment:
         Variables:
           AWS_BATCH_JOB_NAME: !Ref jobName
@@ -607,10 +614,13 @@ Resources:
             Statement:
               - Effect: "Allow"
                 Action: "s3:*"
-                Resource: [
-                  !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]]],
-                  !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]],"/*"]]
-                ]
+                Resource:
+                  - !Sub
+                    - 'arn:aws:s3:::${BucketName}'
+                    - { BucketName: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]] }
+                  - !Sub
+                    - 'arn:aws:s3:::${BucketName}/*'
+                    - { BucketName: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]] }
               -
                 Effect: "Allow"
                 Action: ["ses:SendEmail"]
@@ -636,9 +646,9 @@ Resources:
       Integration:
         Type: AWS_PROXY
         IntegrationHttpMethod: POST
-        Uri: !Join ["",
-          ["arn:aws:apigateway:", !Ref "AWS::Region", ":lambda:path/2015-03-31/functions/", !GetAtt JobStatusLambdaFunction.Arn, "/invocations"]
-        ]
+        Uri: !Sub
+          - 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FunctionArn}/invocations'
+          - { FunctionArn: !GetAtt JobStatusLambdaFunction.Arn }
         IntegrationResponses:
           - StatusCode: 200
       ResourceId: !Ref JobStatusApiGatewayResource
@@ -651,7 +661,7 @@ Resources:
       Action: lambda:invokeFunction
       FunctionName: !GetAtt JobStatusLambdaFunction.Arn
       Principal: apigateway.amazonaws.com
-      SourceArn: !Join ["", ["arn:aws:execute-api:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":", !Ref WPSRestApi, "/*"]]
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WPSRestApi}/*'
   JobStatusLambdaFunction:
     Type: AWS::Lambda::Function
     Properties:
@@ -664,7 +674,7 @@ Resources:
       Timeout: 60
       Code:
         S3Bucket: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
-        S3Key: !Join [ "", [ !Ref s3configKey,  !Ref jobStatusFilename] ]
+        S3Key: !Sub '${s3configKey}${jobStatusFilename}'
       Environment:
         Variables:
           STATUS_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
@@ -714,10 +724,13 @@ Resources:
             Statement:
               - Effect: "Allow"
                 Action: "s3:*"
-                Resource: [
-                  !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]]],
-                  !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]],"/*"]]
-                ]
+                Resource:
+                  - !Sub
+                    - 'arn:aws:s3:::${BucketName}'
+                    - { BucketName: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]] }
+                  - !Sub
+                    - 'arn:aws:s3:::${BucketName}/*'
+                    - { BucketName: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]] }
   ReloadLambdaCodeFunctionRole:
     Type: 'AWS::IAM::Role'
     Properties:
@@ -742,10 +755,9 @@ Resources:
                 Action:
                   - 'lambda:UpdateFunctionCode'
                 Resource: '*'
-                Resource: [
-                  !Join ["", ["arn:aws:lambda:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":function:", !Ref JobStatusLambdaFunction]],
-                  !Join ["", ["arn:aws:lambda:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":function:", !Ref RequestHandlerLambdaFunction]]
-                ]
+                Resource:
+                  - !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${JobStatusLambdaFunction}'
+                  - !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${RequestHandlerLambdaFunction}'
   ReloadLambdaCodeFunction:
     Type: "AWS::Lambda::Function"
     Properties:
@@ -847,10 +859,13 @@ Resources:
             Statement:
               - Effect: "Allow"
                 Action: "s3:Put*"
-                Resource: [
-                  !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]]],
-                  !Join ["", ["arn:aws:s3:::", !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]], "/*"]]
-                ]
+                Resource:
+                  - !Sub
+                    - 'arn:aws:s3:::${BucketName}'
+                    - { BucketName: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]] }
+                  - !Sub
+                    - 'arn:aws:s3:::${BucketName}/*'
+                    - { BucketName: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]] }
   S3PutObjectLambdaFunction:
     Type: "AWS::Lambda::Function"
     Properties:
@@ -1012,10 +1027,9 @@ Resources:
                     "s3:List*",
                     "s3:Get*"
                   ]
-                  Resource: [
-                    !Join ["", ["arn:aws:s3:::", !Ref EphemeralS3Bucket]],
-                    !Join ["", ["arn:aws:s3:::", !Ref EphemeralS3Bucket, "/*"]]
-                  ]
+                  Resource:
+                    - !Sub 'arn:aws:s3:::${EphemeralS3Bucket}'
+                    - !Sub 'arn:aws:s3:::${EphemeralS3Bucket}/*'
   SumoLogicLambdaFunction:
     Type: "AWS::Lambda::Function"
     Condition: "ConfigureSumoLogic"
@@ -1056,7 +1070,7 @@ Resources:
       Action: lambda:invokeFunction
       FunctionName: !GetAtt SumoLogicLambdaFunction.Arn
       Principal: !Sub 'logs.${AWS::Region}.amazonaws.com'
-      SourceArn: !Join ["", ["arn:aws:logs:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":log-group:/aws/batch/job:*"]]
+      SourceArn: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/batch/job:*'
   BatchJobLogsSubscriptionFilter:
     Type: "AWS::Logs::SubscriptionFilter"
     Condition: "ConfigureSumoLogic"
@@ -1072,7 +1086,7 @@ Resources:
       Action: lambda:invokeFunction
       FunctionName: !GetAtt SumoLogicLambdaFunction.Arn
       Principal: !Sub 'logs.${AWS::Region}.amazonaws.com'
-      SourceArn: !Join ["", ["arn:aws:logs:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":log-group:", !Ref RequestHandlerLogGroup,":*"]]
+      SourceArn: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${RequestHandlerLogGroup}:*'
   RequestHandlerLambdaLogsSubscriptionFilter:
     Type: "AWS::Logs::SubscriptionFilter"
     Condition: "ConfigureSumoLogic"
@@ -1088,7 +1102,7 @@ Resources:
       Action: lambda:invokeFunction
       FunctionName: !GetAtt SumoLogicLambdaFunction.Arn
       Principal: !Sub 'logs.${AWS::Region}.amazonaws.com'
-      SourceArn: !Join ["", ["arn:aws:logs:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":log-group:", !Ref JobStatusLogGroup,":*"]]
+      SourceArn: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${JobStatusLogGroup}:*'
   JobStatusLambdaLogsSubscriptionFilter:
     Type: "AWS::Logs::SubscriptionFilter"
     Condition: "ConfigureSumoLogic"
@@ -1100,11 +1114,11 @@ Resources:
   JobStatusLogGroup:
     Type: "AWS::Logs::LogGroup"
     Properties:
-      LogGroupName: !Join ["", ["/aws/lambda/", !Ref JobStatusLambdaFunction]]
+      LogGroupName: !Sub '/aws/lambda/${JobStatusLambdaFunction}'
   RequestHandlerLogGroup:
     Type: "AWS::Logs::LogGroup"
     Properties:
-      LogGroupName: !Join ["", ["/aws/lambda/", !Ref RequestHandlerLambdaFunction]]
+      LogGroupName: !Sub '/aws/lambda/${RequestHandlerLambdaFunction}'
 Outputs:
   RequestHandlerApiGatewayUrl:
     Value: !If [
