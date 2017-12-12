@@ -63,6 +63,7 @@
                 -->
                 <artifactId>maven-assembly-plugin</artifactId>
                 <configuration>
+                    <finalName>job-status-service</finalName>
                     <descriptors>
                         <descriptor>src/assembly/lambda_package_assembly.xml</descriptor>
                     </descriptors>

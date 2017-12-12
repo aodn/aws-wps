@@ -68,6 +68,7 @@
                 -->
                 <artifactId>maven-assembly-plugin</artifactId>
                 <configuration>
+                    <finalName>request-handler</finalName>
                     <descriptors>
                         <descriptor>src/assembly/lambda_package_assembly.xml</descriptor>
                     </descriptors>
