@@ -9,7 +9,6 @@
         <xsl:param name="submittedTime" />
         <xsl:param name="bootstrapCssLocation"/>
         <xsl:param name="aodnCssLocation"/>
-        <xsl:param name="aodnLogoLocation"/>
         <xsl:param name="requestXML"/>
         <xsl:param name="logFileLink"/>
 
@@ -36,7 +35,7 @@
         <div class="portalheader">
             <div class="container">
                 <a class="btn" role="button" href="https://portal.aodn.org.au">
-                    <img src="{$aodnLogoLocation}" alt="Portal logo"/>
+                    <img src="https://s3-ap-southeast-2.amazonaws.com/static.emii.org.au/images/logo/AODN_logo_fullText.png" alt="Portal logo"/>
                 </a>
             </div>
         </div>
