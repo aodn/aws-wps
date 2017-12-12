@@ -6,12 +6,6 @@ Parameters:
     Type: String
     Description: Build/Code version
     Default: '0'
-  s3configKey:
-    Type: String
-    Default: config/
-  s3jobKey:
-    Type: String
-    Default: jobs/
   requestHandlerCodeURL:
     Type: String
   requestHandlerApiPath:
@@ -94,6 +88,8 @@ Mappings:
     ConstantMap:
       ContainerWorkingDir: /mnt/work
       CloudfrontHostedZoneId: Z2FDTNDATAQYW2
+      S3ConfigKeyPrefix: config/
+      S3JobKeyPrefix: jobs/
   AccountConstants:
     '615645230945':  # non-production
       CertificateArn: arn:aws:acm:us-east-1:615645230945:certificate/06e50848-29a7-47c3-8a3f-c3212b608a8d
@@ -173,7 +169,7 @@ Resources:
       LifecycleConfiguration:
         Rules:
           - Id: JobExpirationInDays
-            Prefix: !Ref s3jobKey
+            Prefix: !FindInMap [Constants, ConstantMap, S3JobKeyPrefix]
             Status: Enabled
             ExpirationInDays: !Ref jobExpirationInDays
       Tags:
@@ -190,8 +186,9 @@ Resources:
               - s3:GetObject
             Effect: Allow
             Resource: !Sub
-              - 'arn:aws:s3:::${BucketName}/${s3jobKey}*'
-              - { BucketName: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]] }
+              - 'arn:aws:s3:::${BucketName}/${S3Prefix}*'
+              - BucketName: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
+                S3Prefix: !FindInMap [Constants, ConstantMap, S3JobKeyPrefix]
             Principal: '*'
   BatchServiceRole:
     Type: AWS::IAM::Role
@@ -312,8 +309,14 @@ Resources:
             Name: AWS_REGION_SES
             Value: !Ref awsRegionSes
           -
-            Name: AGGREGATOR_TEMPLATE_FILE_URL
-            Value: !Ref templatesURL
+            Name: AGGREGATOR_TEMPLATE_FILE_S3_KEY
+            Value: !Sub
+              - '${S3Prefix}${ConfigFile}'
+              - S3Prefix: !FindInMap [Constants, ConstantMap, S3ConfigKeyPrefix]
+                ConfigFile: !FindInMap [ConfigurationFileMap, Filename, templates]
+          -
+            Name: AGGREGATOR_CONFIG_S3_BUCKET
+            Value: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
           -
             Name: GEOSERVER_CATALOGUE_ENDPOINT_URL
             Value: !Ref geoserver
@@ -346,7 +349,7 @@ Resources:
             Value: !Ref jobExpirationInDays
           -
             Name: JOB_S3_KEY
-            Value: !Ref s3jobKey
+            Value: !FindInMap [Constants, ConstantMap, S3JobKeyPrefix]
           -
             Name: STATUS_SERVICE_ENDPOINT_URL
             Value: !If [
@@ -560,7 +563,7 @@ Resources:
             !Sub 'https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}'
           ]
           AWS_REGION_SES: !Ref awsRegionSes
-          JOB_S3_KEY: !Ref s3jobKey
+          JOB_S3_KEY: !FindInMap [Constants, ConstantMap, S3JobKeyPrefix]
           STATUS_SERVICE_ENDPOINT_URL: !If [
             CreateWpsApiGatewayDomainName,
             !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}/${jobStatusApiPath}',
@@ -665,8 +668,8 @@ Resources:
           STATUS_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
           STATUS_S3_FILENAME: !FindInMap [ConfigurationFileMap, Filename, status]
           REQUEST_S3_FILENAME: !FindInMap [ConfigurationFileMap, Filename, request]
-          JOB_S3_KEY: !Ref s3jobKey
-          CONFIG_S3_KEY: !Ref s3configKey
+          JOB_S3_KEY: !FindInMap [Constants, ConstantMap, S3JobKeyPrefix]
+          CONFIG_S3_KEY: !FindInMap [Constants, ConstantMap, S3ConfigKeyPrefix]
           BOOTSTRAP_CSS_FILENAME: !FindInMap [ConfigurationFileMap, Filename, bootstrapCss]
           AODN_CSS_FILENAME: !FindInMap [ConfigurationFileMap, Filename, jobStatusCss]
           AWS_BATCH_JOB_QUEUE_NAME: !Ref JobQueue
@@ -814,7 +817,7 @@ Resources:
       Environment:
         Variables:
           BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
-          CONFIG_LOCATION: !Ref s3configKey
+          CONFIG_LOCATION: !FindInMap [Constants, ConstantMap, S3ConfigKeyPrefix]
           FILENAME_SUFFIX: FILENAME
           HTTP_FILE_PREFIX: HTTP_FILE
           HTTP_FILE_JOB_STATUS_CSS: !Ref aodnCssURL
@@ -863,8 +866,8 @@ Resources:
       Environment:
         Variables:
           BUCKET: !Ref EphemeralS3Bucket
-          CONFIG_KEY: !Ref s3configKey
-          JOBS_KEY: !Ref s3jobKey
+          CONFIG_KEY: !FindInMap [Constants, ConstantMap, S3ConfigKeyPrefix]
+          JOBS_KEY: !FindInMap [Constants, ConstantMap, S3JobKeyPrefix]
   EmptyBucket:
     Type: Custom::EmptyBucket
     Condition: CreateEphemeralBucket
