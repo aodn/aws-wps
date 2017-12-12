@@ -328,7 +328,6 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
 
             statusFileTransformer.setParameter("bootstrapCssLocation", WpsConfig.getBootstrapCssS3ExternalURL());
             statusFileTransformer.setParameter("aodnCssLocation", WpsConfig.getAodnCssS3ExternalURL());
-            statusFileTransformer.setParameter("aodnLogoLocation", WpsConfig.getAodnLogoS3ExternalURL());
 
             // Source
             JAXBContext jc = JAXBContext.newInstance(ExecuteResponse.class);
@@ -444,7 +443,6 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
 
             params.put("bootstrapCssLocation", WpsConfig.getBootstrapCssS3ExternalURL());
             params.put("aodnCssLocation", WpsConfig.getAodnCssS3ExternalURL());
-            params.put("aodnLogoLocation", WpsConfig.getAodnLogoS3ExternalURL());
             params.put("queueName", queueName);
             params.put("statusServiceBaseLink", WpsConfig.getBaseStatusServiceAdminLink());
 
