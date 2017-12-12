@@ -34,11 +34,6 @@ Parameters:
   sumoEndpoint:
     Type: String
     Default: ''
-  sumologicLambdaCodeFilename:
-    Type: String
-    Default: index.zip
-  sumologicLambdaCodeURL:
-    Type: String
   bootstrapCssURL:
     Type: String
   aodnCssURL:
@@ -838,8 +833,6 @@ Resources:
           HTTP_FILE_TEMPLATES_FILENAME: !FindInMap [ConfigurationFileMap, Filename, templates]
           HTTP_FILE_JOB_STATUS_CSS: !Ref aodnCssURL
           HTTP_FILE_JOB_STATUS_CSS_FILENAME: !FindInMap [ConfigurationFileMap, Filename, jobStatusCss]
-          HTTP_FILE_SUMOLOGIC_LAMBDA: !Ref sumologicLambdaCodeURL
-          HTTP_FILE_SUMOLOGIC_LAMBDA_FILENAME: !Ref sumologicLambdaCodeFilename
           HTTP_FILE_BOOTSTRAP_CSS: !Ref bootstrapCssURL
           HTTP_FILE_BOOTSTRAP_CSS_FILENAME: !FindInMap [ConfigurationFileMap, Filename, bootstrapCss]
           HTTP_FILE_AODN_LOGO: !Ref aodnLogoURL
@@ -935,9 +928,7 @@ Resources:
     Condition: ConfigureSumoLogic
     DependsOn: S3PutConfigurationFiles
     Properties:
-      Code:
-        S3Bucket: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
-        S3Key: !Join [ '', [ !Ref s3configKey,  !Ref sumologicLambdaCodeFilename] ]
+      Code: ./sumologic-lambda.zip
       Description: Push batch logs to SumoLogic
       FunctionName: !Sub 'SumoLogic-WPS-${AWS::StackName}'
       Handler: index.handler
