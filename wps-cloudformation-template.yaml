@@ -6,8 +6,6 @@ Parameters:
     Type: String
     Description: Build/Code version
     Default: '0'
-  requestHandlerCodeURL:
-    Type: String
   requestHandlerApiPath:
     Type: String
     Default: wps
@@ -21,8 +19,6 @@ Parameters:
     Type: String
     Description: Custom AMI image id to use when creating the compute environment (optional)
     Default: ''
-  jobStatusCodeURL:
-    Type: String
   templatesURL:
     Type: String
   sumoEndpoint:
