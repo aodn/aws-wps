@@ -88,8 +88,7 @@ public class AggregationRunner implements CommandLineRunner {
             Path workingDir = Paths.get(WpsConfig.getConfig(WORKING_DIR_CONFIG_KEY));
             Path jobDir = Files.createTempDirectory(workingDir, batchJobId);
 
-            String aggregatorConfigS3Bucket = WpsConfig.getConfig(AGGREGATOR_CONFIG_S3_BUCKET_CONFIG_KEY);
-            String aggregatorTemplateFileS3Key = WpsConfig.getConfig(AGGREGATOR_TEMPLATE_FILE_S3_KEY_CONFIG_KEY);
+            String aggregatorTemplateFileURL = WpsConfig.getConfig(AGGREGATOR_TEMPLATE_FILE_URL_KEY);
 
             //  Parse connect timeout
             String downloadConnectTimeoutString = WpsConfig.getConfig(DOWNLOAD_CONNECT_TIMEOUT_CONFIG_KEY);
@@ -165,7 +164,7 @@ public class AggregationRunner implements CommandLineRunner {
             }
 
             //  Apply overrides (if provided)
-            AggregationOverrides overrides = getAggregationOverrides(aggregatorConfigS3Bucket, aggregatorTemplateFileS3Key, layer);
+            AggregationOverrides overrides = getAggregationOverrides(aggregatorTemplateFileURL, layer);
 
             // Create a directory for downloads in working directory
             downloadDirectory = jobDir.resolve("downloads");
@@ -226,7 +225,7 @@ public class AggregationRunner implements CommandLineRunner {
                     Map<String, Object> params = new HashMap<>();
                     params.put("jobId", batchJobId);
                     params.put("downloadUrl", resultUrl);
-                    params.put("settingsPath", WpsConfig.getS3ExternalURL(aggregatorConfigS3Bucket, aggregatorTemplateFileS3Key));
+                    params.put("settingsPath", aggregatorTemplateFileURL);
                     params.put("startTime", startTime);
                     params.put("endTime", new DateTime(DateTimeZone.UTC));
                     params.put("layer", layer);

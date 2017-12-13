@@ -4,11 +4,11 @@ import au.org.aodn.aggregator.configuration.Attribute;
 import au.org.aodn.aggregator.configuration.Template;
 import au.org.aodn.aggregator.configuration.Templates;
 import au.org.aodn.aggregator.configuration.Variable;
-import au.org.aodn.aws.util.S3Utils;
 import au.org.emii.aggregator.overrides.AggregationOverrides;
 import au.org.emii.aggregator.overrides.GlobalAttributeOverride;
 import au.org.emii.aggregator.overrides.VariableAttributeOverride;
 import au.org.emii.aggregator.overrides.VariableOverrides;
+import com.amazonaws.util.IOUtils;
 import com.amazonaws.util.StringInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +18,8 @@ import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
@@ -27,15 +29,15 @@ public class AggregationOverridesReader {
 
     private static Logger logger = LoggerFactory.getLogger(AggregationOverridesReader.class);
 
-    public static AggregationOverrides getAggregationOverrides(String s3Bucket, String s3Key, String layer) {
+    public static AggregationOverrides getAggregationOverrides(String url, String layer) {
         AggregationOverrides overrides = new AggregationOverrides();
 
-        logger.info("Loading aggregation templates file from S3.  Bucket [" + s3Bucket + "], Key [" + s3Key + "]");
+        logger.info("Loading aggregation templates file from url: " + url);
 
         //  Read config file from S3
         String overrideTemplateDocument = null;
-        try {
-            overrideTemplateDocument = S3Utils.readS3ObjectAsString(s3Bucket, s3Key);
+        try  (InputStream inputStream = new URL(url).openStream()) {
+            overrideTemplateDocument =  IOUtils.toString(inputStream);
 
             //  Unmarshall from XML
             JAXBContext context = JAXBContext.newInstance(Templates.class);
@@ -130,7 +132,7 @@ public class AggregationOverridesReader {
                 }
             }
         } catch (IOException ex) {
-            logger.error("Unable to load aggregations override file from S3.", ex);
+            logger.error("Unable to download aggregations override file from given url ", ex);
         } catch (JAXBException ex) {
             logger.error("Unable to unmarshall XML from aggregations override file.", ex);
         }

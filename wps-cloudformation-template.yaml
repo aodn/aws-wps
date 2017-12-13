@@ -120,7 +120,6 @@ Mappings:
       outputWithoutExtension: output
       status: status.xml
       request: request.xml
-      templates: templates.xml
       bootstrapCss: bootstrap.min.css
       jobStatusCss: AODNStatusPage.css
   production:
@@ -313,13 +312,8 @@ Resources:
             Name: AWS_REGION_SES
             Value: !Ref awsRegionSes
           -
-            Name: AGGREGATOR_TEMPLATE_FILE_S3_KEY
-            Value: !Sub
-              - '${s3configKey}${ConfigFile}'
-              - { ConfigFile: !FindInMap [ConfigurationFileMap, Filename, templates] }
-          -
-            Name: AGGREGATOR_CONFIG_S3_BUCKET
-            Value: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
+            Name: AGGREGATOR_TEMPLATE_FILE_URL
+            Value: !Ref templatesURL
           -
             Name: GEOSERVER_CATALOGUE_ENDPOINT_URL
             Value: !Ref geoserver
@@ -823,8 +817,6 @@ Resources:
           CONFIG_LOCATION: !Ref s3configKey
           FILENAME_SUFFIX: FILENAME
           HTTP_FILE_PREFIX: HTTP_FILE
-          HTTP_FILE_TEMPLATES: !Ref templatesURL
-          HTTP_FILE_TEMPLATES_FILENAME: !FindInMap [ConfigurationFileMap, Filename, templates]
           HTTP_FILE_JOB_STATUS_CSS: !Ref aodnCssURL
           HTTP_FILE_JOB_STATUS_CSS_FILENAME: !FindInMap [ConfigurationFileMap, Filename, jobStatusCss]
           HTTP_FILE_BOOTSTRAP_CSS: !Ref bootstrapCssURL
