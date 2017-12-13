@@ -36,11 +36,8 @@ public class AggregationOverridesReader {
 
         //  Read config file from S3
         String overrideTemplateDocument = null;
-        try {
-            InputStream inputStream = new URL(url).openStream();
-
+        try  (InputStream inputStream = new URL(url).openStream()) {
             overrideTemplateDocument =  IOUtils.toString(inputStream);
-            inputStream.close();
 
             //  Unmarshall from XML
             JAXBContext context = JAXBContext.newInstance(Templates.class);
