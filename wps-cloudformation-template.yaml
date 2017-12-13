@@ -256,9 +256,7 @@ Resources:
               -
                 Effect: Allow
                 Action:
-                  - s3:Get*
-                  - s3:List*
-                  - s3:PutObject
+                  - s3:*
                 Resource:
                   - !Sub
                     - 'arn:aws:s3:::${BucketName}'
