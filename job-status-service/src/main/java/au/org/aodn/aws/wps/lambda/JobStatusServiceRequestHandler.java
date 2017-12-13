@@ -326,9 +326,6 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
             //  locale of the browser.  Passed as seconds since epoch.
             statusFileTransformer.setParameter("submittedTime", "" + unixTimestampSeconds);
 
-            statusFileTransformer.setParameter("bootstrapCssLocation", WpsConfig.getBootstrapCssS3ExternalURL());
-            statusFileTransformer.setParameter("aodnCssLocation", WpsConfig.getAodnCssS3ExternalURL());
-
             // Source
             JAXBContext jc = JAXBContext.newInstance(ExecuteResponse.class);
             JAXBSource source = new JAXBSource(jc, xmlStatus);
@@ -441,8 +438,6 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
 
             Map<String, Object> params = new HashMap<String, Object>();
 
-            params.put("bootstrapCssLocation", WpsConfig.getBootstrapCssS3ExternalURL());
-            params.put("aodnCssLocation", WpsConfig.getAodnCssS3ExternalURL());
             params.put("queueName", queueName);
             params.put("statusServiceBaseLink", WpsConfig.getBaseStatusServiceAdminLink());
 

@@ -26,8 +26,24 @@
 
         <html>
         <head>
-            <link rel="stylesheet" href="{$bootstrapCssLocation}"/>
-            <link rel="stylesheet" type="text/css" href="{$aodnCssLocation}"/>
+            <style>
+                html {background-color: white; margin-top: 0 ! important;}
+                body, html, td, p, button {font-family: 'Arimo', sans-serif;}
+                body, html, td {color: #4D5B63;}
+                h2 {margin-bottom: 14px;}
+                h1, h2, h3, h4,.x-panel-header,.x-window-header-text,.search-filter-panel,.filter-selection-panel-header-selected {color: #4D5B63;cursor: default;}
+                p {margin-bottom: 10px;}
+                .portalheader, .jumbotronFooter {padding: 10px 0;background-color: #1a5173;}
+                .jumbotronFooter {padding: 48px 0;}
+                .jumbotronFooter * {color: #ffffff;}
+                .jumbotronFooter a {color: #ccc;}
+                table {border: 0;}
+                table * {border-collapse: collapse;padding: 6px}
+                th {border: 1px solid black;color:#ffffff;;background:#1a5273;padding:inherit;}
+                tr:hover td {background:#dfe4e6;}
+                td {border: 1px solid black;padding:6px;text-align:left;font-weight:300;font-size:12px;}
+            </style>
+            <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css"/>
 
             <title>IMOS Job Status - <xsl:value-of select="$jobid"/></title>
         </head>

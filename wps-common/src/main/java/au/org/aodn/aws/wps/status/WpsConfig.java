@@ -78,9 +78,6 @@ public class WpsConfig {
     private static final String REGISTERED_JOB_EMAIL_SUBJECT_KEY = "jobRegisteredEmailSubject";
     private static final String REGISTERED_JOB_EMAIL_KEY = "jobRegisteredEmail";
 
-    private static final String BOOTSTRAP_CSS_FILENAME_CONFIG_KEY = "BOOTSTRAP_CSS_FILENAME";
-    private static final String AODN_CSS_FILENAME_CONFIG_KEY = "AODN_CSS_FILENAME";
-
     public static final String LANGUAGE_KEY = "language";
 
     public static final String APPLICATION_PROPERTIES = "application.properties";
@@ -134,9 +131,6 @@ public class WpsConfig {
             setProperty(properties, POOL_SIZE_CONFIG_KEY);
             setProperty(properties, RETRY_INTERVAL_CONFIG_KEY);
             setProperty(properties, STATUS_SERVICE_ENDPOINT_KEY);
-
-            setProperty(properties, BOOTSTRAP_CSS_FILENAME_CONFIG_KEY);
-            setProperty(properties, AODN_CSS_FILENAME_CONFIG_KEY);
             setProperty(properties, AWS_BATCH_CONFIG_S3_KEY);
             setProperty(properties, AWS_BATCH_LOG_GROUP_NAME_CONFIG_KEY);
         }
@@ -175,14 +169,6 @@ public class WpsConfig {
 
     public static String getAwsWpsEndpointUrl() {
         return getConfig(WPS_ENDPOINT_URL_CONFIG_KEY);
-    }
-
-    public static String getBootstrapCssS3ExternalURL() {
-        return getConfigFileS3ExternalURL(BOOTSTRAP_CSS_FILENAME_CONFIG_KEY);
-    }
-
-    public static String getAodnCssS3ExternalURL() {
-        return getConfigFileS3ExternalURL(AODN_CSS_FILENAME_CONFIG_KEY);
     }
 
     private static String getConfigFileS3ExternalURL(String filename) {
