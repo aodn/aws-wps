@@ -352,18 +352,16 @@ Resources:
             Value: !FindInMap [Constants, ConstantMap, S3JobKeyPrefix]
           -
             Name: STATUS_SERVICE_ENDPOINT_URL
-            Value: !If [
-              CreateWpsApiGatewayDomainName,
-              !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}/${jobStatusApiPath}',
-              !Sub 'https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}/${jobStatusApiPath}'
-            ]
+            Value: !If
+              - CreateWpsApiGatewayDomainName
+              - !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}/${jobStatusApiPath}'
+              - !Sub 'https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}/${jobStatusApiPath}'
           -
             Name: AWS_WPS_ENDPOINT_URL
-            Value: !If [
-              CreateWpsApiGatewayDomainName,
-              !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}',
-              !Sub 'https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}'
-            ]
+            Value: !If
+              - CreateWpsApiGatewayDomainName
+              - !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}'
+              - !Sub 'https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}'
         MountPoints:
           -
             SourceVolume: work
@@ -557,18 +555,16 @@ Resources:
           STATUS_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
           STATUS_S3_FILENAME: !FindInMap [ConfigurationFileMap, Filename, status]
           REQUEST_S3_FILENAME: !FindInMap [ConfigurationFileMap, Filename, request]
-          AWS_WPS_ENDPOINT_URL: !If [
-            CreateWpsApiGatewayDomainName,
-            !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}',
-            !Sub 'https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}'
-          ]
+          AWS_WPS_ENDPOINT_URL: !If
+            - CreateWpsApiGatewayDomainName
+            - !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}'
+            - !Sub 'https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}'
           AWS_REGION_SES: !Ref awsRegionSes
           JOB_S3_KEY: !FindInMap [Constants, ConstantMap, S3JobKeyPrefix]
-          STATUS_SERVICE_ENDPOINT_URL: !If [
-            CreateWpsApiGatewayDomainName,
-            !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}/${jobStatusApiPath}',
-            !Sub 'https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}/${jobStatusApiPath}'
-          ]
+          STATUS_SERVICE_ENDPOINT_URL: !If
+            - CreateWpsApiGatewayDomainName
+            - !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}/${jobStatusApiPath}'
+            - !Sub 'https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}/${jobStatusApiPath}'
     DependsOn: S3PutConfigurationFiles
   RequestHandlerLambdaExecutionRole:
     Type: AWS::IAM::Role
@@ -674,11 +670,10 @@ Resources:
           AODN_CSS_FILENAME: !FindInMap [ConfigurationFileMap, Filename, jobStatusCss]
           AWS_BATCH_JOB_QUEUE_NAME: !Ref JobQueue
           AWS_BATCH_LOG_GROUP_NAME: /aws/batch/job
-          STATUS_SERVICE_ENDPOINT_URL: !If [
-            CreateWpsApiGatewayDomainName,
-            !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}/${jobStatusApiPath}',
-            !Sub 'https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}/${jobStatusApiPath}'
-          ]
+          STATUS_SERVICE_ENDPOINT_URL: !If
+            - CreateWpsApiGatewayDomainName
+            - !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}/${jobStatusApiPath}'
+            - !Sub 'https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}/${jobStatusApiPath}'
     DependsOn: S3PutConfigurationFiles
   JobStatusLambdaExecutionRole:
     Type: AWS::IAM::Role
@@ -999,17 +994,15 @@ Resources:
       LogGroupName: !Sub '/aws/lambda/${RequestHandlerLambdaFunction}'
 Outputs:
   RequestHandlerApiGatewayUrl:
-    Value: !If [
-      CreateWpsApiGatewayDomainName,
-      !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}',
-      !Sub 'https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}'
-    ]
+    Value: !If
+      - CreateWpsApiGatewayDomainName
+      - !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}'
+      - !Sub 'https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}'
   JobStatusApiGatewayUrl:
-    Value: !If [
-      CreateWpsApiGatewayDomainName,
-      !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}/${jobStatusApiPath}',
-      !Sub 'https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}/${jobStatusApiPath}'
-    ]
+    Value: !If
+      - CreateWpsApiGatewayDomainName
+      - !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}/${jobStatusApiPath}'
+      - !Sub 'https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}/${jobStatusApiPath}'
   ComputeEnvironmentArn:
     Value: !Ref ComputeEnvironment
   JobQueueArn:
