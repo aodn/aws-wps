@@ -2,11 +2,6 @@ package au.org.aodn.aws.wps.operation;
 
 
 import au.org.aodn.aws.util.Utils;
-import com.amazonaws.regions.Region;
-import com.amazonaws.regions.Regions;
-import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.S3Object;
-import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import freemarker.cache.StringTemplateLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,10 +29,10 @@ public class GetCapabilitiesReader {
             String templateString;
             try {
                 templateString = Utils.inputStreamToString(inputStream);
-                logger.info("Freemarker template: " + templateString);
+                logger.info("Read freemarker template.");
             } catch (IOException ioex) {
                 //  Bad stuff - blow up!
-                logger.error("Problem loading tempate: ", ioex);
+                logger.error("Problem loading template: ", ioex);
                 throw ioex;
             }
 
