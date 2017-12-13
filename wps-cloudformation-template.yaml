@@ -34,10 +34,6 @@ Parameters:
   sumoEndpoint:
     Type: String
     Default: ''
-  bootstrapCssURL:
-    Type: String
-  aodnCssURL:
-    Type: String
   jobName:
     Type: String
     Default: javaduck
@@ -120,8 +116,6 @@ Mappings:
       outputWithoutExtension: output
       status: status.xml
       request: request.xml
-      bootstrapCss: bootstrap.min.css
-      jobStatusCss: AODNStatusPage.css
   production:
     ap-southeast-2:
       vpc: vpc-7302ee16
@@ -817,10 +811,6 @@ Resources:
           CONFIG_LOCATION: !Ref s3configKey
           FILENAME_SUFFIX: FILENAME
           HTTP_FILE_PREFIX: HTTP_FILE
-          HTTP_FILE_JOB_STATUS_CSS: !Ref aodnCssURL
-          HTTP_FILE_JOB_STATUS_CSS_FILENAME: !FindInMap [ConfigurationFileMap, Filename, jobStatusCss]
-          HTTP_FILE_BOOTSTRAP_CSS: !Ref bootstrapCssURL
-          HTTP_FILE_BOOTSTRAP_CSS_FILENAME: !FindInMap [ConfigurationFileMap, Filename, bootstrapCss]
   S3PutConfigurationFiles:
     Type: Custom::S3PutObject
     Properties:
