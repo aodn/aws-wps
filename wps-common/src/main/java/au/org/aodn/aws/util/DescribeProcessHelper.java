@@ -22,14 +22,11 @@ public class DescribeProcessHelper {
     public static ProcessDescriptionType getProcessDescription(String qualifiedProcessName)
             throws OGCException {
 
-        LOGGER.info("Process name: " + qualifiedProcessName);
-
         String processName = qualifiedProcessName;
 
         if(processName.indexOf(":")!=-1)
         {
             processName = processName.substring(processName.indexOf(":") + 1);
-            LOGGER.info("Process name after substring: " + processName);
         }
 
         String processDescription = String.format("/processes/%s%s", processName, PROCESS_DESCRIPTION_FILE_EXTENSION);

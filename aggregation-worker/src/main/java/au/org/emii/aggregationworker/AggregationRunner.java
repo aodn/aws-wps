@@ -24,6 +24,9 @@ import net.opengis.wps.v_1_0_0.Execute;
 import org.apache.commons.io.FileUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.joda.time.Period;
+import org.joda.time.format.PeriodFormatter;
+import org.joda.time.format.PeriodFormatterBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
@@ -65,6 +68,7 @@ public class AggregationRunner implements CommandLineRunner {
     public void run(String... args) {
 
         DateTime startTime = new DateTime(DateTimeZone.UTC);
+
         S3JobFileManager statusFileManager = null;
         String batchJobId = null, email = null;
         EmailService emailService = null;
@@ -248,7 +252,18 @@ public class AggregationRunner implements CommandLineRunner {
 
                 DateTime stopTime = new DateTime(DateTimeZone.UTC);
 
-                logger.info("Aggregation completed successfully. JobID [" + batchJobId + "], Callback email [" + email + "], Size bytes [" + convertedFile.toFile().length() + "]");
+                Period elapsedPeriod = new Period(startTime, stopTime);
+
+                PeriodFormatter formatter = new PeriodFormatterBuilder()
+                        .printZeroNever()
+                        .appendHours().appendPrefix("h:")
+                        .appendMinutes().appendSuffix("m:")
+                        .appendSeconds().appendSuffix("s")
+                        .toFormatter();
+
+                String elapsedTime = formatter.print(elapsedPeriod);
+
+                logger.info("Aggregation completed successfully. JobID [" + batchJobId + "], Callback email [" + email + "], Size bytes [" + convertedFile.toFile().length() + "], Elapsed time [" + elapsedTime + "]");
                 statusDocument = statusBuilder.createResponseDocument(EnumStatus.SUCCEEDED, GOGODUCK_PROCESS_IDENTIFIER, null, null, outputMap);
                 statusFileManager.write(statusDocument, statusFilename, STATUS_FILE_MIME_TYPE);
 
