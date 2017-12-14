@@ -186,9 +186,12 @@ public class AggregationRunner implements CommandLineRunner {
                     NetcdfAggregator netcdfAggregator = new NetcdfAggregator(outputFile, overrides, chunkSize, bbox, subsetParams.getVerticalRange(), subsetTimeRange)
             ) {
                 for (Download download : downloadManager.download(new LinkedHashSet<>(downloads))) {
+                    logger.info("Download file size [" + download.getPath().toFile().length() + " bytes]");
                     netcdfAggregator.add(download.getPath());
                     downloadManager.remove();
                 }
+
+                logger.info("Raw aggregated file size [" + outputFile.toFile().length() + " bytes]");
 
                 HashMap<String, String> outputMap = new HashMap<>();
 
@@ -202,6 +205,7 @@ public class AggregationRunner implements CommandLineRunner {
                 S3JobFileManager outputFileManager = new S3JobFileManager(outputBucketName, jobFileS3KeyPrefix, batchJobId);
                 String fullOutputFilename = outputFilename + "." + converter.getExtension();
                 outputFileManager.upload(convertedFile.toFile(), fullOutputFilename, resultMime);
+
 
                 String resultUrl = WpsConfig.getS3ExternalURL(outputBucketName,
                         outputFileManager.getJobFileKey(fullOutputFilename));
@@ -242,7 +246,9 @@ public class AggregationRunner implements CommandLineRunner {
                     outputMap.put("provenance", provenanceUrl);
                 }
 
-                logger.info("Aggregation completed successfully. JobID [" + batchJobId + "], Callback email [" + email + "]");
+                DateTime stopTime = new DateTime(DateTimeZone.UTC);
+
+                logger.info("Aggregation completed successfully. JobID [" + batchJobId + "], Callback email [" + email + "], Size bytes [" + convertedFile.toFile().length() + "]");
                 statusDocument = statusBuilder.createResponseDocument(EnumStatus.SUCCEEDED, GOGODUCK_PROCESS_IDENTIFIER, null, null, outputMap);
                 statusFileManager.write(statusDocument, statusFilename, STATUS_FILE_MIME_TYPE);
 
