@@ -6,6 +6,12 @@ Parameters:
     Type: String
     Description: Build/Code version
     Default: '0'
+  s3configKey:
+    Type: String
+    Default: config/
+  s3jobKey:
+    Type: String
+    Default: jobs/
   requestHandlerApiPath:
     Type: String
     Default: wps
@@ -80,8 +86,6 @@ Mappings:
     ConstantMap:
       ContainerWorkingDir: /mnt/work
       CloudfrontHostedZoneId: Z2FDTNDATAQYW2
-      S3ConfigKeyPrefix: config/
-      S3JobKeyPrefix: jobs/
   AccountConstants:
     '615645230945':  # non-production
       CertificateArn: arn:aws:acm:us-east-1:615645230945:certificate/06e50848-29a7-47c3-8a3f-c3212b608a8d
@@ -159,7 +163,7 @@ Resources:
       LifecycleConfiguration:
         Rules:
           - Id: JobExpirationInDays
-            Prefix: !FindInMap [Constants, ConstantMap, S3JobKeyPrefix]
+            Prefix: !Ref s3jobKey
             Status: Enabled
             ExpirationInDays: !Ref jobExpirationInDays
       Tags:
@@ -176,9 +180,8 @@ Resources:
               - s3:GetObject
             Effect: Allow
             Resource: !Sub
-              - 'arn:aws:s3:::${BucketName}/${S3Prefix}*'
-              - BucketName: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
-                S3Prefix: !FindInMap [Constants, ConstantMap, S3JobKeyPrefix]
+              - 'arn:aws:s3:::${BucketName}/${s3jobKey}*'
+              - { BucketName: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]] }
             Principal: '*'
   BatchServiceRole:
     Type: AWS::IAM::Role
@@ -333,19 +336,21 @@ Resources:
             Value: !Ref jobExpirationInDays
           -
             Name: JOB_S3_KEY
-            Value: !FindInMap [Constants, ConstantMap, S3JobKeyPrefix]
+            Value: !Ref s3jobKey
           -
             Name: STATUS_SERVICE_ENDPOINT_URL
-            Value: !If
-              - CreateWpsApiGatewayDomainName
-              - !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}/${jobStatusApiPath}'
-              - !Sub 'https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}/${jobStatusApiPath}'
+            Value: !If [
+              CreateWpsApiGatewayDomainName,
+              !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}/${jobStatusApiPath}',
+              !Sub 'https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}/${jobStatusApiPath}'
+            ]
           -
             Name: AWS_WPS_ENDPOINT_URL
-            Value: !If
-              - CreateWpsApiGatewayDomainName
-              - !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}'
-              - !Sub 'https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}'
+            Value: !If [
+              CreateWpsApiGatewayDomainName,
+              !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}',
+              !Sub 'https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}'
+            ]
         MountPoints:
           -
             SourceVolume: work
@@ -539,16 +544,18 @@ Resources:
           STATUS_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
           STATUS_S3_FILENAME: !FindInMap [ConfigurationFileMap, Filename, status]
           REQUEST_S3_FILENAME: !FindInMap [ConfigurationFileMap, Filename, request]
-          AWS_WPS_ENDPOINT_URL: !If
-            - CreateWpsApiGatewayDomainName
-            - !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}'
-            - !Sub 'https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}'
+          AWS_WPS_ENDPOINT_URL: !If [
+            CreateWpsApiGatewayDomainName,
+            !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}',
+            !Sub 'https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}'
+          ]
           AWS_REGION_SES: !Ref awsRegionSes
-          JOB_S3_KEY: !FindInMap [Constants, ConstantMap, S3JobKeyPrefix]
-          STATUS_SERVICE_ENDPOINT_URL: !If
-            - CreateWpsApiGatewayDomainName
-            - !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}/${jobStatusApiPath}'
-            - !Sub 'https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}/${jobStatusApiPath}'
+          JOB_S3_KEY: !Ref s3jobKey
+          STATUS_SERVICE_ENDPOINT_URL: !If [
+            CreateWpsApiGatewayDomainName,
+            !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}/${jobStatusApiPath}',
+            !Sub 'https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}/${jobStatusApiPath}'
+          ]
     DependsOn: S3PutConfigurationFiles
   RequestHandlerLambdaExecutionRole:
     Type: AWS::IAM::Role
@@ -648,16 +655,15 @@ Resources:
           STATUS_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
           STATUS_S3_FILENAME: !FindInMap [ConfigurationFileMap, Filename, status]
           REQUEST_S3_FILENAME: !FindInMap [ConfigurationFileMap, Filename, request]
-          JOB_S3_KEY: !FindInMap [Constants, ConstantMap, S3JobKeyPrefix]
-          CONFIG_S3_KEY: !FindInMap [Constants, ConstantMap, S3ConfigKeyPrefix]
-          BOOTSTRAP_CSS_FILENAME: !FindInMap [ConfigurationFileMap, Filename, bootstrapCss]
-          AODN_CSS_FILENAME: !FindInMap [ConfigurationFileMap, Filename, jobStatusCss]
+          JOB_S3_KEY: !Ref s3jobKey
+          CONFIG_S3_KEY: !Ref s3configKey
           AWS_BATCH_JOB_QUEUE_NAME: !Ref JobQueue
           AWS_BATCH_LOG_GROUP_NAME: /aws/batch/job
-          STATUS_SERVICE_ENDPOINT_URL: !If
-            - CreateWpsApiGatewayDomainName
-            - !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}/${jobStatusApiPath}'
-            - !Sub 'https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}/${jobStatusApiPath}'
+          STATUS_SERVICE_ENDPOINT_URL: !If [
+            CreateWpsApiGatewayDomainName,
+            !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}/${jobStatusApiPath}',
+            !Sub 'https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}/${jobStatusApiPath}'
+          ]
     DependsOn: S3PutConfigurationFiles
   JobStatusLambdaExecutionRole:
     Type: AWS::IAM::Role
@@ -796,7 +802,7 @@ Resources:
       Environment:
         Variables:
           BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
-          CONFIG_LOCATION: !FindInMap [Constants, ConstantMap, S3ConfigKeyPrefix]
+          CONFIG_LOCATION: !Ref s3configKey
           FILENAME_SUFFIX: FILENAME
           HTTP_FILE_PREFIX: HTTP_FILE
   S3PutConfigurationFiles:
@@ -841,8 +847,8 @@ Resources:
       Environment:
         Variables:
           BUCKET: !Ref EphemeralS3Bucket
-          CONFIG_KEY: !FindInMap [Constants, ConstantMap, S3ConfigKeyPrefix]
-          JOBS_KEY: !FindInMap [Constants, ConstantMap, S3JobKeyPrefix]
+          CONFIG_KEY: !Ref s3configKey
+          JOBS_KEY: !Ref s3jobKey
   EmptyBucket:
     Type: Custom::EmptyBucket
     Condition: CreateEphemeralBucket
@@ -974,15 +980,17 @@ Resources:
       LogGroupName: !Sub '/aws/lambda/${RequestHandlerLambdaFunction}'
 Outputs:
   RequestHandlerApiGatewayUrl:
-    Value: !If
-      - CreateWpsApiGatewayDomainName
-      - !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}'
-      - !Sub 'https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}'
+    Value: !If [
+      CreateWpsApiGatewayDomainName,
+      !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}',
+      !Sub 'https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}'
+    ]
   JobStatusApiGatewayUrl:
-    Value: !If
-      - CreateWpsApiGatewayDomainName
-      - !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}/${jobStatusApiPath}'
-      - !Sub 'https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}/${jobStatusApiPath}'
+    Value: !If [
+      CreateWpsApiGatewayDomainName,
+      !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}/${jobStatusApiPath}',
+      !Sub 'https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}/${jobStatusApiPath}'
+    ]
   ComputeEnvironmentArn:
     Value: !Ref ComputeEnvironment
   JobQueueArn:
