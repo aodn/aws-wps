@@ -2,10 +2,6 @@ AWSTemplateFormatVersion: 2010-09-09
 Description: >-
   A template for AWS-WPS
 Parameters:
-  version:
-    Type: String
-    Description: Build/Code version
-    Default: '0'
   requestHandlerApiPath:
     Type: String
     Default: wps
@@ -549,7 +545,6 @@ Resources:
             - CreateWpsApiGatewayDomainName
             - !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}/${jobStatusApiPath}'
             - !Sub 'https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}/${jobStatusApiPath}'
-    DependsOn: S3PutConfigurationFiles
   RequestHandlerLambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -656,7 +651,6 @@ Resources:
             - CreateWpsApiGatewayDomainName
             - !Sub 'https://${WpsRoute53RecordSet}/${requestHandlerApiPath}/${jobStatusApiPath}'
             - !Sub 'https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}/${jobStatusApiPath}'
-    DependsOn: S3PutConfigurationFiles
   JobStatusLambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -696,112 +690,6 @@ Resources:
                   - !Sub
                     - 'arn:aws:s3:::${BucketName}/*'
                     - { BucketName: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]] }
-  S3PutObjectLambdaFunctionRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - lambda.amazonaws.com
-            Action:
-              - sts:AssumeRole
-      Path: /
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-      Policies:
-        - PolicyName: PublishVersion
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - lambda:PublishVersion
-                Resource: '*'
-        - PolicyName: S3Access
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - s3:Put*
-                Resource:
-                  - !Sub
-                    - 'arn:aws:s3:::${BucketName}'
-                    - { BucketName: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]] }
-                  - !Sub
-                    - 'arn:aws:s3:::${BucketName}/*'
-                    - { BucketName: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]] }
-  S3PutObjectLambdaFunction:
-    Type: AWS::Lambda::Function
-    Properties:
-      Code:
-        ZipFile: |
-          import os
-          import boto3
-          import mimetypes
-          from urllib2 import urlopen, Request
-          import cfnresponse
-
-          responseData = {'Data': 'OK'}
-
-          s3c = boto3.client('s3')
-          target_bucket = os.getenv('BUCKET')
-          config_location = os.getenv('CONFIG_LOCATION')
-          filename_suffix = os.getenv('FILENAME_SUFFIX')
-          http_prefix = os.getenv('HTTP_FILE_PREFIX')
-
-
-          def handler(event, context):
-             try:
-                 if event['RequestType'] == 'Create' or event['RequestType'] == 'Update':
-                     for env_var in os.environ:
-                         env_var_value = os.getenv(env_var)
-                         print('Environment Variable {} : {}'.format(env_var, env_var_value))
-
-                     for env_var in os.environ:
-                         env_var_value = os.getenv(env_var)
-                         filename = os.getenv('{}_{}'.format(env_var, filename_suffix))
-                         if env_var.startswith(http_prefix) and not env_var.endswith(filename_suffix) and env_var_value != http_prefix:
-                             put(filename, env_var_value)
-                 return cfnresponse.send(event, context, cfnresponse.SUCCESS, responseData, 'S3PutObjectLambdaFunction')
-             except Exception as e:
-               print(e)
-               return cfnresponse.send(event, context, cfnresponse.FAILED, responseData, 'S3PutObjectLambdaFunction')
-
-
-          def put(filename, url):
-              print('Downloading url : {}'.format(url))
-              request = Request(url)
-              response = urlopen(request)
-
-              file_contents = response.read()
-              fileType,fileEncoding = mimetypes.guess_type(filename)
-              if fileType:
-                  s3c.put_object(Bucket=target_bucket, ContentType=fileType, ACL='public-read', Key='{}{}'.format(config_location, filename), Body=file_contents)
-              else:
-                  s3c.put_object(Bucket=target_bucket, ACL='public-read', Key='{}{}'.format(config_location, filename), Body=file_contents)
-              print('Downloaded url : {}'.format(url))
-      Description: Used to put objects into S3.
-      FunctionName: !Sub 'S3PutObject-${AWS::StackName}'
-      Handler: index.handler
-      Role: !GetAtt S3PutObjectLambdaFunctionRole.Arn
-      Runtime: python2.7
-      MemorySize: 256
-      Timeout: 60
-      Environment:
-        Variables:
-          BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
-          CONFIG_LOCATION: !FindInMap [Constants, ConstantMap, S3ConfigKeyPrefix]
-          FILENAME_SUFFIX: FILENAME
-          HTTP_FILE_PREFIX: HTTP_FILE
-  S3PutConfigurationFiles:
-    Type: Custom::S3PutObject
-    Properties:
-      ServiceToken: !GetAtt S3PutObjectLambdaFunction.Arn
-      Version: !Ref version
   EmptyBucketLambdaFunction:
     Type: AWS::Lambda::Function
     Condition: CreateEphemeralBucket
@@ -886,7 +774,6 @@ Resources:
   SumoLogicLambdaFunction:
     Type: AWS::Lambda::Function
     Condition: ConfigureSumoLogic
-    DependsOn: S3PutConfigurationFiles
     Properties:
       Code: ./sumologic-lambda.zip
       Description: Push batch logs to SumoLogic
