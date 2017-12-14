@@ -299,14 +299,8 @@ Resources:
             Name: AWS_REGION_SES
             Value: !Ref awsRegionSes
           -
-            Name: AGGREGATOR_TEMPLATE_FILE_S3_KEY
-            Value: !Sub
-              - '${S3Prefix}${ConfigFile}'
-              - S3Prefix: !FindInMap [Constants, ConstantMap, S3ConfigKeyPrefix]
-                ConfigFile: !FindInMap [ConfigurationFileMap, Filename, templates]
-          -
-            Name: AGGREGATOR_CONFIG_S3_BUCKET
-            Value: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
+            Name: AGGREGATOR_TEMPLATE_FILE_URL
+            Value: !Ref templatesURL
           -
             Name: GEOSERVER_CATALOGUE_ENDPOINT_URL
             Value: !Ref geoserver
