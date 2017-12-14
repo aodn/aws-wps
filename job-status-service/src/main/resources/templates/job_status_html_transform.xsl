@@ -7,8 +7,6 @@
         <xsl:param name="jobid" />
         <xsl:param name="statusDescription" />
         <xsl:param name="submittedTime" />
-        <xsl:param name="bootstrapCssLocation"/>
-        <xsl:param name="aodnCssLocation"/>
         <xsl:param name="requestXML"/>
         <xsl:param name="logFileLink"/>
 
