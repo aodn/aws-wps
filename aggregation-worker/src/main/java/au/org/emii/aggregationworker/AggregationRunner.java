@@ -190,7 +190,6 @@ public class AggregationRunner implements CommandLineRunner {
                     NetcdfAggregator netcdfAggregator = new NetcdfAggregator(outputFile, overrides, chunkSize, bbox, subsetParams.getVerticalRange(), subsetTimeRange)
             ) {
                 for (Download download : downloadManager.download(new LinkedHashSet<>(downloads))) {
-                    logger.info("Download file size [" + download.getPath().toFile().length() + " bytes]");
                     netcdfAggregator.add(download.getPath());
                     downloadManager.remove();
                 }
