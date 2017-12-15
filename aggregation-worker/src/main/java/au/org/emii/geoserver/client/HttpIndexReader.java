@@ -32,10 +32,10 @@ public class HttpIndexReader {
     public List<DownloadRequest> getDownloadRequestList(String layer, String timeField, String urlField, SubsetParameters subset) throws AggregationException {
 
         ArrayList<DownloadRequest> downloadList = new ArrayList<DownloadRequest>();
+        String geoserverWfsEndpoint = String.format("%s/wfs", geoserver);
+        String getParametersString = "";
 
         try {
-
-            String downloadUrl = String.format("%s/wfs", geoserver);
 
             Map<String, String> params = new HashMap<String, String>();
             //  TODO: source from configuration?
@@ -55,17 +55,17 @@ public class HttpIndexReader {
             logger.info("CQL Time Filter: " + cqlTimeFilter);
 
             //  URL encode the parameters - except the sortBy parameter
-            String getParamsDataString = encodeMapForPostRequest(params);
+            getParametersString = encodeMapForPostRequest(params);
 
             if(timeField != null) {
-                getParamsDataString += getTimeSortClause(timeField);
+                getParametersString += getTimeSortClause(timeField);
             }
 
-            logger.info("GET Request Params String: " + getParamsDataString);
-            byte[]getParamsBytes = getParamsDataString.getBytes();
+            logger.info("GET Request Params String: " + getParametersString);
+            byte[]getParamsBytes = getParametersString.getBytes();
 
 
-            URL url = new URL(downloadUrl);
+            URL url = new URL(geoserverWfsEndpoint);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
             conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
@@ -76,7 +76,7 @@ public class HttpIndexReader {
             InputStream inputStream = conn.getInputStream();
             DataInputStream dataInputStream = new DataInputStream(new BufferedInputStream(inputStream));
 
-            logger.info(String.format("Getting list of files from '%s'", downloadUrl));
+            logger.info(String.format("Getting list of files from '%s'", geoserverWfsEndpoint));
             logger.info(String.format("Parameters: '%s'", new String(getParamsBytes)));
             String line = null;
             Integer i = 0;
@@ -94,8 +94,6 @@ public class HttpIndexReader {
                     URL fileURL = new URL("http://data.aodn.org.au/" + fileURI.toString());
 
                     DownloadRequest downloadRequest = new DownloadRequest(fileURL, fileSize);
-
-                    logger.info("Adding download URL: " + fileURL);
                     downloadList.add(downloadRequest);
                 } else {
                     //  The first line is the header - which lists all of the fields returned.
@@ -124,7 +122,7 @@ public class HttpIndexReader {
             logger.debug("DownloadRequest - # files requested : " + downloadList.size());
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
-            logger.error("We could not obtain list of URLs, does the collection still exist?");
+            logger.error("Unable to list file URLs. Layer name [" + layer + "], HttpIndex request [" + geoserverWfsEndpoint + "?" + getParametersString + "]");
             throw new AggregationException(String.format("Could not obtain list of URLs: '%s'", e.getMessage()));
         }
 
