@@ -76,23 +76,23 @@ Mappings:
     ConstantMap:
       ContainerWorkingDir: /mnt/work
       CloudfrontHostedZoneId: Z2FDTNDATAQYW2
-      S3ConfigKeyPrefix: config/
       S3JobKeyPrefix: jobs/
   AccountConstants:
     '615645230945':  # non-production
+      AllowEphemeralBuckets: true
       CertificateArn: arn:aws:acm:us-east-1:615645230945:certificate/06e50848-29a7-47c3-8a3f-c3212b608a8d
       DomainSuffix: dev.aodn.org.au
       HostedZoneId: Z3JIUIKOQNPOWH
       HostedZoneName: dev.aodn.org.au.
     '104044260116':  # production
+      AllowEphemeralBuckets: false
       CertificateArn: arn:aws:acm:us-east-1:104044260116:certificate/58773098-aaa7-42b5-bc58-8ba2a938f951
       DomainSuffix: aodn.org.au
       HostedZoneId: ZYU7JVFK6NXWM
       HostedZoneName: aodn.org.au.
-  EnvironmentMap:
+  BucketMap:
     production:
       BucketName: aws-wps-production
-      AccountId: 104044260116
     systest:
       BucketName: aws-wps-systest
     sandbox:
@@ -101,7 +101,6 @@ Mappings:
       BucketName: aws-wps-dev
   ConfigurationFileMap:
     Filename:
-      outputWithoutExtension: output
       status: status.xml
       request: request.xml
   production:
@@ -141,17 +140,22 @@ Mappings:
 Conditions:
   CreateEphemeralBucket: !And
     - !Equals [!Ref environment, dev]
-    - !Not [!Equals [!Ref 'AWS::AccountId', !FindInMap [EnvironmentMap, production, AccountId]]]
-  ConfigureSumoLogic: !Not [!Equals [ '', !Ref sumoEndpoint]]
-  CreateWpsApiGatewayDomainName: !Not [!Equals [!Ref wpsDomainName, '']]
-  UseCustomAmi: !Not [!Equals [!Ref customAmiId, '']]
+    - !Equals [true, !FindInMap [AccountConstants, !Ref 'AWS::AccountId', AllowEphemeralBuckets]]
+  ConfigureSumoLogic: !Not [!Equals ['', !Ref sumoEndpoint]]
+  CreateWpsApiGatewayDomainName: !Not [!Equals ['', !Ref wpsDomainName]]
+  UseCustomAmi: !Not [!Equals ['', !Ref customAmiId]]
 Resources:
+
+  #
+  # S3 bucket
+  #
+
   EphemeralS3Bucket:
     Type: AWS::S3::Bucket
     Condition: CreateEphemeralBucket
     DeletionPolicy: Delete
     Properties:
-      BucketName: !Join ['-', [!FindInMap [EnvironmentMap, !Ref environment, BucketName], !Ref 'AWS::StackName']]
+      BucketName: !Join ['-', [!FindInMap [BucketMap, !Ref environment, BucketName], !Ref 'AWS::StackName']]
       LifecycleConfiguration:
         Rules:
           - Id: JobExpirationInDays
@@ -164,7 +168,7 @@ Resources:
   S3BucketPolicy:
     Type: AWS::S3::BucketPolicy
     Properties:
-      Bucket: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
+      Bucket: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [BucketMap, !Ref environment, BucketName]]
       PolicyDocument:
         Statement:
           -
@@ -173,9 +177,92 @@ Resources:
             Effect: Allow
             Resource: !Sub
               - 'arn:aws:s3:::${BucketName}/${S3Prefix}*'
-              - BucketName: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
+              - BucketName: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [BucketMap, !Ref environment, BucketName]]
                 S3Prefix: !FindInMap [Constants, ConstantMap, S3JobKeyPrefix]
             Principal: '*'
+  EmptyBucketLambdaFunction:
+    Type: AWS::Lambda::Function
+    Condition: CreateEphemeralBucket
+    Properties:
+      Code:
+        ZipFile: |
+          import os
+          import boto3
+          import cfnresponse
+
+          def handler(event, context):
+              try:
+                  if event['RequestType'] == 'Delete':
+                      s3 = boto3.resource('s3')
+                      bucket = s3.Bucket(os.environ['BUCKET'])
+
+                      is_ephemeral = any(
+                          l for l in bucket.Tagging().tag_set if l['Key'] == 'EphemeralBucket' and l['Value'] == 'true')
+                      if not is_ephemeral:
+                          raise ValueError("bucket '{bucket}' is not ephemeral".format(bucket=bucket))
+
+                      bucket.objects.filter(Prefix=os.environ['JOBS_KEY']).delete()
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, {'Data': 'OK'}, 'EmptyBucketLambdaFunction')
+              except Exception as e:
+                  print("error deleting ephemeral bucket contents: {e}".format(e=e))
+                  cfnresponse.send(event, context, cfnresponse.FAILED, {'Data': 'OK'}, 'EmptyBucketLambdaFunction')
+      Description: Used to put objects into S3.
+      FunctionName: !Sub 'EmptyBucket-${AWS::StackName}'
+      Handler: index.handler
+      Role: !GetAtt EmptyBucketLambdaFunctionRole.Arn
+      Runtime: python2.7
+      Timeout: 60
+      Environment:
+        Variables:
+          BUCKET: !Ref EphemeralS3Bucket
+          JOBS_KEY: !FindInMap [Constants, ConstantMap, S3JobKeyPrefix]
+  EmptyBucket:
+    Type: Custom::EmptyBucket
+    Condition: CreateEphemeralBucket
+    Properties:
+      ServiceToken: !GetAtt EmptyBucketLambdaFunction.Arn
+  EmptyBucketLambdaFunctionRole:
+      Type: AWS::IAM::Role
+      Condition: CreateEphemeralBucket
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - lambda.amazonaws.com
+              Action:
+                - sts:AssumeRole
+        Path: /
+        ManagedPolicyArns:
+          - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        Policies:
+          - PolicyName: PublishVersion
+            PolicyDocument:
+              Version: 2012-10-17
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - lambda:PublishVersion
+                  Resource: '*'
+          - PolicyName: S3Access
+            PolicyDocument:
+              Version: 2012-10-17
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - s3:Delete*
+                    - s3:List*
+                    - s3:Get*
+                  Resource:
+                    - !Sub 'arn:aws:s3:::${EphemeralS3Bucket}'
+                    - !Sub 'arn:aws:s3:::${EphemeralS3Bucket}/*'
+
+  #
+  # Batch service
+  #
+
   BatchServiceRole:
     Type: AWS::IAM::Role
     Properties:
@@ -242,10 +329,10 @@ Resources:
                 Resource:
                   - !Sub
                     - 'arn:aws:s3:::${BucketName}'
-                    - { BucketName: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]] }
+                    - { BucketName: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [BucketMap, !Ref environment, BucketName]] }
                   - !Sub
                     - 'arn:aws:s3:::${BucketName}/*'
-                    - { BucketName: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]] }
+                    - { BucketName: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [BucketMap, !Ref environment, BucketName]] }
               -
                 Effect: Allow
                 Action:
@@ -275,13 +362,13 @@ Resources:
             Value: -Xmx512m
           -
             Name: OUTPUT_S3_FILENAME
-            Value: !FindInMap [ConfigurationFileMap, Filename, outputWithoutExtension]
+            Value: output
           -
             Name: OUTPUT_S3_BUCKET
-            Value: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [ EnvironmentMap, !Ref environment, BucketName]]
+            Value: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [BucketMap, !Ref environment, BucketName]]
           -
             Name: STATUS_S3_BUCKET
-            Value: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
+            Value: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [BucketMap, !Ref environment, BucketName]]
           -
             Name: STATUS_S3_FILENAME
             Value: !FindInMap [ConfigurationFileMap, Filename, status]
@@ -399,6 +486,11 @@ Resources:
         FromPort: '-1'
         ToPort: '-1'
         CidrIp: 0.0.0.0/0
+
+  #
+  # Request handler service
+  #
+
   WPSRestApi:
     Type: AWS::ApiGateway::RestApi
     Properties:
@@ -532,7 +624,7 @@ Resources:
           AWS_BATCH_JOB_NAME: !Ref jobName
           AWS_BATCH_JOB_QUEUE_NAME: !Ref JobQueue
           AWS_BATCH_JOB_DEFINITION_NAME: !Select [1, !Split ['/', !Ref JobDefinition]]
-          STATUS_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
+          STATUS_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [BucketMap, !Ref environment, BucketName]]
           STATUS_S3_FILENAME: !FindInMap [ConfigurationFileMap, Filename, status]
           REQUEST_S3_FILENAME: !FindInMap [ConfigurationFileMap, Filename, request]
           AWS_WPS_ENDPOINT_URL: !If
@@ -580,10 +672,10 @@ Resources:
                 Resource:
                   - !Sub
                     - 'arn:aws:s3:::${BucketName}'
-                    - { BucketName: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]] }
+                    - { BucketName: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [BucketMap, !Ref environment, BucketName]] }
                   - !Sub
                     - 'arn:aws:s3:::${BucketName}/*'
-                    - { BucketName: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]] }
+                    - { BucketName: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [BucketMap, !Ref environment, BucketName]] }
               -
                 Effect: Allow
                 Action:
@@ -594,6 +686,11 @@ Resources:
                 Action:
                   - ses:SendRawEmail
                 Resource: '*'
+
+  #
+  # Job status service
+  #
+
   JobStatusApiGatewayResource:
     Type: AWS::ApiGateway::Resource
     Properties:
@@ -640,11 +737,10 @@ Resources:
       Code: ./job-status-service/target/job-status-service-lambda-package.zip
       Environment:
         Variables:
-          STATUS_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]]
+          STATUS_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [BucketMap, !Ref environment, BucketName]]
           STATUS_S3_FILENAME: !FindInMap [ConfigurationFileMap, Filename, status]
           REQUEST_S3_FILENAME: !FindInMap [ConfigurationFileMap, Filename, request]
           JOB_S3_KEY: !FindInMap [Constants, ConstantMap, S3JobKeyPrefix]
-          CONFIG_S3_KEY: !FindInMap [Constants, ConstantMap, S3ConfigKeyPrefix]
           AWS_BATCH_JOB_QUEUE_NAME: !Ref JobQueue
           AWS_BATCH_LOG_GROUP_NAME: /aws/batch/job
           STATUS_SERVICE_ENDPOINT_URL: !If
@@ -686,91 +782,15 @@ Resources:
                 Resource:
                   - !Sub
                     - 'arn:aws:s3:::${BucketName}'
-                    - { BucketName: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]] }
+                    - { BucketName: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [BucketMap, !Ref environment, BucketName]] }
                   - !Sub
                     - 'arn:aws:s3:::${BucketName}/*'
-                    - { BucketName: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [EnvironmentMap, !Ref environment, BucketName]] }
-  EmptyBucketLambdaFunction:
-    Type: AWS::Lambda::Function
-    Condition: CreateEphemeralBucket
-    Properties:
-      Code:
-        ZipFile: |
-          import os
-          import boto3
-          import cfnresponse
+                    - { BucketName: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [BucketMap, !Ref environment, BucketName]] }
 
-          def handler(event, context):
-               try:
-                   if event['RequestType'] == 'Delete':
-                       s3 = boto3.resource('s3')
-                       bucket = s3.Bucket(os.getenv('BUCKET'))
-                       # bool to check if bucket is flagged as ephemeral before touching it
-                       is_ephemeral = any([l for l in bucket.Tagging().tag_set if l['Key'] == 'EphemeralBucket' and l['Value'] == 'true'])
+  #
+  # SumoLogic integration
+  #
 
-                       if not is_ephemeral:
-                           raise Exception('Bucket is not ephemeral, will not delete')
-
-                       print "Deleting"
-                       bucket.objects.filter(Prefix=os.getenv('JOBS_KEY')).delete()
-                       bucket.objects.filter(Prefix=os.getenv('CONFIG_KEY')).delete()
-                   cfnresponse.send(event, context, cfnresponse.SUCCESS, {'Data': 'OK'}, 'EmptyBucketLambdaFunction')
-               except Exception as e:
-                  print(e)
-                  cfnresponse.send(event, context, cfnresponse.FAILED, {'Data': 'OK'}, 'EmptyBucketLambdaFunction')
-      Description: Used to put objects into S3.
-      FunctionName: !Sub 'EmptyBucket-${AWS::StackName}'
-      Handler: index.handler
-      Role: !GetAtt EmptyBucketLambdaFunctionRole.Arn
-      Runtime: python2.7
-      Timeout: 60
-      Environment:
-        Variables:
-          BUCKET: !Ref EphemeralS3Bucket
-          CONFIG_KEY: !FindInMap [Constants, ConstantMap, S3ConfigKeyPrefix]
-          JOBS_KEY: !FindInMap [Constants, ConstantMap, S3JobKeyPrefix]
-  EmptyBucket:
-    Type: Custom::EmptyBucket
-    Condition: CreateEphemeralBucket
-    Properties:
-      ServiceToken: !GetAtt EmptyBucketLambdaFunction.Arn
-  EmptyBucketLambdaFunctionRole:
-      Type: AWS::IAM::Role
-      Condition: CreateEphemeralBucket
-      Properties:
-        AssumeRolePolicyDocument:
-          Version: 2012-10-17
-          Statement:
-            - Effect: Allow
-              Principal:
-                Service:
-                  - lambda.amazonaws.com
-              Action:
-                - sts:AssumeRole
-        Path: /
-        ManagedPolicyArns:
-          - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-        Policies:
-          - PolicyName: PublishVersion
-            PolicyDocument:
-              Version: 2012-10-17
-              Statement:
-                - Effect: Allow
-                  Action:
-                    - lambda:PublishVersion
-                  Resource: '*'
-          - PolicyName: S3Access
-            PolicyDocument:
-              Version: 2012-10-17
-              Statement:
-                - Effect: Allow
-                  Action:
-                    - s3:Delete*
-                    - s3:List*
-                    - s3:Get*
-                  Resource:
-                    - !Sub 'arn:aws:s3:::${EphemeralS3Bucket}'
-                    - !Sub 'arn:aws:s3:::${EphemeralS3Bucket}/*'
   SumoLogicLambdaFunction:
     Type: AWS::Lambda::Function
     Condition: ConfigureSumoLogic
