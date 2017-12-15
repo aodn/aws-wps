@@ -2,17 +2,25 @@
 
 set -eu
 
-declare -A BUCKET_MAP=( ["104044260116"]="imos-deploy-cache-prod" ["615645230945"]="imos-binary-dev" )
-
 function get_account_id() {
-    local account_id=$(aws sts get-caller-identity 2>/dev/null | jq --raw-output '.Account' 2>/dev/null)
-    echo ${account_id}
+    local account_id=$(aws sts get-caller-identity --output text --query Account)
+    echo -n ${account_id}
 }
 
 function get_cache_bucket_for_account() {
     local account_id=$1
-    local bucket_name=${BUCKET_MAP[${account_id}]}
-    echo ${bucket_name}
+    case $account_id in
+    104044260116)  # production
+        bucket_name=imos-deploy-cache-prod
+        ;;
+    615645230945) # non-production
+        bucket_name=imos-binary-dev
+        ;;
+    *)
+        bucket_name=""
+        ;;
+    esac
+    echo -n ${bucket_name}
 }
 
 function usage() {
