@@ -22,9 +22,6 @@ Parameters:
   jobName:
     Type: String
     Default: javaduck
-  jobExpirationInDays:
-    Type: Number
-    Default: 7
   maxVCPUs:
     Type: Number
     Default: 4
@@ -140,7 +137,7 @@ Resources:
           - Id: JobExpirationInDays
             Prefix: !FindInMap [Constants, ConstantMap, S3JobKeyPrefix]
             Status: Enabled
-            ExpirationInDays: !Ref jobExpirationInDays
+            ExpirationInDays: 7
       Tags:
         - Key: EphemeralBucket
           Value: true
@@ -390,9 +387,6 @@ Resources:
           -
             Name: GEONETWORK_LAYER_SEARCH_FIELD
             Value: layer
-          -
-            Name: JOB_EXPIRATION_IN_DAYS
-            Value: !Ref jobExpirationInDays
           -
             Name: JOB_S3_KEY
             Value: !FindInMap [Constants, ConstantMap, S3JobKeyPrefix]

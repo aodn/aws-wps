@@ -47,7 +47,6 @@ public class WpsConfig {
     public static final String AWS_BATCH_JQ_NAME_CONFIG_KEY = "AWS_BATCH_JQ_NAME";
     public static final String AWS_BATCH_JOB_S3_KEY_PREFIX = "JOB_S3_KEY";
     public static final String AWS_BATCH_CONFIG_S3_KEY = "CONFIG_S3_KEY";
-    private static final String AWS_BATCH_JOB_EXPIRATION_IN_DAYS = "JOB_EXPIRATION_IN_DAYS";
 
     public static final String WPS_ENDPOINT_URL_CONFIG_KEY = "AWS_WPS_ENDPOINT_URL";
     public static final String GEOSERVER_CATALOGUE_ENDPOINT_URL_CONFIG_KEY = "GEOSERVER_CATALOGUE_ENDPOINT_URL";
@@ -115,7 +114,6 @@ public class WpsConfig {
             setProperty(properties, AWS_BATCH_JOB_ID_CONFIG_KEY);
             setProperty(properties, AWS_BATCH_CE_NAME_CONFIG_KEY);
             setProperty(properties, AWS_BATCH_JQ_NAME_CONFIG_KEY);
-            setProperty(properties, AWS_BATCH_JOB_EXPIRATION_IN_DAYS);
             setProperty(properties, AWS_BATCH_JOB_S3_KEY_PREFIX);
 
             setProperty(properties, WPS_ENDPOINT_URL_CONFIG_KEY);
@@ -173,10 +171,6 @@ public class WpsConfig {
 
     private static String getConfigFileS3ExternalURL(String filename) {
         return getS3ExternalURL(getConfig(STATUS_S3_BUCKET_CONFIG_KEY), getConfig(AWS_BATCH_CONFIG_S3_KEY) + getConfig(filename));
-    }
-
-    public static String getJobExpiration() {
-        return String.format("%s days", getConfig(AWS_BATCH_JOB_EXPIRATION_IN_DAYS));
     }
 
     public static String getRegisteredJobEmailSubjectTemplate() {
