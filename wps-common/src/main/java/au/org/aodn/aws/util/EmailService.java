@@ -9,7 +9,7 @@ import com.amazonaws.services.simpleemail.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static au.org.aodn.aws.wps.status.WpsConfig.FROM_EMAIL;
+import static au.org.aodn.aws.wps.status.WpsConfig.JOB_EMAIL_FROM_EMAIL;
 
 public class EmailService {
 
@@ -18,7 +18,7 @@ public class EmailService {
     private EmailTemplateManager templateManager;
 
     public EmailService() throws Exception {
-        Regions region = Regions.fromName(WpsConfig.getConfig(WpsConfig.AWS_REGION_SES_CONFIG_KEY));
+        Regions region = Regions.fromName(WpsConfig.getProperty(WpsConfig.AWS_REGION_SES_CONFIG_KEY));
         this.client = AmazonSimpleEmailServiceClientBuilder.standard()
                 .withRegion(region).build();
         templateManager = new EmailTemplateManager();
@@ -68,26 +68,26 @@ public class EmailService {
     }
 
     public void sendRegisteredJobEmail(String to, String uuid) throws EmailException {
-        String subject = templateManager.getRegisteredJobSubject(uuid);
+        String subject = "IMOS download request registered - " + uuid;
         String textBody = templateManager.getRegisteredEmailContent(uuid);
-        String from = WpsConfig.getConfig(FROM_EMAIL);
+        String from = WpsConfig.getProperty(JOB_EMAIL_FROM_EMAIL);
 
         sendEmail(to, from, subject, null, textBody);
     }
 
     public void sendCompletedJobEmail(String to, String uuid, String outputFileLocation, int expirationPeriodInDays) throws EmailException {
-        String subject = templateManager.getCompletedJobSubject(uuid);
+        String subject = "IMOS download available - " + uuid;
         String expirationPeriod = String.format("%d days", expirationPeriodInDays);
         String textBody = templateManager.getCompletedEmailContent(uuid, expirationPeriod, outputFileLocation);
-        String from = WpsConfig.getConfig(FROM_EMAIL);
+        String from = WpsConfig.getProperty(JOB_EMAIL_FROM_EMAIL);
 
         sendEmail(to, from, subject, null, textBody);
     }
 
     public void sendFailedJobEmail(String to, String uuid) throws EmailException {
-        String subject = templateManager.getFailedJobSubject(uuid);
+        String subject = "IMOS download error - " + uuid;
         String textBody = templateManager.getFailedEmailContent(uuid);
-        String from = WpsConfig.getConfig(FROM_EMAIL);
+        String from = WpsConfig.getProperty(JOB_EMAIL_FROM_EMAIL);
 
         sendEmail(to, from, subject, null, textBody);
     }

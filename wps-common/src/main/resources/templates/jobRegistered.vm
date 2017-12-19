@@ -1,14 +1,16 @@
 Hi,
 
-Thank you for submitting a request for $siteAcronym data. Your job has been registered.
+Thank you for submitting a request for AODN data. Your job has been registered.
 
 You will receive an email with a link to the data when the job is complete.
 You can monitor the status of your job here: $jobReportUrl
 
-$emailSignature
+Kind regards,
+The AODN Team
 
 
 --
 If you require assistance with this service please contact us at $contactEmail. The job reference is $uuid.
 
-$emailFooter
+The AODN Portal provides access to all available Australian marine and climate science data and provides the primary access to IMOS data including access to the IMOS metadata.
+IMOS is supported by the Australian Government through the National Collaborative Research Infrastructure Strategy and the Super Science Initiative.

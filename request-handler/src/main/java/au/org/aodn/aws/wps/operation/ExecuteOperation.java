@@ -38,13 +38,13 @@ public class ExecuteOperation implements Operation {
         //      AWS region
         //      status filename
         //      status location
-        String statusS3BucketName = WpsConfig.getConfig(STATUS_S3_BUCKET_CONFIG_KEY);
-        String jobFileS3KeyPrefix = WpsConfig.getConfig(AWS_BATCH_JOB_S3_KEY_PREFIX);
-        String statusFileName = WpsConfig.getConfig(STATUS_S3_FILENAME_CONFIG_KEY);
-        String requestFileName = WpsConfig.getConfig(REQUEST_S3_FILENAME_CONFIG_KEY);
-        String jobName = WpsConfig.getConfig(AWS_BATCH_JOB_NAME_CONFIG_KEY);
-        String jobQueueName = WpsConfig.getConfig(AWS_BATCH_JOB_QUEUE_NAME_CONFIG_KEY);
-        String awsRegion = WpsConfig.getConfig(AWS_REGION_CONFIG_KEY);
+        String statusS3BucketName = WpsConfig.getProperty(STATUS_S3_BUCKET_CONFIG_KEY);
+        String jobFileS3KeyPrefix = WpsConfig.getProperty(AWS_BATCH_JOB_S3_KEY_PREFIX);
+        String statusFileName = WpsConfig.getProperty(STATUS_S3_FILENAME_CONFIG_KEY);
+        String requestFileName = WpsConfig.getProperty(REQUEST_S3_FILENAME_CONFIG_KEY);
+        String jobName = WpsConfig.getProperty(AWS_BATCH_JOB_NAME_CONFIG_KEY);
+        String jobQueueName = WpsConfig.getProperty(AWS_BATCH_JOB_QUEUE_NAME_CONFIG_KEY);
+        String awsRegion = WpsConfig.getProperty(AWS_REGION_CONFIG_KEY);
 
 
         LOGGER.info("statusS3BucketName: " + statusS3BucketName);

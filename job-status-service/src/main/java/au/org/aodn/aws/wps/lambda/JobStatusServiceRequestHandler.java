@@ -61,10 +61,10 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
 
     private Logger LOGGER = LoggerFactory.getLogger(JobStatusServiceRequestHandler.class);
 
-    private String statusFilename = WpsConfig.getConfig(WpsConfig.STATUS_S3_FILENAME_CONFIG_KEY);
-    private String jobFileS3KeyPrefix = WpsConfig.getConfig(WpsConfig.AWS_BATCH_JOB_S3_KEY_PREFIX);
-    private String statusS3Bucket = WpsConfig.getConfig(WpsConfig.STATUS_S3_BUCKET_CONFIG_KEY);
-    private String requestFilename = WpsConfig.getConfig(WpsConfig.REQUEST_S3_FILENAME_CONFIG_KEY);
+    private String statusFilename = WpsConfig.getProperty(WpsConfig.STATUS_S3_FILENAME_CONFIG_KEY);
+    private String jobFileS3KeyPrefix = WpsConfig.getProperty(WpsConfig.AWS_BATCH_JOB_S3_KEY_PREFIX);
+    private String statusS3Bucket = WpsConfig.getProperty(WpsConfig.STATUS_S3_BUCKET_CONFIG_KEY);
+    private String requestFilename = WpsConfig.getProperty(WpsConfig.REQUEST_S3_FILENAME_CONFIG_KEY);
 
 
     @Override
@@ -115,7 +115,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
             LOGGER.info("Queue contents requested.");
 
             AWSBatch batchClient = AWSBatchClientBuilder.defaultClient();
-            String queueName = WpsConfig.getConfig(WpsConfig.AWS_BATCH_JOB_QUEUE_NAME_CONFIG_KEY);
+            String queueName = WpsConfig.getProperty(WpsConfig.AWS_BATCH_JOB_QUEUE_NAME_CONFIG_KEY);
 
             try {
                 responseBody = generateQueueViewHTML(batchClient, queueName);
@@ -471,8 +471,8 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
         //  Cloudwatch links are of this form:
         //  https://ap-southeast-2.console.aws.amazon.com/cloudwatch/home?region=ap-southeast-2#logEventViewer:group=/aws/batch/job;stream=JavaDuckSmall1-dev-cam/default/7714fa46-0b24-4e21-a4ff-45f1160d1ba0
         //  ie: https://<AWS_REGION>.console.aws.amazon.com/cloudwatch/home?region=<AWS_REGION>#logEventViewer:group=<LOG_GROUP_NAME>;stream=<LOG_STREAM_NAME>/default/<JOB_ID>
-        String awsRegion = WpsConfig.getConfig(WpsConfig.AWS_REGION_CONFIG_KEY);
-        String logGroup = WpsConfig.getConfig(WpsConfig.AWS_BATCH_LOG_GROUP_NAME_CONFIG_KEY);
+        String awsRegion = WpsConfig.getProperty(WpsConfig.AWS_REGION_CONFIG_KEY);
+        String logGroup = WpsConfig.getProperty(WpsConfig.AWS_BATCH_LOG_GROUP_NAME_CONFIG_KEY);
         String logStream = AWSBatchUtil.getJobLogStream(jobId);
         if(logStream != null) {
             String logUrl = "https://" + awsRegion + ".console.aws.amazon.com/cloudwatch/home?region=" + awsRegion + "#logEventViewer:group=" + logGroup + ";stream=" + logStream;
