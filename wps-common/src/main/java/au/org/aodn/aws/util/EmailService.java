@@ -13,6 +13,15 @@ import static au.org.aodn.aws.wps.status.WpsConfig.JOB_EMAIL_FROM_EMAIL;
 
 public class EmailService {
 
+    public static final String EMAIL_TEMPLATES_LOCATION = "templates";
+    public static final String COMPLETED_JOB_EMAIL_TEMPLATE_NAME = "jobComplete.vm";
+    public static final String FAILED_JOB_EMAIL_TEMPLATE_NAME = "jobFailed.vm";
+    public static final String REGISTERED_JOB_EMAIL_TEMPLATE_NAME = "jobRegistered.vm";
+    public static final String REGISTERED_JOB_EMAIL_SUBJECT = "IMOS download request registered - ";
+    public static final String COMPLETED_JOB_EMAIL_SUBJECT = "IMOS download available - ";
+    public static final String FAILED_JOB_EMAIL_SUBJECT = "IMOS download error - ";
+
+
     private static final Logger LOGGER = LoggerFactory.getLogger(EmailService.class);
     private AmazonSimpleEmailService client;
     private EmailTemplateManager templateManager;
@@ -68,7 +77,7 @@ public class EmailService {
     }
 
     public void sendRegisteredJobEmail(String to, String uuid) throws EmailException {
-        String subject = "IMOS download request registered - " + uuid;
+        String subject = REGISTERED_JOB_EMAIL_SUBJECT + uuid;
         String textBody = templateManager.getRegisteredEmailContent(uuid);
         String from = WpsConfig.getProperty(JOB_EMAIL_FROM_EMAIL);
 
@@ -76,7 +85,7 @@ public class EmailService {
     }
 
     public void sendCompletedJobEmail(String to, String uuid, String outputFileLocation, int expirationPeriodInDays) throws EmailException {
-        String subject = "IMOS download available - " + uuid;
+        String subject = COMPLETED_JOB_EMAIL_SUBJECT + uuid;
         String expirationPeriod = String.format("%d days", expirationPeriodInDays);
         String textBody = templateManager.getCompletedEmailContent(uuid, expirationPeriod, outputFileLocation);
         String from = WpsConfig.getProperty(JOB_EMAIL_FROM_EMAIL);
@@ -85,10 +94,23 @@ public class EmailService {
     }
 
     public void sendFailedJobEmail(String to, String uuid) throws EmailException {
-        String subject = "IMOS download error - " + uuid;
+        String subject = FAILED_JOB_EMAIL_SUBJECT + uuid;
         String textBody = templateManager.getFailedEmailContent(uuid);
         String from = WpsConfig.getProperty(JOB_EMAIL_FROM_EMAIL);
 
         sendEmail(to, from, subject, null, textBody);
+    }
+
+
+    public static String getRegisteredJobEmailTemplate() {
+        return String.format("%s/%s", EMAIL_TEMPLATES_LOCATION, REGISTERED_JOB_EMAIL_TEMPLATE_NAME);
+    }
+
+    public static String getCompletedJobEmailTemplate() {
+        return String.format("%s/%s", EMAIL_TEMPLATES_LOCATION, COMPLETED_JOB_EMAIL_TEMPLATE_NAME);
+    }
+
+    public static String getFailedJobEmailTemplate() {
+        return String.format("%s/%s", EMAIL_TEMPLATES_LOCATION, FAILED_JOB_EMAIL_TEMPLATE_NAME);
     }
 }
