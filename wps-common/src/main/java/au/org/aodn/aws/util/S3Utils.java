@@ -116,4 +116,9 @@ public class S3Utils {
         }
     }
 
+    public static int getExpirationinDays(String bucket) {
+        AmazonS3 s3Client = AmazonS3ClientBuilder.defaultClient();
+        return s3Client.getBucketLifecycleConfiguration(bucket).getRules().get(0).getExpirationInDays();
+    }
+
 }

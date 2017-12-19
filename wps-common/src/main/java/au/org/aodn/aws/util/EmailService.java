@@ -75,8 +75,9 @@ public class EmailService {
         sendEmail(to, from, subject, null, textBody);
     }
 
-    public void sendCompletedJobEmail(String to, String uuid, String outputFileLocation, String expirationPeriod) throws EmailException {
+    public void sendCompletedJobEmail(String to, String uuid, String outputFileLocation, int expirationPeriodInDays) throws EmailException {
         String subject = templateManager.getCompletedJobSubject(uuid);
+        String expirationPeriod = String.format("%d days", expirationPeriodInDays);
         String textBody = templateManager.getCompletedEmailContent(uuid, expirationPeriod, outputFileLocation);
         String from = WpsConfig.getConfig(FROM_EMAIL);
 

@@ -3,6 +3,7 @@ package au.org.emii.aggregationworker;
 
 import au.org.aodn.aws.exception.EmailException;
 import au.org.aodn.aws.util.EmailService;
+import au.org.aodn.aws.util.S3Utils;
 import au.org.aodn.aws.wps.request.ExecuteRequestHelper;
 import au.org.aodn.aws.wps.request.XmlRequestParser;
 import au.org.aodn.aws.wps.status.EnumStatus;
@@ -267,7 +268,8 @@ public class AggregationRunner implements CommandLineRunner {
                 statusFileManager.write(statusDocument, statusFilename, STATUS_FILE_MIME_TYPE);
 
                 if (email != null) {
-                    emailService.sendCompletedJobEmail(email, batchJobId, resultUrl, WpsConfig.getJobExpiration());
+
+                    emailService.sendCompletedJobEmail(email, batchJobId, resultUrl, S3Utils.getExpirationinDays(outputBucketName));
                 }
             } finally {
                 if (jobDir != null) {
