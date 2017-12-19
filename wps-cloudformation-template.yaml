@@ -2,12 +2,20 @@ AWSTemplateFormatVersion: 2010-09-09
 Description: >-
   A template for AWS-WPS
 Parameters:
+  geoserver:
+    Type: String
+    Description: Geoserver from which to source files to aggregate
+  dockerImage:
+    Type: String
+  templatesURL:
+    Type: String
+  geonetworkCatalogueURL:
+    Type: String
+
   customAmiId:
     Type: String
     Description: Custom AMI image id to use when creating the compute environment (optional)
     Default: ''
-  templatesURL:
-    Type: String
   sumoEndpoint:
     Type: String
     Default: ''
@@ -20,33 +28,10 @@ Parameters:
   maxVCPUs:
     Type: Number
     Default: 4
-  geoserver:
-    Type: String
-    Description: Geoserver from which to source files to aggregate
-  dockerImage:
-    Type: String
-  workerDownloadAttempts:
-    Type: Number
-    Default: 4
-  workerLocalStorageLimitBytes:
-    Type: Number
-    Default: 104857600
-  workerPoolSize:
-    Type: Number
-    Default: 8
-  workerRetryIntervalMs:
-    Type: Number
-    Default: 60000
   wpsDomainName:
     Type: String
     Default: ''
     Description: The WPS API Gateway endpoint's domain name prefix (excluding the domain)
-  geonetworkCatalogueURL:
-    Type: String
-    Default: https://catalogue-imos.aodn.org.au/geonetwork
-  geonetworkLayerSearchField:
-    Type: String
-    Default: layer
   environment:
     Type: String
     Default: dev
@@ -386,25 +371,25 @@ Resources:
             Value: 100000000
           -
             Name: DOWNLOAD_ATTEMPTS
-            Value: !Ref workerDownloadAttempts
+            Value: 4
           -
             Name: WORKING_DIR
             Value: !FindInMap [Constants, ConstantMap, ContainerWorkingDir]
           -
             Name: LOCAL_STORAGE_LIMIT_BYTES
-            Value: !Ref workerLocalStorageLimitBytes
+            Value: 104857600
           -
             Name: POOL_SIZE
-            Value: !Ref workerPoolSize
+            Value: 8
           -
             Name: RETRY_INTERVAL_MS
-            Value: !Ref workerRetryIntervalMs
+            Value: 60000
           -
             Name: GEONETWORK_CATALOGUE_URL
             Value: !Ref geonetworkCatalogueURL
           -
             Name: GEONETWORK_LAYER_SEARCH_FIELD
-            Value: !Ref geonetworkLayerSearchField
+            Value: layer
           -
             Name: JOB_EXPIRATION_IN_DAYS
             Value: !Ref jobExpirationInDays
