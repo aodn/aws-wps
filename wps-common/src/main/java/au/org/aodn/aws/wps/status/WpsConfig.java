@@ -60,10 +60,6 @@ public class WpsConfig {
     public static final String JOB_EMAIL_CONTACT_EMAIL = "JOB_EMAIL_CONTACT_EMAIL";
     public static final String JOB_EMAIL_FROM_EMAIL = "JOB_EMAIL_FROM_EMAIL";
     public static final String ADMINISTRATOR_EMAIL = "ADMINISTRATOR_EMAIL";
-    public static final String EMAIL_TEMPLATES_LOCATION = "templates";
-    public static final String COMPLETED_JOB_EMAIL_TEMPLATE_NAME = "jobComplete.vm";
-    public static final String FAILED_JOB_EMAIL_TEMPLATE_NAME = "jobFailed.vm";
-    public static final String REGISTERED_JOB_EMAIL_TEMPLATE_NAME = "jobRegistered.vm";
 
     public static final String DEFAULT_LANGUAGE = "en-US";
 
@@ -93,17 +89,6 @@ public class WpsConfig {
         return getProperty(WPS_ENDPOINT_URL_CONFIG_KEY);
     }
 
-    public static String getRegisteredJobEmailTemplate() {
-        return String.format("%s/%s", EMAIL_TEMPLATES_LOCATION, REGISTERED_JOB_EMAIL_TEMPLATE_NAME);
-    }
-
-    public static String getCompletedJobEmailTemplate() {
-        return String.format("%s/%s", EMAIL_TEMPLATES_LOCATION, COMPLETED_JOB_EMAIL_TEMPLATE_NAME);
-    }
-
-    public static String getFailedJobEmailTemplate() {
-        return String.format("%s/%s", EMAIL_TEMPLATES_LOCATION, FAILED_JOB_EMAIL_TEMPLATE_NAME);
-    }
 
     public static String getS3ExternalURL(String s3Bucket, String s3Key) {
         String region = getProperty(WpsConfig.AWS_REGION_CONFIG_KEY);

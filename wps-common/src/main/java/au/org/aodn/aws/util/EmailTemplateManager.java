@@ -38,7 +38,7 @@ public class EmailTemplateManager {
 
     public String getRegisteredEmailContent(String uuid) throws EmailException {
         try {
-            Template t = velocityEngine.getTemplate(WpsConfig.getRegisteredJobEmailTemplate());
+            Template t = velocityEngine.getTemplate(EmailService.getRegisteredJobEmailTemplate());
             VelocityContext context = new VelocityContext();
             context.put(UUID, uuid);
             context.put(JOB_REPORT_URL, WpsConfig.getStatusServiceHtmlEndpoint(uuid));
@@ -57,7 +57,7 @@ public class EmailTemplateManager {
 
     public String getCompletedEmailContent(String uuid, String expirationPeriod, String outputFileLocation) throws EmailException {
         try {
-            Template t = velocityEngine.getTemplate(WpsConfig.getCompletedJobEmailTemplate());
+            Template t = velocityEngine.getTemplate(EmailService.getCompletedJobEmailTemplate());
             VelocityContext context = new VelocityContext();
             context.put(UUID, uuid);
             context.put(JOB_REPORT_URL, outputFileLocation);
@@ -77,7 +77,7 @@ public class EmailTemplateManager {
 
     public String getFailedEmailContent(String uuid) throws EmailException {
         try {
-            Template t = velocityEngine.getTemplate(WpsConfig.getFailedJobEmailTemplate());
+            Template t = velocityEngine.getTemplate(EmailService.getFailedJobEmailTemplate());
             VelocityContext context = new VelocityContext();
             context.put(UUID, uuid);
             context.put(JOB_REPORT_URL, WpsConfig.getStatusServiceHtmlEndpoint(uuid));
