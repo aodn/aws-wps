@@ -71,7 +71,9 @@ public class AggregationRunner implements CommandLineRunner {
         DateTime startTime = new DateTime(DateTimeZone.UTC);
 
         S3JobFileManager statusFileManager = null;
-        String batchJobId = null, email = null;
+        String batchJobId = null;
+        String contactEmail = null;
+        String administratorEmail = null;
         EmailService emailService = null;
         ExecuteStatusBuilder statusBuilder = null;
         Path downloadDirectory = null;
@@ -79,24 +81,24 @@ public class AggregationRunner implements CommandLineRunner {
         try {
             //  Capture the AWS job specifics - they are passed to the docker runtime as
             //  environment variables.
-            batchJobId = WpsConfig.getConfig(AWS_BATCH_JOB_ID_CONFIG_KEY);
-            String awsBatchComputeEnvName = WpsConfig.getConfig(AWS_BATCH_CE_NAME_CONFIG_KEY);
-            String awsBatchQueueName = WpsConfig.getConfig(AWS_BATCH_JQ_NAME_CONFIG_KEY);
+            batchJobId = WpsConfig.getProperty(AWS_BATCH_JOB_ID_CONFIG_KEY);
+            String awsBatchComputeEnvName = WpsConfig.getProperty(AWS_BATCH_CE_NAME_CONFIG_KEY);
+            String awsBatchQueueName = WpsConfig.getProperty(AWS_BATCH_JQ_NAME_CONFIG_KEY);
 
             //  These values are passed as environment variables set in the AWS Batch job definition
-            String outputBucketName = WpsConfig.getConfig(OUTPUT_S3_BUCKET_CONFIG_KEY);
-            String outputFilename = WpsConfig.getConfig(OUTPUT_S3_FILENAME_CONFIG_KEY);
-            statusS3Bucket = WpsConfig.getConfig(STATUS_S3_BUCKET_CONFIG_KEY);
-            String jobFileS3KeyPrefix = WpsConfig.getConfig(AWS_BATCH_JOB_S3_KEY_PREFIX);
-            statusFilename = WpsConfig.getConfig(STATUS_S3_FILENAME_CONFIG_KEY);
-            requestFilename = WpsConfig.getConfig(REQUEST_S3_FILENAME_CONFIG_KEY);
-            Path workingDir = Paths.get(WpsConfig.getConfig(WORKING_DIR_CONFIG_KEY));
+            String outputBucketName = WpsConfig.getProperty(OUTPUT_S3_BUCKET_CONFIG_KEY);
+            String outputFilename = WpsConfig.getProperty(OUTPUT_S3_FILENAME_CONFIG_KEY);
+            statusS3Bucket = WpsConfig.getProperty(STATUS_S3_BUCKET_CONFIG_KEY);
+            String jobFileS3KeyPrefix = WpsConfig.getProperty(AWS_BATCH_JOB_S3_KEY_PREFIX);
+            statusFilename = WpsConfig.getProperty(STATUS_S3_FILENAME_CONFIG_KEY);
+            requestFilename = WpsConfig.getProperty(REQUEST_S3_FILENAME_CONFIG_KEY);
+            Path workingDir = Paths.get(WpsConfig.getProperty(WORKING_DIR_CONFIG_KEY));
             Path jobDir = Files.createTempDirectory(workingDir, batchJobId);
-
-            String aggregatorTemplateFileURL = WpsConfig.getConfig(AGGREGATOR_TEMPLATE_FILE_URL_KEY);
+            administratorEmail = WpsConfig.getProperty(WpsConfig.ADMINISTRATOR_EMAIL);
+            String aggregatorTemplateFileURL = WpsConfig.getProperty(AGGREGATOR_TEMPLATE_FILE_URL_KEY);
 
             //  Parse connect timeout
-            String downloadConnectTimeoutString = WpsConfig.getConfig(DOWNLOAD_CONNECT_TIMEOUT_CONFIG_KEY);
+            String downloadConnectTimeoutString = WpsConfig.getProperty(DOWNLOAD_CONNECT_TIMEOUT_CONFIG_KEY);
             int downloadConnectTimeout;
             if (downloadConnectTimeoutString != null && IntegerHelper.isInteger(downloadConnectTimeoutString)) {
                 downloadConnectTimeout = Integer.parseInt(downloadConnectTimeoutString);
@@ -105,7 +107,7 @@ public class AggregationRunner implements CommandLineRunner {
             }
 
             // Parse read timeout
-            String downloadReadTimeoutString = WpsConfig.getConfig(DOWNLOAD_READ_TIMEOUT_CONFIG_KEY);
+            String downloadReadTimeoutString = WpsConfig.getProperty(DOWNLOAD_READ_TIMEOUT_CONFIG_KEY);
             int downloadReadTimeout;
             if (downloadReadTimeoutString != null && IntegerHelper.isInteger(downloadReadTimeoutString)) {
                 downloadReadTimeout = Integer.parseInt(downloadConnectTimeoutString);
@@ -137,7 +139,7 @@ public class AggregationRunner implements CommandLineRunner {
             ExecuteRequestHelper requestHelper = new ExecuteRequestHelper(request);
             String layer = requestHelper.getLiteralInputValue("layer");
             String subset = requestHelper.getLiteralInputValue("subset");
-            email = requestHelper.getEmail();
+            contactEmail = requestHelper.getEmail();
 
             // Determine required output mime type
             String requestedMimeType = requestHelper.getRequestedMimeType("result");
@@ -145,16 +147,15 @@ public class AggregationRunner implements CommandLineRunner {
 
             SubsetParameters subsetParams = SubsetParameters.parse(subset);
 
-            if (email != null) {
-                emailService = new EmailService();
-            }
+            //  Initialise email service
+            emailService = new EmailService();
 
-            logger.info("Running aggregation job. JobID [" + batchJobId + "]. Layer [" + layer + "], Subset [" + subset + "], Result MIME [" + resultMime + "], Callback email [" + email + "]");
+            logger.info("Running aggregation job. JobID [" + batchJobId + "]. Layer [" + layer + "], Subset [" + subset + "], Result MIME [" + resultMime + "], Callback email [" + contactEmail + "]");
 
             //  TODO: Qa the parameters/settings passed?
 
             //  Query geoserver to get a list of files for the aggregation
-            HttpIndexReader indexReader = new HttpIndexReader(WpsConfig.getConfig(WpsConfig.GEOSERVER_CATALOGUE_ENDPOINT_URL_CONFIG_KEY));
+            HttpIndexReader indexReader = new HttpIndexReader(WpsConfig.getProperty(WpsConfig.GEOSERVER_CATALOGUE_ENDPOINT_URL_CONFIG_KEY));
             List<DownloadRequest> downloads = indexReader.getDownloadRequestList(layer, "time", "file_url", subsetParams);
 
             //  Apply subset parameters
@@ -184,7 +185,7 @@ public class AggregationRunner implements CommandLineRunner {
             Path outputFile = Files.createTempFile(jobDir, "agg", ".nc");
             Path convertedFile = null;
 
-            long chunkSize = Long.valueOf(WpsConfig.getConfig(CHUNK_SIZE_KEY));
+            long chunkSize = Long.valueOf(WpsConfig.getProperty(CHUNK_SIZE_KEY));
 
             try (
                     ParallelDownloadManager downloadManager = new ParallelDownloadManager(downloadConfig, downloader);
@@ -222,8 +223,8 @@ public class AggregationRunner implements CommandLineRunner {
                     logger.info("Provenance output requested.");
 
                     //  Lookup the metadata URL for the layer
-                    String catalogueURL = WpsConfig.getConfig(GEONETWORK_CATALOGUE_URL_CONFIG_KEY);
-                    String layerSearchField = WpsConfig.getConfig(GEONETWORK_CATALOGUE_LAYER_FIELD_CONFIG_KEY);
+                    String catalogueURL = WpsConfig.getProperty(GEONETWORK_CATALOGUE_URL_CONFIG_KEY);
+                    String layerSearchField = WpsConfig.getProperty(GEONETWORK_CATALOGUE_LAYER_FIELD_CONFIG_KEY);
                     CatalogueReader catalogueReader = new CatalogueReader(catalogueURL, layerSearchField);
 
                     // Create provenance document
@@ -263,14 +264,13 @@ public class AggregationRunner implements CommandLineRunner {
 
                 String elapsedTime = formatter.print(elapsedPeriod);
 
-                logger.info("Aggregation completed successfully. JobID [" + batchJobId + "], Callback email [" + email + "], Size bytes [" + convertedFile.toFile().length() + "], Elapsed time [" + elapsedTime + "]");
+                logger.info("Aggregation completed successfully. JobID [" + batchJobId + "], Callback email [" + contactEmail + "], Size bytes [" + convertedFile.toFile().length() + "], Elapsed time [" + elapsedTime + "]");
                 statusDocument = statusBuilder.createResponseDocument(EnumStatus.SUCCEEDED, GOGODUCK_PROCESS_IDENTIFIER, null, null, outputMap);
                 statusFileManager.write(statusDocument, statusFilename, STATUS_FILE_MIME_TYPE);
 
-                if (email != null) {
+                //  Send completed job email to user
+                emailService.sendCompletedJobEmail(contactEmail, batchJobId, resultUrl, S3Utils.getExpirationinDays(outputBucketName));
 
-                    emailService.sendCompletedJobEmail(email, batchJobId, resultUrl, S3Utils.getExpirationinDays(outputBucketName));
-                }
             } finally {
                 if (jobDir != null) {
                     FileUtils.deleteDirectory(jobDir.toFile());
@@ -290,7 +290,7 @@ public class AggregationRunner implements CommandLineRunner {
 
         } catch (Throwable e) {
             e.printStackTrace();
-            logger.error("Failed aggregation. JobID [" + batchJobId + "], Callback email [" + email + "] : " + e.getMessage(), e);
+            logger.error("Failed aggregation. JobID [" + batchJobId + "], Callback email [" + contactEmail + "] : " + e.getMessage(), e);
             if (statusFileManager != null) {
                 if (batchJobId != null) {
                     String statusDocument = null;
@@ -304,13 +304,24 @@ public class AggregationRunner implements CommandLineRunner {
                 }
             }
 
-            if (email != null) {
+            //  Send failed job email to user
+            if (contactEmail != null) {
                 try {
-                    emailService.sendFailedJobEmail(email, batchJobId);
+                    emailService.sendFailedJobEmail(contactEmail, batchJobId);
                 } catch (EmailException ex) {
                     logger.error(ex.getMessage(), ex);
                 }
             }
+
+            //  Send failed job email to administrator
+            if(administratorEmail != null) {
+                try {
+                    emailService.sendFailedJobEmail(administratorEmail, batchJobId);
+                } catch (EmailException ex) {
+                    logger.error(ex.getMessage(), ex);
+                }
+            }
+
             //  Exit with a 'success' return code - will mean job will not retry
             System.exit(0);
         }

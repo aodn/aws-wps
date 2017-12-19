@@ -25,7 +25,7 @@ public class GetCapabilitiesOperation implements Operation {
 
     @Override
     public String execute() {
-        String wpsEndpointUrl = WpsConfig.getConfig(WPS_ENDPOINT_URL_CONFIG_KEY);
+        String wpsEndpointUrl = WpsConfig.getProperty(WPS_ENDPOINT_URL_CONFIG_KEY);
 
         GetCapabilitiesReader capabilitiesReader;
         String getCapabilitiesDocument;

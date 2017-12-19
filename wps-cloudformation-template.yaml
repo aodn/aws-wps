@@ -29,6 +29,17 @@ Parameters:
     Type: String
     Default: ''
     Description: The WPS API Gateway endpoint's domain name prefix (excluding the domain)
+  jobEmailContactEmail:
+    Type: String
+    Default: 'info@aodn.org.au'
+    Description: Contact email address to be included in job emails
+  jobEmailFromEmail:
+    Type: String
+    Default: 'administrator@aodn.org.au'
+    Description: From email address for job emails sent to clients
+  administratorEmail:
+    Type: String
+    Description: Email address of an administrator - used to send failed job emails for attention of administrators
   environment:
     Type: String
     Default: dev
@@ -385,6 +396,15 @@ Resources:
             Name: GEONETWORK_CATALOGUE_URL
             Value: !Ref geonetworkCatalogueURL
           -
+            Name: JOB_EMAIL_FROM_EMAIL
+            Value: !Ref jobEmailFromEmail
+          -
+            Name: JOB_EMAIL_CONTACT_EMAIL
+            Value: !Ref jobEmailContactEmail
+          -
+            Name: ADMINISTRATOR_EMAIL
+            Value: !Ref administratorEmail
+          -
             Name: GEONETWORK_LAYER_SEARCH_FIELD
             Value: layer
           -
@@ -597,6 +617,9 @@ Resources:
           AWS_BATCH_JOB_NAME: !Ref jobName
           AWS_BATCH_JOB_QUEUE_NAME: !Ref JobQueue
           AWS_BATCH_JOB_DEFINITION_NAME: !Select [1, !Split ['/', !Ref JobDefinition]]
+          JOB_EMAIL_FROM_EMAIL: !Ref jobEmailFromEmail
+          JOB_EMAIL_CONTACT_EMAIL: !Ref jobEmailContactEmail
+          ADMINISTRATOR_EMAIL: !Ref administratorEmail
           STATUS_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [BucketMap, !Ref environment, BucketName]]
           STATUS_S3_FILENAME: !FindInMap [ConfigurationFileMap, Filename, status]
           REQUEST_S3_FILENAME: !FindInMap [ConfigurationFileMap, Filename, request]

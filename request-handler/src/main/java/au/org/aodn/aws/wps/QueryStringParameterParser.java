@@ -49,7 +49,7 @@ public class QueryStringParameterParser implements RequestParser {
                 DescribeProcessOperation describeOperation = (DescribeProcessOperation) operation;
 
                 DescribeProcess describeRequest = describeOperation.getRequest();
-                describeRequest.setLanguage(WpsConfig.getConfig(WpsConfig.LANGUAGE_KEY));
+                describeRequest.setLanguage(WpsConfig.DEFAULT_LANGUAGE);
 
                 String identifierParamValue = getMapValueIgnoreCase(IDENTIFIER_REQUEST_PARAMETER_NAME, queryParameters);
                 LOGGER.info("New Identifier param: " + identifierParamValue);
@@ -82,7 +82,7 @@ public class QueryStringParameterParser implements RequestParser {
             {
                 GetCapabilitiesOperation capabilitiesOperation = (GetCapabilitiesOperation) operation;
                 GetCapabilities capabilitiesRequest = capabilitiesOperation.getRequest();
-                capabilitiesRequest.setLanguage(WpsConfig.getConfig(WpsConfig.LANGUAGE_KEY));
+                capabilitiesRequest.setLanguage(WpsConfig.getProperty(WpsConfig.DEFAULT_LANGUAGE));
                 AcceptVersionsType acceptedVersions = new AcceptVersionsType();
                 acceptedVersions.getVersion().add(getMapValueIgnoreCase(VERSION_REQUEST_PARAMETER_NAME,queryParameters));
                 capabilitiesRequest.setAcceptVersions(acceptedVersions);

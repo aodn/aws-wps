@@ -41,7 +41,7 @@ public class ExecuteStatusBuilder {
     private static final  Logger LOGGER = LoggerFactory.getLogger(ExecuteStatusBuilder.class);
 
     public ExecuteStatusBuilder(String jobId, String s3Bucket, String filename) {
-        String jobFileS3KeyPrefix = WpsConfig.getConfig(AWS_BATCH_JOB_S3_KEY_PREFIX);
+        String jobFileS3KeyPrefix = WpsConfig.getProperty(AWS_BATCH_JOB_S3_KEY_PREFIX);
         this.wpsEndpointUrl = WpsConfig.getAwsWpsEndpointUrl();
         this.statusFileS3Location = WpsConfig.getS3ExternalURL(s3Bucket, jobFileS3KeyPrefix + jobId + "/" + filename);
         this.jobId = jobId;
@@ -63,7 +63,7 @@ public class ExecuteStatusBuilder {
 
         ExecuteResponse response = new ExecuteResponse();
         response.setServiceInstance(wpsEndpointUrl);
-        response.setLang(WpsConfig.getConfig(WpsConfig.LANGUAGE_KEY));
+        response.setLang(WpsConfig.getProperty(WpsConfig.DEFAULT_LANGUAGE));
         response.setStatusLocation(WpsConfig.getStatusServiceXmlEndpoint(jobId));
 
         ProcessDescriptionType processDescription = null;

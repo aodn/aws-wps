@@ -4,9 +4,10 @@ Something has gone wrong with your download request. For further information abo
 
 Please try again. If you continue to experience problems please contact us at $contactEmail. The job reference is $uuid.
 
-
-$emailSignature
+Kind regards,
+The AODN Team
 
 
 --
-$emailFooter
+The AODN Portal provides access to all available Australian marine and climate science data and provides the primary access to IMOS data including access to the IMOS metadata.
+IMOS is supported by the Australian Government through the National Collaborative Research Infrastructure Strategy and the Super Science Initiative.

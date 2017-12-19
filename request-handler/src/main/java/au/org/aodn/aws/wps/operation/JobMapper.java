@@ -13,7 +13,7 @@ public class JobMapper {
 
     public String getJobDefinitionName() {
         if(processIdentifier.equalsIgnoreCase("gs:gogoduck")) {
-            return WpsConfig.getConfig(AWS_BATCH_JOB_DEFINITION_NAME_CONFIG_KEY);
+            return WpsConfig.getProperty(AWS_BATCH_JOB_DEFINITION_NAME_CONFIG_KEY);
         } else {
             return null;
         }
