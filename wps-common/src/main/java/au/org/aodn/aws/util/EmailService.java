@@ -9,8 +9,6 @@ import com.amazonaws.services.simpleemail.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static au.org.aodn.aws.wps.status.WpsConfig.JOB_EMAIL_FROM_EMAIL;
-
 public class EmailService {
 
     public static final String EMAIL_TEMPLATES_LOCATION = "templates";
@@ -20,6 +18,8 @@ public class EmailService {
     public static final String REGISTERED_JOB_EMAIL_SUBJECT = "IMOS download request registered - ";
     public static final String COMPLETED_JOB_EMAIL_SUBJECT = "IMOS download available - ";
     public static final String FAILED_JOB_EMAIL_SUBJECT = "IMOS download error - ";
+    public static final String JOB_EMAIL_CONTACT_ADDRESS = "info@aodn.org.au";
+    public static final String JOB_EMAIL_FROM_ADDRESS = "administrator@aodn.org.au";
 
 
     private static final Logger LOGGER = LoggerFactory.getLogger(EmailService.class);
@@ -79,7 +79,7 @@ public class EmailService {
     public void sendRegisteredJobEmail(String to, String uuid) throws EmailException {
         String subject = REGISTERED_JOB_EMAIL_SUBJECT + uuid;
         String textBody = templateManager.getRegisteredEmailContent(uuid);
-        String from = WpsConfig.getProperty(JOB_EMAIL_FROM_EMAIL);
+        String from = WpsConfig.getProperty(JOB_EMAIL_FROM_ADDRESS);
 
         sendEmail(to, from, subject, null, textBody);
     }
@@ -88,7 +88,7 @@ public class EmailService {
         String subject = COMPLETED_JOB_EMAIL_SUBJECT + uuid;
         String expirationPeriod = String.format("%d days", expirationPeriodInDays);
         String textBody = templateManager.getCompletedEmailContent(uuid, expirationPeriod, outputFileLocation);
-        String from = WpsConfig.getProperty(JOB_EMAIL_FROM_EMAIL);
+        String from = WpsConfig.getProperty(JOB_EMAIL_FROM_ADDRESS);
 
         sendEmail(to, from, subject, null, textBody);
     }
@@ -96,7 +96,7 @@ public class EmailService {
     public void sendFailedJobEmail(String to, String uuid) throws EmailException {
         String subject = FAILED_JOB_EMAIL_SUBJECT + uuid;
         String textBody = templateManager.getFailedEmailContent(uuid);
-        String from = WpsConfig.getProperty(JOB_EMAIL_FROM_EMAIL);
+        String from = WpsConfig.getProperty(JOB_EMAIL_FROM_ADDRESS);
 
         sendEmail(to, from, subject, null, textBody);
     }

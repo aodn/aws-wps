@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 import java.io.StringWriter;
 import java.util.Properties;
 
-import static au.org.aodn.aws.wps.status.WpsConfig.JOB_EMAIL_CONTACT_EMAIL;
+import static au.org.aodn.aws.util.EmailService.JOB_EMAIL_CONTACT_ADDRESS;
 
 public class EmailTemplateManager {
 
@@ -42,7 +42,7 @@ public class EmailTemplateManager {
             VelocityContext context = new VelocityContext();
             context.put(UUID, uuid);
             context.put(JOB_REPORT_URL, WpsConfig.getStatusServiceHtmlEndpoint(uuid));
-            context.put(CONTACT_EMAIL, WpsConfig.getProperty(JOB_EMAIL_CONTACT_EMAIL));
+            context.put(CONTACT_EMAIL, WpsConfig.getProperty(JOB_EMAIL_CONTACT_ADDRESS));
 
             StringWriter writer = new StringWriter();
             t.merge(context, writer);
@@ -62,7 +62,7 @@ public class EmailTemplateManager {
             context.put(UUID, uuid);
             context.put(JOB_REPORT_URL, outputFileLocation);
             context.put(EXPIRATION_PERIOD, expirationPeriod);
-            context.put(CONTACT_EMAIL, WpsConfig.getProperty(JOB_EMAIL_CONTACT_EMAIL));
+            context.put(CONTACT_EMAIL, WpsConfig.getProperty(JOB_EMAIL_CONTACT_ADDRESS));
 
             StringWriter writer = new StringWriter();
             t.merge(context, writer);
@@ -81,7 +81,7 @@ public class EmailTemplateManager {
             VelocityContext context = new VelocityContext();
             context.put(UUID, uuid);
             context.put(JOB_REPORT_URL, WpsConfig.getStatusServiceHtmlEndpoint(uuid));
-            context.put(CONTACT_EMAIL, WpsConfig.getProperty(JOB_EMAIL_CONTACT_EMAIL));
+            context.put(CONTACT_EMAIL, WpsConfig.getProperty(JOB_EMAIL_CONTACT_ADDRESS));
 
             StringWriter writer = new StringWriter();
             t.merge(context, writer);

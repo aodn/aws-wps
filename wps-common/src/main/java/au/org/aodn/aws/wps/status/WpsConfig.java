@@ -57,8 +57,6 @@ public class WpsConfig {
     public static final String STATUS_SERVICE_ENDPOINT_KEY = "STATUS_SERVICE_ENDPOINT_URL";
 
     // Email properties
-    public static final String JOB_EMAIL_CONTACT_EMAIL = "JOB_EMAIL_CONTACT_EMAIL";
-    public static final String JOB_EMAIL_FROM_EMAIL = "JOB_EMAIL_FROM_EMAIL";
     public static final String ADMINISTRATOR_EMAIL = "ADMINISTRATOR_EMAIL";
 
     public static final String DEFAULT_LANGUAGE = "en-US";
