@@ -388,12 +388,6 @@ Resources:
             Name: GEONETWORK_CATALOGUE_URL
             Value: !Ref geonetworkCatalogueURL
           -
-            Name: JOB_EMAIL_FROM_EMAIL
-            Value: !Ref jobEmailFromEmail
-          -
-            Name: JOB_EMAIL_CONTACT_EMAIL
-            Value: !Ref jobEmailContactEmail
-          -
             Name: ADMINISTRATOR_EMAIL
             Value: !Ref administratorEmail
           -
@@ -609,8 +603,6 @@ Resources:
           AWS_BATCH_JOB_NAME: !Ref jobName
           AWS_BATCH_JOB_QUEUE_NAME: !Ref JobQueue
           AWS_BATCH_JOB_DEFINITION_NAME: !Select [1, !Split ['/', !Ref JobDefinition]]
-          JOB_EMAIL_FROM_EMAIL: !Ref jobEmailFromEmail
-          JOB_EMAIL_CONTACT_EMAIL: !Ref jobEmailContactEmail
           ADMINISTRATOR_EMAIL: !Ref administratorEmail
           STATUS_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !FindInMap [BucketMap, !Ref environment, BucketName]]
           STATUS_S3_FILENAME: !FindInMap [ConfigurationFileMap, Filename, status]
