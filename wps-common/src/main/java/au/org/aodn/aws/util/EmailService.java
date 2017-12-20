@@ -79,7 +79,7 @@ public class EmailService {
     public void sendRegisteredJobEmail(String to, String uuid) throws EmailException {
         String subject = REGISTERED_JOB_EMAIL_SUBJECT + uuid;
         String textBody = templateManager.getRegisteredEmailContent(uuid);
-        String from = WpsConfig.getProperty(JOB_EMAIL_FROM_ADDRESS);
+        String from = JOB_EMAIL_FROM_ADDRESS;
 
         sendEmail(to, from, subject, null, textBody);
     }
@@ -88,7 +88,7 @@ public class EmailService {
         String subject = COMPLETED_JOB_EMAIL_SUBJECT + uuid;
         String expirationPeriod = String.format("%d days", expirationPeriodInDays);
         String textBody = templateManager.getCompletedEmailContent(uuid, expirationPeriod, outputFileLocation);
-        String from = WpsConfig.getProperty(JOB_EMAIL_FROM_ADDRESS);
+        String from = JOB_EMAIL_FROM_ADDRESS;
 
         sendEmail(to, from, subject, null, textBody);
     }
@@ -96,7 +96,7 @@ public class EmailService {
     public void sendFailedJobEmail(String to, String uuid) throws EmailException {
         String subject = FAILED_JOB_EMAIL_SUBJECT + uuid;
         String textBody = templateManager.getFailedEmailContent(uuid);
-        String from = WpsConfig.getProperty(JOB_EMAIL_FROM_ADDRESS);
+        String from = JOB_EMAIL_FROM_ADDRESS;
 
         sendEmail(to, from, subject, null, textBody);
     }

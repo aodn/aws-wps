@@ -42,7 +42,7 @@ public class EmailTemplateManager {
             VelocityContext context = new VelocityContext();
             context.put(UUID, uuid);
             context.put(JOB_REPORT_URL, WpsConfig.getStatusServiceHtmlEndpoint(uuid));
-            context.put(CONTACT_EMAIL, WpsConfig.getProperty(JOB_EMAIL_CONTACT_ADDRESS));
+            context.put(CONTACT_EMAIL, JOB_EMAIL_CONTACT_ADDRESS);
 
             StringWriter writer = new StringWriter();
             t.merge(context, writer);
@@ -62,7 +62,7 @@ public class EmailTemplateManager {
             context.put(UUID, uuid);
             context.put(JOB_REPORT_URL, outputFileLocation);
             context.put(EXPIRATION_PERIOD, expirationPeriod);
-            context.put(CONTACT_EMAIL, WpsConfig.getProperty(JOB_EMAIL_CONTACT_ADDRESS));
+            context.put(CONTACT_EMAIL, JOB_EMAIL_CONTACT_ADDRESS);
 
             StringWriter writer = new StringWriter();
             t.merge(context, writer);
@@ -81,7 +81,7 @@ public class EmailTemplateManager {
             VelocityContext context = new VelocityContext();
             context.put(UUID, uuid);
             context.put(JOB_REPORT_URL, WpsConfig.getStatusServiceHtmlEndpoint(uuid));
-            context.put(CONTACT_EMAIL, WpsConfig.getProperty(JOB_EMAIL_CONTACT_ADDRESS));
+            context.put(CONTACT_EMAIL, JOB_EMAIL_CONTACT_ADDRESS);
 
             StringWriter writer = new StringWriter();
             t.merge(context, writer);
