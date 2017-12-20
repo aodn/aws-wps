@@ -11,7 +11,6 @@ Parameters:
     Type: String
   geonetworkCatalogueURL:
     Type: String
-
   customAmiId:
     Type: String
     Description: Custom AMI image id to use when creating the compute environment (optional)
@@ -29,16 +28,9 @@ Parameters:
     Type: String
     Default: ''
     Description: The WPS API Gateway endpoint's domain name prefix (excluding the domain)
-  jobEmailContactEmail:
-    Type: String
-    Default: 'info@aodn.org.au'
-    Description: Contact email address to be included in job emails
-  jobEmailFromEmail:
-    Type: String
-    Default: 'administrator@aodn.org.au'
-    Description: From email address for job emails sent to clients
   administratorEmail:
     Type: String
+    Default: ''
     Description: Email address of an administrator - used to send failed job emails for attention of administrators
   environment:
     Type: String
