@@ -84,10 +84,10 @@ public class EmailService {
         sendEmail(to, from, subject, null, textBody);
     }
 
-    public void sendCompletedJobEmail(String to, String uuid, String outputFileLocation, int expirationPeriodInDays) throws EmailException {
+    public void sendCompletedJobEmail(String to, String uuid, String statusPageLink, int expirationPeriodInDays) throws EmailException {
         String subject = COMPLETED_JOB_EMAIL_SUBJECT + uuid;
         String expirationPeriod = String.format("%d days", expirationPeriodInDays);
-        String textBody = templateManager.getCompletedEmailContent(uuid, expirationPeriod, outputFileLocation);
+        String textBody = templateManager.getCompletedEmailContent(uuid, expirationPeriod, statusPageLink);
         String from = JOB_EMAIL_FROM_ADDRESS;
 
         sendEmail(to, from, subject, null, textBody);

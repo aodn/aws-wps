@@ -215,6 +215,9 @@ public class AggregationRunner implements CommandLineRunner {
                 String resultUrl = WpsConfig.getS3ExternalURL(outputBucketName,
                         outputFileManager.getJobFileKey(fullOutputFilename));
 
+                //  URL for the status page for this job
+                String statusUrl = WpsConfig.getStatusServiceHtmlEndpoint(batchJobId);
+
                 if (requestHelper.hasRequestedOutput("result")) {
                     outputMap.put("result", resultUrl);
                 }
@@ -269,7 +272,7 @@ public class AggregationRunner implements CommandLineRunner {
                 statusFileManager.write(statusDocument, statusFilename, STATUS_FILE_MIME_TYPE);
 
                 //  Send completed job email to user
-                emailService.sendCompletedJobEmail(contactEmail, batchJobId, resultUrl, S3Utils.getExpirationinDays(outputBucketName));
+                emailService.sendCompletedJobEmail(contactEmail, batchJobId, statusUrl, S3Utils.getExpirationinDays(outputBucketName));
 
             } finally {
                 if (jobDir != null) {
