@@ -55,12 +55,12 @@ public class EmailTemplateManager {
         }
     }
 
-    public String getCompletedEmailContent(String uuid, String expirationPeriod, String outputFileLocation) throws EmailException {
+    public String getCompletedEmailContent(String uuid, String expirationPeriod, String statusUrl) throws EmailException {
         try {
             Template t = velocityEngine.getTemplate(EmailService.getCompletedJobEmailTemplate());
             VelocityContext context = new VelocityContext();
             context.put(UUID, uuid);
-            context.put(JOB_REPORT_URL, outputFileLocation);
+            context.put(JOB_REPORT_URL, statusUrl);
             context.put(EXPIRATION_PERIOD, expirationPeriod);
             context.put(CONTACT_EMAIL, JOB_EMAIL_CONTACT_ADDRESS);
 
