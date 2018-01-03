@@ -11,10 +11,6 @@ Parameters:
     Type: String
   geonetworkCatalogueURL:
     Type: String
-  customAmiId:
-    Type: String
-    Description: Custom AMI image id to use when creating the compute environment (optional)
-    Default: ''
   sumoEndpoint:
     Type: String
     Default: ''
@@ -63,12 +59,14 @@ Mappings:
       DomainSuffix: dev.aodn.org.au
       HostedZoneId: Z3JIUIKOQNPOWH
       HostedZoneName: dev.aodn.org.au.
+      CustomAmiId: ami-65c23707
     '104044260116':  # production
       AllowEphemeralBuckets: false
       CertificateArn: arn:aws:acm:us-east-1:104044260116:certificate/58773098-aaa7-42b5-bc58-8ba2a938f951
       DomainSuffix: aodn.org.au
       HostedZoneId: ZYU7JVFK6NXWM
       HostedZoneName: aodn.org.au.
+      CustomAmiId: ami-bd06f3df
   BucketMap:
     production:
       BucketName: aws-wps-production
@@ -122,7 +120,7 @@ Conditions:
     - !Equals [true, !FindInMap [AccountConstants, !Ref 'AWS::AccountId', AllowEphemeralBuckets]]
   ConfigureSumoLogic: !Not [!Equals ['', !Ref sumoEndpoint]]
   CreateWpsApiGatewayDomainName: !Not [!Equals ['', !Ref wpsDomainName]]
-  UseCustomAmi: !Not [!Equals ['', !Ref customAmiId]]
+  UseCustomAmi: !Not [!Equals ['', !FindInMap [AccountConstants, !Ref 'AWS::AccountId', CustomAmiId]]]
 Resources:
 
   #
@@ -442,7 +440,7 @@ Resources:
           - m4.large
           - r4.large
           - r3.large
-        ImageId: !If [UseCustomAmi, !Ref customAmiId, !Ref 'AWS::NoValue']
+        ImageId: !If [UseCustomAmi, !FindInMap [AccountConstants, !Ref 'AWS::AccountId', CustomAmiId], !Ref 'AWS::NoValue']
         Subnets: !FindInMap [!Ref environment, !Ref 'AWS::Region', subnets]
         SecurityGroupIds:
           - !Ref ComputeEnvironmentInstanceSecurityGroup
@@ -801,22 +799,22 @@ Resources:
         Path: /
         ManagedPolicyArns:
           - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-  BatchJobLogsLambdaPermission:
-    Type: AWS::Lambda::Permission
-    Condition: ConfigureSumoLogic
-    Properties:
-      Action: lambda:invokeFunction
-      FunctionName: !GetAtt SumoLogicLambdaFunction.Arn
-      Principal: !Sub 'logs.${AWS::Region}.amazonaws.com'
-      SourceArn: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/batch/job:*'
-  BatchJobLogsSubscriptionFilter:
-    Type: AWS::Logs::SubscriptionFilter
-    Condition: ConfigureSumoLogic
-    DependsOn: BatchJobLogsLambdaPermission
-    Properties:
-      DestinationArn: !GetAtt SumoLogicLambdaFunction.Arn
-      FilterPattern: '' # Will need to update the filter pattern or create a log stream. Currently all the batch job logs will be fetched.
-      LogGroupName: /aws/batch/job
+  #BatchJobLogsLambdaPermission:
+  #  Type: AWS::Lambda::Permission
+  #  Condition: ConfigureSumoLogic
+  #  Properties:
+  #    Action: lambda:invokeFunction
+  #    FunctionName: !GetAtt SumoLogicLambdaFunction.Arn
+  #    Principal: !Sub 'logs.${AWS::Region}.amazonaws.com'
+  #    SourceArn: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/batch/job:*'
+  #BatchJobLogsSubscriptionFilter:
+  #  Type: AWS::Logs::SubscriptionFilter
+  #  Condition: ConfigureSumoLogic
+  #  DependsOn: BatchJobLogsLambdaPermission
+  #  Properties:
+  #    DestinationArn: !GetAtt SumoLogicLambdaFunction.Arn
+  #    FilterPattern: '' # Will need to update the filter pattern or create a log stream. Currently all the batch job logs will be fetched.
+  #    LogGroupName: /aws/batch/job
   RequestHandlerLogsLambdaPermission:
     Type: AWS::Lambda::Permission
     Condition: ConfigureSumoLogic
