@@ -102,11 +102,11 @@ Mappings:
         - subnet-d722d0b2
   sandbox:
     ap-southeast-2:
-      vpc: vpc-7302ee16
+      vpc: vpc-5e0e3a3a
       subnets:
-        - subnet-7976213f
-        - subnet-54b3aa20
-        - subnet-d722d0b2
+        - subnet-4d471e14
+        - subnet-eab65ea3
+        - subnet-19956d7e
   dev:
     ap-southeast-2:
       vpc: vpc-5e0e3a3a
