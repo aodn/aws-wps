@@ -7,7 +7,7 @@ import net.opengis.wps.v_1_0_0.InputType;
 
 import java.util.List;
 
-import static au.org.aodn.aws.wps.status.WpsConfig.TEST_TRANSACTION_INPUT_IDENTIFIER;
+import au.org.aodn.aws.wps.exception.ValidationException;
 
 public class ExecuteRequestHelper {
     private final Execute request;
@@ -35,6 +35,37 @@ public class ExecuteRequestHelper {
         }
 
         return false;
+    }
+
+    public void validateInputs() throws ValidationException {
+        String layerName = getLiteralInputValue("layer");
+        String subset = getLiteralInputValue("subset");
+        String email = getEmail();
+
+        if (layerName == null) {
+            throw new ValidationException("Request must have a layer name");
+        }
+
+        if (subset == null) {
+            throw new ValidationException("Request must have a subset");
+        } else {
+            String[] subsetFields = subset.split(";", -1);
+            String[] requiredFields = {"LATITUDE", "LONGITUDE"};
+
+            if (subsetFields.length != requiredFields.length) {
+                throw new ValidationException("Subset is incorrectly formatted");
+            } else {
+                for (int i = 0; i < subsetFields.length; i++) {
+                    if (!subsetFields[i].startsWith(requiredFields[i])) {
+                        throw new ValidationException("Subset is missing required field: " + requiredFields[i]);
+                    }
+                }
+            }
+        }
+
+        if (email == null) {
+            throw new ValidationException("Request must have a callback email");
+        }
     }
 
     public String getRequestedMimeType(String identifier) {

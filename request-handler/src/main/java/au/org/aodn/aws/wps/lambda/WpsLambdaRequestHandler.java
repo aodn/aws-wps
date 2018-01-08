@@ -38,6 +38,8 @@ public class WpsLambdaRequestHandler implements RequestHandler<AwsApiRequest, Aw
             LOGGER.info(String.format("%s = %s", key, System.getenv(key)));
         }
 
+        String ipAddress = getClientIpAddress(request);
+
         //  Log all HTTP headers
         if(httpHeaders != null) {
             Set<String> httpHeaderKeys = httpHeaders.keySet();

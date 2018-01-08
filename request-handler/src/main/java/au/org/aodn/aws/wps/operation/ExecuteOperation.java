@@ -6,6 +6,7 @@ import au.org.aodn.aws.geoserver.client.SubsetParameters;
 import au.org.aodn.aws.util.EmailService;
 import au.org.aodn.aws.util.JobFileUtil;
 import au.org.aodn.aws.wps.request.ExecuteRequestHelper;
+import au.org.aodn.aws.wps.exception.ValidationException;
 import au.org.aodn.aws.wps.status.*;
 import com.amazonaws.services.batch.AWSBatch;
 import com.amazonaws.services.batch.AWSBatchClientBuilder;
@@ -51,6 +52,7 @@ public class ExecuteOperation implements Operation {
         String awsRegion = WpsConfig.getProperty(AWS_REGION_CONFIG_KEY);
 
         ExecuteRequestHelper helper = new ExecuteRequestHelper(executeRequest);
+        helper.validateInputs();
         String email = helper.getEmail();
 
         //  Determine the name of the batch job definition to run for the indicated process
