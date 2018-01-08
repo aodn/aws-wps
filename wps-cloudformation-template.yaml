@@ -67,6 +67,20 @@ Mappings:
       HostedZoneId: ZYU7JVFK6NXWM
       HostedZoneName: aodn.org.au.
       CustomAmiId: ami-bd06f3df
+  '615645230945': # non-production region constants
+    ap-southeast-2:
+      vpc: vpc-5e0e3a3a
+      subnets:
+        - subnet-4d471e14
+        - subnet-eab65ea3
+        - subnet-19956d7e
+  '104044260116': # production region constants
+    ap-southeast-2:
+      vpc: vpc-7302ee16
+      subnets:
+        - subnet-7976213f
+        - subnet-54b3aa20
+        - subnet-d722d0b2
   BucketMap:
     production:
       BucketName: aws-wps-production
@@ -80,40 +94,6 @@ Mappings:
     Filename:
       status: status.xml
       request: request.xml
-  production:
-    ap-southeast-2:
-      vpc: vpc-7302ee16
-      subnets:
-        - subnet-7976213f
-        - subnet-54b3aa20
-        - subnet-d722d0b2
-    eu-central-1:
-      vpc: vpc-16c5247f
-      subnets:
-        - subnet-9e0003e6
-        - subnet-f82bcb91
-        - subnet-5086a51a
-  systest:
-    ap-southeast-2:
-      vpc: vpc-7302ee16
-      subnets:
-        - subnet-7976213f
-        - subnet-54b3aa20
-        - subnet-d722d0b2
-  sandbox:
-    ap-southeast-2:
-      vpc: vpc-5e0e3a3a
-      subnets:
-        - subnet-4d471e14
-        - subnet-eab65ea3
-        - subnet-19956d7e
-  dev:
-    ap-southeast-2:
-      vpc: vpc-5e0e3a3a
-      subnets:
-        - subnet-4d471e14
-        - subnet-eab65ea3
-        - subnet-19956d7e
 Conditions:
   CreateEphemeralBucket: !And
     - !Equals [!Ref environment, dev]
@@ -440,7 +420,7 @@ Resources:
           - r4.large
           - r3.large
         ImageId: !If [UseCustomAmi, !FindInMap [AccountConstants, !Ref 'AWS::AccountId', CustomAmiId], !Ref 'AWS::NoValue']
-        Subnets: !FindInMap [!Ref environment, !Ref 'AWS::Region', subnets]
+        Subnets: !FindInMap [!Ref 'AWS::AccountId', !Ref 'AWS::Region', subnets]
         SecurityGroupIds:
           - !Ref ComputeEnvironmentInstanceSecurityGroup
         InstanceRole: !Ref IamInstanceProfile
@@ -451,7 +431,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Allow http to client host
-      VpcId: !FindInMap [!Ref environment, !Ref 'AWS::Region', vpc]
+      VpcId: !FindInMap [!Ref 'AWS::AccountId', !Ref 'AWS::Region', vpc]
       SecurityGroupIngress:
       - IpProtocol: '-1'
         FromPort: '-1'
