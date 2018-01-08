@@ -14,9 +14,6 @@ Parameters:
   sumoEndpoint:
     Type: String
     Default: ''
-  jobName:
-    Type: String
-    Default: javaduck
   maxVCPUs:
     Type: Number
     Default: 4
@@ -577,7 +574,7 @@ Resources:
       Code: ./request-handler/target/request-handler-lambda-package.zip
       Environment:
         Variables:
-          AWS_BATCH_JOB_NAME: !Ref jobName
+          AWS_BATCH_JOB_NAME: javaduck
           AWS_BATCH_JOB_QUEUE_NAME: !Ref JobQueue
           AWS_BATCH_JOB_DEFINITION_NAME: !Select [1, !Split ['/', !Ref JobDefinition]]
           ADMINISTRATOR_EMAIL: !Ref administratorEmail
