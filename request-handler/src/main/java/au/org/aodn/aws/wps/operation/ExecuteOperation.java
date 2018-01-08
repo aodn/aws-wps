@@ -3,6 +3,7 @@ package au.org.aodn.aws.wps.operation;
 import au.org.aodn.aws.util.EmailService;
 import au.org.aodn.aws.util.JobFileUtil;
 import au.org.aodn.aws.wps.request.ExecuteRequestHelper;
+import au.org.aodn.aws.wps.exception.ValidationException;
 import au.org.aodn.aws.wps.status.*;
 import com.amazonaws.services.batch.AWSBatch;
 import com.amazonaws.services.batch.AWSBatchClientBuilder;
@@ -30,7 +31,7 @@ public class ExecuteOperation implements Operation {
 
 
     @Override
-    public String execute() {
+    public String execute() throws ValidationException {
 
         //  Config items:
         //      queue names
@@ -54,6 +55,7 @@ public class ExecuteOperation implements Operation {
         LOGGER.info("awsRegion: " + awsRegion);
 
         ExecuteRequestHelper helper = new ExecuteRequestHelper(executeRequest);
+        helper.validateInputs();
         String email = helper.getEmail();
 
         String processIdentifier = executeRequest.getIdentifier().getValue();  // code spaces not supported for the moment
