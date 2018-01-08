@@ -8,12 +8,12 @@
         <groupId>au.org.emii</groupId>
         <artifactId>aws-wps</artifactId>
         <relativePath>../pom.xml</relativePath>
-        <version>0.4.3</version>
+        <version>0.4.5-testing</version>
     </parent>
 
     <groupId>au.org.emii</groupId>
     <artifactId>aggregation-worker</artifactId>
-    <version>0.4.3</version>
+    <version>0.4.5-testing</version>
 
     <properties>
         <java.version>1.8</java.version>
@@ -69,7 +69,7 @@
         <dependency>
             <groupId>au.org.emii</groupId>
             <artifactId>wps-common</artifactId>
-            <version>0.4.3</version>
+            <version>0.4.5-testing</version>
         </dependency>
         <dependency>
             <groupId>dom4j</groupId>
