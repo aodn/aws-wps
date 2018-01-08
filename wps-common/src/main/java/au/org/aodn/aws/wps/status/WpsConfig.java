@@ -20,6 +20,7 @@ public class WpsConfig {
     public static final String AWS_BATCH_JOB_DEFINITION_NAME_CONFIG_KEY = "AWS_BATCH_JOB_DEFINITION_NAME";
     public static final String AWS_BATCH_LOG_GROUP_NAME_CONFIG_KEY = "AWS_BATCH_LOG_GROUP_NAME";
 
+    public static final String SUMOLOGIC_ENDPOINT_ENV_VARIABLE_NAME = "SUMO_ENDPOINT";
     public static final String AWS_REGION_CONFIG_KEY = "AWS_REGION";
     public static final String AWS_REGION_SES_CONFIG_KEY = "AWS_REGION_SES";
     public static final String STATUS_S3_BUCKET_CONFIG_KEY = "STATUS_S3_BUCKET";

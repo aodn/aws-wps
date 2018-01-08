@@ -23,22 +23,25 @@ import com.amazonaws.AmazonServiceException;
 import freemarker.template.Configuration;
 import net.opengis.wps.v_1_0_0.Execute;
 import org.apache.commons.io.FileUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.Appender;
+import org.apache.logging.log4j.core.LoggerContext;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Period;
 import org.joda.time.format.PeriodFormatter;
 import org.joda.time.format.PeriodFormatterBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import ucar.nc2.time.CalendarDateRange;
 import ucar.unidata.geoloc.LatLonRect;
+import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -54,9 +57,10 @@ public class AggregationRunner implements CommandLineRunner {
     public static final int DEFAULT_CONNECT_TIMEOUT_MS = 60000;
     public static final int DEFAULT_READ_TIMEOUT_MS = 60000;
 
+    public static final String SUMOLOGIC_LOG_APPENDER_NAME = "SumoAppender";
     private static final String PROVENANCE_TEMPLATE_GRIDDED = "provenance_template_gridded.ftl";
 
-    private static final Logger logger = LoggerFactory.getLogger(au.org.emii.aggregationworker.AggregationRunner.class);
+    private static final Logger logger = LogManager.getRootLogger();
 
     private String statusS3Bucket = null, statusFilename = null, requestFilename = null;
 
@@ -68,6 +72,8 @@ public class AggregationRunner implements CommandLineRunner {
     @Override
     public void run(String... args) {
 
+        checkLoggingConfiguration();
+
         DateTime startTime = new DateTime(DateTimeZone.UTC);
 
         S3JobFileManager statusFileManager = null;
@@ -76,7 +82,7 @@ public class AggregationRunner implements CommandLineRunner {
         String administratorEmail = null;
         EmailService emailService = null;
         ExecuteStatusBuilder statusBuilder = null;
-        Path downloadDirectory = null;
+        Path downloadDirectory;
 
         try {
             //  Capture the AWS job specifics - they are passed to the docker runtime as
@@ -259,15 +265,15 @@ public class AggregationRunner implements CommandLineRunner {
                 Period elapsedPeriod = new Period(startTime, stopTime);
 
                 PeriodFormatter formatter = new PeriodFormatterBuilder()
-                        .printZeroNever()
-                        .appendHours().appendPrefix("h:")
-                        .appendMinutes().appendSuffix("m:")
-                        .appendSeconds().appendSuffix("s")
+                        .printZeroAlways()
+                        .appendHours().appendSuffix(":")
+                        .appendMinutes().appendSuffix(":")
+                        .appendSeconds()
                         .toFormatter();
 
                 String elapsedTime = formatter.print(elapsedPeriod);
 
-                logger.info("Aggregation completed successfully. JobID [" + batchJobId + "], Callback email [" + contactEmail + "], Size bytes [" + convertedFile.toFile().length() + "], Elapsed time [" + elapsedTime + "]");
+                logger.info("Aggregation completed successfully. JobID [" + batchJobId + "], Callback email [" + contactEmail + "], Size bytes [" + convertedFile.toFile().length() + "], Elapsed time (h:m:s) [" + elapsedTime + "]");
                 statusDocument = statusBuilder.createResponseDocument(EnumStatus.SUCCEEDED, GOGODUCK_PROCESS_IDENTIFIER, null, null, outputMap);
                 statusFileManager.write(statusDocument, statusFilename, STATUS_FILE_MIME_TYPE);
 
@@ -279,7 +285,6 @@ public class AggregationRunner implements CommandLineRunner {
                     FileUtils.deleteDirectory(jobDir.toFile());
                 }
             }
-
         } catch(AmazonServiceException se) {
             String errorMessage = "An amazon service exception occurred processing job [" + batchJobId + "] : " +
                                   "Message [" + se.getMessage() + "]" +
@@ -288,6 +293,10 @@ public class AggregationRunner implements CommandLineRunner {
                                   ", ErrorType [" + se.getErrorType().name() + "]";
 
             logger.error(errorMessage, se);
+
+            //  Flush messages etc...
+            LogManager.shutdown();
+
             //  Exit with a failed return code - means batch job will retry (unless max retries reached)
             System.exit(1);
 
@@ -325,8 +334,31 @@ public class AggregationRunner implements CommandLineRunner {
                 }
             }
 
+            //  Flush messages etc...
+            LogManager.shutdown();
+
             //  Exit with a 'success' return code - will mean job will not retry
             System.exit(0);
+        }
+    }
+
+
+    private void checkLoggingConfiguration() {
+        //  If we don't have a sumo endpoint defined - but we do have a Sumo log appender configured
+        //  we should remove the appender - because it isn't configured properly anyway.
+        if(WpsConfig.getProperty(WpsConfig.SUMOLOGIC_ENDPOINT_ENV_VARIABLE_NAME) == null) {
+            org.apache.logging.log4j.core.config.Configuration logConfig = ((LoggerContext) LogManager.getContext()).getConfiguration();
+            Map<String, Appender> appenderMap = logConfig.getAppenders();
+            Collection<Appender> appenders = appenderMap.values();
+            for(Appender currentAppender : appenders) {
+                if(currentAppender.getName().equalsIgnoreCase(SUMOLOGIC_LOG_APPENDER_NAME)) {
+                    LoggerContext context = (LoggerContext) LogManager.getContext();
+                    logConfig.getRootLogger().removeAppender(SUMOLOGIC_LOG_APPENDER_NAME);
+                    context.updateLoggers();
+
+                    logger.info("Removed SumoLogic Log Appender [" + SUMOLOGIC_LOG_APPENDER_NAME + "] - no endpoint set.");
+                }
+            }
         }
     }
 }

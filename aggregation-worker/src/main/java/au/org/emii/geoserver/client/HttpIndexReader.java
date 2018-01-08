@@ -61,9 +61,10 @@ public class HttpIndexReader {
                 getParametersString += getTimeSortClause(timeField);
             }
 
-            logger.info("GET Request Params String: " + getParametersString);
-            byte[]getParamsBytes = getParametersString.getBytes();
+            byte[] getParamsBytes = getParametersString.getBytes();
 
+            logger.info(String.format("GETting list of files from [%s]", geoserverWfsEndpoint));
+            logger.info(String.format("GET Parameters: [%s]", new String(getParamsBytes)));
 
             URL url = new URL(geoserverWfsEndpoint);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -76,8 +77,6 @@ public class HttpIndexReader {
             InputStream inputStream = conn.getInputStream();
             DataInputStream dataInputStream = new DataInputStream(new BufferedInputStream(inputStream));
 
-            logger.info(String.format("Getting list of files from '%s'", geoserverWfsEndpoint));
-            logger.info(String.format("Parameters: '%s'", new String(getParamsBytes)));
             String line = null;
             Integer i = 0;
             int fileUrlIndex = 0;

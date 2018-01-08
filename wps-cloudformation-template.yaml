@@ -327,6 +327,9 @@ Resources:
             Name: AWS_REGION_SES
             Value: !Ref awsRegionSes
           -
+            Name: SUMO_ENDPOINT
+            Value: !Ref sumoEndpoint
+          -
             Name: AGGREGATOR_TEMPLATE_FILE_URL
             Value: !Ref templatesURL
           -
@@ -766,22 +769,22 @@ Resources:
         Path: /
         ManagedPolicyArns:
           - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-  BatchJobLogsLambdaPermission:
-    Type: AWS::Lambda::Permission
-    Condition: ConfigureSumoLogic
-    Properties:
-      Action: lambda:invokeFunction
-      FunctionName: !GetAtt SumoLogicLambdaFunction.Arn
-      Principal: !Sub 'logs.${AWS::Region}.amazonaws.com'
-      SourceArn: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/batch/job:*'
-  BatchJobLogsSubscriptionFilter:
-    Type: AWS::Logs::SubscriptionFilter
-    Condition: ConfigureSumoLogic
-    DependsOn: BatchJobLogsLambdaPermission
-    Properties:
-      DestinationArn: !GetAtt SumoLogicLambdaFunction.Arn
-      FilterPattern: '' # Will need to update the filter pattern or create a log stream. Currently all the batch job logs will be fetched.
-      LogGroupName: /aws/batch/job
+  #BatchJobLogsLambdaPermission:
+  #  Type: AWS::Lambda::Permission
+  #  Condition: ConfigureSumoLogic
+  #  Properties:
+  #    Action: lambda:invokeFunction
+  #    FunctionName: !GetAtt SumoLogicLambdaFunction.Arn
+  #    Principal: !Sub 'logs.${AWS::Region}.amazonaws.com'
+  #    SourceArn: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/batch/job:*'
+  #BatchJobLogsSubscriptionFilter:
+  #  Type: AWS::Logs::SubscriptionFilter
+  #  Condition: ConfigureSumoLogic
+  #  DependsOn: BatchJobLogsLambdaPermission
+  #  Properties:
+  #    DestinationArn: !GetAtt SumoLogicLambdaFunction.Arn
+  #    FilterPattern: '' # Will need to update the filter pattern or create a log stream. Currently all the batch job logs will be fetched.
+  #    LogGroupName: /aws/batch/job
   RequestHandlerLogsLambdaPermission:
     Type: AWS::Lambda::Permission
     Condition: ConfigureSumoLogic

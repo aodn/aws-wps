@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration packages="com.sumologic.log4j.SumoLogicAppender">
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} %-5p [%t] %c : %m%n"/>
+        </Console>
+        <SumoLogicAppender
+                name="SumoAppender"
+                maxFlushInterval="1000"
+                messagePerRequest="100"
+                sourceName="/aws/batch/job"
+                url="${env:SUMO_ENDPOINT}">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} %-5p [%t] %c : %m%n" />
+        </SumoLogicAppender>
+    </Appenders>
+    <Loggers>
+        <Root level="INFO">
+            <AppenderRef ref="Console" />
+            <AppenderRef ref="SumoAppender" />
+        </Root>
+    </Loggers>
+</Configuration>
