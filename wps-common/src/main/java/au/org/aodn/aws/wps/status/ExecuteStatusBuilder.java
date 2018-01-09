@@ -63,7 +63,7 @@ public class ExecuteStatusBuilder {
 
         ExecuteResponse response = new ExecuteResponse();
         response.setServiceInstance(wpsEndpointUrl);
-        response.setLang(WpsConfig.getProperty(WpsConfig.DEFAULT_LANGUAGE));
+        response.setLang(WpsConfig.DEFAULT_LANGUAGE);
         response.setStatusLocation(WpsConfig.getStatusServiceXmlEndpoint(jobId));
 
         ProcessDescriptionType processDescription = null;
