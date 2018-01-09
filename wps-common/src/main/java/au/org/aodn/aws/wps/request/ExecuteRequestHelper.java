@@ -6,6 +6,8 @@ import net.opengis.wps.v_1_0_0.Execute;
 import net.opengis.wps.v_1_0_0.InputType;
 
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import au.org.aodn.aws.wps.exception.ValidationException;
 
@@ -49,17 +51,16 @@ public class ExecuteRequestHelper {
         if (subset == null) {
             throw new ValidationException("Request must have a subset");
         } else {
-            String[] subsetFields = subset.split(";", -1);
-            String[] requiredFields = {"LATITUDE", "LONGITUDE"};
+            int latLonCount = 0;
+            Pattern latLonPattern = Pattern.compile("([+-]?\\d+\\.?\\d+)\\s*,\\s*([+-]?\\d+\\.?\\d+)");
+            Matcher matcher = latLonPattern.matcher(subset);
 
-            if (subsetFields.length != requiredFields.length) {
-                throw new ValidationException("Subset is incorrectly formatted");
-            } else {
-                for (int i = 0; i < subsetFields.length; i++) {
-                    if (!subsetFields[i].startsWith(requiredFields[i])) {
-                        throw new ValidationException("Subset is missing required field: " + requiredFields[i]);
-                    }
-                }
+            while (matcher.find()) {
+                latLonCount++;
+            }
+
+            if (latLonCount != 2) {
+                throw new ValidationException(String.format("Invalid latitude/longitude format for subset: %s", subset));
             }
         }
 
