@@ -39,7 +39,7 @@ public class DescribeProcessOperation implements Operation {
 
         if (identifiers != null) {
             ProcessDescriptions outputProcessDescriptions = new ProcessDescriptions();
-            outputProcessDescriptions.setLang(WpsConfig.getProperty(WpsConfig.DEFAULT_LANGUAGE));
+            outputProcessDescriptions.setLang(WpsConfig.DEFAULT_LANGUAGE);
 
             for (CodeType identifier : identifiers) {
                 //  The identifier passed will be prefixed with 'gs:' - ie: gs:GoGoDuck

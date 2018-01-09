@@ -82,7 +82,7 @@ public class QueryStringParameterParser implements RequestParser {
             {
                 GetCapabilitiesOperation capabilitiesOperation = (GetCapabilitiesOperation) operation;
                 GetCapabilities capabilitiesRequest = capabilitiesOperation.getRequest();
-                capabilitiesRequest.setLanguage(WpsConfig.getProperty(WpsConfig.DEFAULT_LANGUAGE));
+                capabilitiesRequest.setLanguage(WpsConfig.DEFAULT_LANGUAGE);
                 AcceptVersionsType acceptedVersions = new AcceptVersionsType();
                 acceptedVersions.getVersion().add(getMapValueIgnoreCase(VERSION_REQUEST_PARAMETER_NAME,queryParameters));
                 capabilitiesRequest.setAcceptVersions(acceptedVersions);
