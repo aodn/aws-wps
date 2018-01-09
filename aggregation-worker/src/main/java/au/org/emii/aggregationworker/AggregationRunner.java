@@ -260,20 +260,13 @@ public class AggregationRunner implements CommandLineRunner {
                     outputMap.put("provenance", provenanceUrl);
                 }
 
+
+                //  Calculate period elapsed during aggregation
                 DateTime stopTime = new DateTime(DateTimeZone.UTC);
-
                 Period elapsedPeriod = new Period(startTime, stopTime);
+                String elapsedTimeString = formatPeriodString(elapsedPeriod);
 
-                PeriodFormatter formatter = new PeriodFormatterBuilder()
-                        .printZeroAlways()
-                        .appendHours().appendSuffix(":")
-                        .appendMinutes().appendSuffix(":")
-                        .appendSeconds()
-                        .toFormatter();
-
-                String elapsedTime = formatter.print(elapsedPeriod);
-
-                logger.info("Aggregation completed successfully. JobID [" + batchJobId + "], Callback email [" + contactEmail + "], Size bytes [" + convertedFile.toFile().length() + "], Elapsed time (h:m:s) [" + elapsedTime + "]");
+                logger.info("Aggregation completed successfully. JobID [" + batchJobId + "], Callback email [" + contactEmail + "], Size bytes [" + convertedFile.toFile().length() + "], Elapsed time (h:m:s) [" + elapsedTimeString + "]");
                 statusDocument = statusBuilder.createResponseDocument(EnumStatus.SUCCEEDED, GOGODUCK_PROCESS_IDENTIFIER, null, null, outputMap);
                 statusFileManager.write(statusDocument, statusFilename, STATUS_FILE_MIME_TYPE);
 
@@ -360,5 +353,20 @@ public class AggregationRunner implements CommandLineRunner {
                 }
             }
         }
+    }
+
+
+    private String formatPeriodString(Period period) {
+        PeriodFormatter formatter = new PeriodFormatterBuilder()
+                .printZeroAlways()
+                .minimumPrintedDigits(2)
+                .appendHours().appendSeparator(":")
+                .minimumPrintedDigits(2)
+                .appendMinutes().appendSeparator(":")
+                .minimumPrintedDigits(2)
+                .appendSeconds()
+                .toFormatter();
+
+        return formatter.print(period);
     }
 }
