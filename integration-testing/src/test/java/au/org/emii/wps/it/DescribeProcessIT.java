@@ -43,7 +43,7 @@ public class DescribeProcessIT {
             .body(validateWith("/ows/1.1.0/owsAll.xsd"))
             .root("ExceptionReport.Exception")
             .body("@exceptionCode", equalTo("InvalidParameterValue"))
-            .body("@locator", equalTo("identifier"))
+            .body("@locator", equalTo("identifieer"))
             .body("ExceptionText", equalTo("No such process 'unknown'"));
     }
 
