@@ -6,7 +6,7 @@
 
     <groupId>au.org.emii</groupId>
     <artifactId>aws-wps</artifactId>
-    <version>0.4.9</version>
+    <version>jenkens-test-0.1</version>
     <packaging>pom</packaging>
 
     <properties>

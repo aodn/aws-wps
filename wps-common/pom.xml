@@ -6,13 +6,13 @@
 
     <groupId>au.org.emii</groupId>
     <artifactId>wps-common</artifactId>
-    <version>0.4.9</version>
+    <version>jenkens-test-0.1</version>
 
     <parent>
         <groupId>au.org.emii</groupId>
         <artifactId>aws-wps</artifactId>
         <relativePath>../pom.xml</relativePath>
-        <version>0.4.9</version>
+        <version>jenkens-test-0.1</version>
     </parent>
 
     <dependencies>
