@@ -6,6 +6,7 @@ import au.org.aodn.aws.wps.AwsApiResponse;
 import au.org.aodn.aws.wps.AwsApiResponse.ResponseBuilder;
 import au.org.aodn.aws.wps.RequestParser;
 import au.org.aodn.aws.wps.RequestParserFactory;
+import au.org.aodn.aws.wps.exception.ValidationException;
 import au.org.aodn.aws.util.JobFileUtil;
 import au.org.aodn.aws.wps.operation.Operation;
 import com.amazonaws.services.lambda.runtime.Context;
@@ -78,6 +79,11 @@ public class WpsLambdaRequestHandler implements RequestHandler<AwsApiRequest, Aw
             responseBuilder.statusCode(500);
             String exceptionReportString = JobFileUtil.getExceptionReportString(oe.getExceptionText(),
                 oe.getExceptionCode(), oe.getLocator());
+            responseBuilder.body(exceptionReportString);
+        } catch (ValidationException ve) {
+            LOGGER.error("Error in request parameters " + ve.getMessage(), ve);
+            responseBuilder.statusCode(500);
+            String exceptionReportString = JobFileUtil.getExceptionReportString(ve.getMessage(), "ValidationError");
             responseBuilder.body(exceptionReportString);
         } catch (Exception e) {
             LOGGER.error("Exception : " + e.getMessage(), e);
