@@ -4,6 +4,7 @@ import au.org.aodn.aggregator.configuration.Attribute;
 import au.org.aodn.aggregator.configuration.Template;
 import au.org.aodn.aggregator.configuration.Templates;
 import au.org.aodn.aggregator.configuration.Variable;
+import au.org.emii.aggregator.exception.AggregationException;
 import au.org.emii.aggregator.overrides.AggregationOverrides;
 import au.org.emii.aggregator.overrides.GlobalAttributeOverride;
 import au.org.emii.aggregator.overrides.VariableAttributeOverride;
@@ -29,7 +30,7 @@ public class AggregationOverridesReader {
 
     private static Logger logger = LoggerFactory.getLogger(AggregationOverridesReader.class);
 
-    public static AggregationOverrides getAggregationOverrides(String url, String layer) {
+    public static AggregationOverrides getAggregationOverrides(String url, String layer) throws AggregationException {
         AggregationOverrides overrides = new AggregationOverrides();
 
         logger.info("Loading aggregation templates file from url: " + url);
@@ -132,9 +133,13 @@ public class AggregationOverridesReader {
                 }
             }
         } catch (IOException ex) {
-            logger.error("Unable to download aggregations override file from given url ", ex);
+            String message = "Unable to download aggregation override configuration file from specified URL : " + url;
+            logger.error(message, ex);
+            throw new AggregationException(message, ex);
         } catch (JAXBException ex) {
-            logger.error("Unable to unmarshall XML from aggregations override file.", ex);
+            String message = "Unable to unmarshall aggregation override configuration file.";
+            logger.error(message, ex);
+            throw new AggregationException(message, ex);
         }
 
         return overrides;
