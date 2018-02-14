@@ -107,6 +107,12 @@
             <ac:attribute>
                 <ac:name>geospatial_lon_max</ac:name><ac:type>String</ac:type><ac:value>${LON_MAX}</ac:value>
             </ac:attribute>
+            <ac:attribute>
+                <ac:name>geospatial_vertical_max</ac:name><ac:type>String</ac:type><ac:value>${Z_MAX}</ac:value>
+            </ac:attribute>
+            <ac:attribute>
+                <ac:name>geospatial_vertical_min</ac:name><ac:type>String</ac:type><ac:value>${Z_MIN}</ac:value>
+            </ac:attribute>
         </ac:attributes>
     </ac:template>
 </ac:templates>

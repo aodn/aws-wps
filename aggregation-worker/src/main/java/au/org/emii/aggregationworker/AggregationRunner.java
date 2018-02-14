@@ -34,6 +34,7 @@ import org.joda.time.format.PeriodFormatterBuilder;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import ucar.nc2.time.CalendarDateRange;
+import ucar.ma2.Range;
 import ucar.unidata.geoloc.LatLonRect;
 import org.apache.logging.log4j.Logger;
 
@@ -173,6 +174,11 @@ public class AggregationRunner implements CommandLineRunner {
             CalendarDateRange subsetTimeRange = subsetParams.getTimeRange();
             if (subsetTimeRange != null) {
                 logger.info("Time range specified for aggregation: START [" + subsetTimeRange.getStart() + "], END [" + subsetTimeRange.getEnd() + "]");
+            }
+
+            Range depthRange = subsetParams.getVerticalRange();
+            if (depthRange != null) {
+                logger.info("Z range specified for aggregation: START [" + depthRange.first() + "], END [" + depthRange.last() + "]");
             }
 
             //  Apply overrides (if provided)
