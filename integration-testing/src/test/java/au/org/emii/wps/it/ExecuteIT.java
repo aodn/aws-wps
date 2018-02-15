@@ -79,10 +79,10 @@ public class ExecuteIT {
             // Check global attributes overridden as required
             hasXPath("/netcdf/attribute[@name='time_coverage_start']/@value", equalTo("2017-01-01T00:00:00Z")),
             hasXPath("/netcdf/attribute[@name='time_coverage_end']/@value", equalTo("2017-01-07T23:04:00Z")),
-            hasXPath("/netcdf/attribute[@name='geospatial_lat_min']/@value", equalTo("-33.145229")),
-            hasXPath("/netcdf/attribute[@name='geospatial_lat_max']/@value", equalTo("-31.485632")),
-            hasXPath("/netcdf/attribute[@name='geospatial_lon_min']/@value", equalTo("114.849838")),
-            hasXPath("/netcdf/attribute[@name='geospatial_lon_max']/@value", equalTo("115.359207")),
+            hasXPath("/netcdf/attribute[@name='geospatial_lat_min']/@value", equalTo("-33.145229 ")),
+            hasXPath("/netcdf/attribute[@name='geospatial_lat_max']/@value", equalTo("-31.485632 ")),
+            hasXPath("/netcdf/attribute[@name='geospatial_lon_min']/@value", equalTo("114.849838 ")),
+            hasXPath("/netcdf/attribute[@name='geospatial_lon_max']/@value", equalTo("115.359207 ")),
             // Check all variables have been included
             hasGPath("netcdf.variable.@name", containsInAnyOrder(
                 "TIME","LATITUDE","LONGITUDE","GDOP","UCUR","VCUR","UCUR_sd","VCUR_sd","NOBS1","NOBS2",
@@ -227,10 +227,61 @@ public class ExecuteIT {
             // Check only requested variables have been included
             hasGPath("netcdf.variable.@name", containsInAnyOrder(
                 "time", "lat", "lon", "dt_analysis", "l2p_flags", "quality_level", "satellite_zenith_angle",
-                "sea_surface_temperature", "sses_bias", "sses_count", "sses_standard_deviation", "sst_dtime"                )
+                "sea_surface_temperature", "sses_bias", "sses_count", "sses_standard_deviation", "sst_dtime"
+                )
             ),
             // Ensure type has been overridden as required
             hasXPath("/netcdf/variable[@name='sea_surface_temperature']/@type", equalTo("float"))
+        );
+    }
+
+    @Test
+    public void testCarsSubset() throws IOException {
+        Execute request = new ExecuteRequestBuilder()
+                .identifer("gs:GoGoDuck")
+                .input("layer", "csiro_cars_weekly_url")
+                .input("subset", "TIME,2009-12-19T00:00:00.000Z,2009-12-26T00:00:00.000Z;LATITUDE,-33.433849,-32.150743;LONGITUDE,114.15197,115.741219;DEPTH,0,100")
+                .input("callbackParams", "imos-wps-testing@mailinator.com")
+                .output("result", "application/x-netcdf")
+                .build();
+
+        String statusUrl = submitAndWaitToComplete(request, TWENTY_MINUTES);
+
+        String outputLocation = given()
+                .spec(spec)
+                .when()
+                .get(statusUrl)
+                .then()
+                .statusCode(200)
+                .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
+                .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"))
+                .extract()
+                .path("ExecuteResponse.ProcessOutputs.Output.Reference.@href");
+
+        getNcml(outputLocation).content(
+                // Check global attributes overridden as required
+                hasXPath("/netcdf/attribute[@name='time_coverage_start']/@value", equalTo("2009-12-19T00:00:00Z")),
+                hasXPath("/netcdf/attribute[@name='time_coverage_end']/@value", equalTo("2009-12-26T00:00:00Z")),
+                hasXPath("/netcdf/attribute[@name='geospatial_lat_max']/@value", equalTo("-32.5 ")),
+                hasXPath("/netcdf/attribute[@name='geospatial_lat_min']/@value", equalTo("-33. ")),
+                hasXPath("/netcdf/attribute[@name='geospatial_lon_max']/@value", equalTo("115.5 ")),
+                hasXPath("/netcdf/attribute[@name='geospatial_lon_min']/@value", equalTo("114.5 ")),
+                hasXPath("/netcdf/attribute[@name='geospatial_vertical_max']/@value", equalTo("100. ")),
+                hasXPath("/netcdf/attribute[@name='geospatial_vertical_min']/@value", equalTo("0. ")),
+                // Check only requested variables have been included
+                hasGPath("netcdf.variable.@name", containsInAnyOrder(
+                    "DAY_OF_YEAR", "DEPTH", "LATITUDE", "LONGITUDE", "TEMP", "TEMP_mean", "TEMP_std_dev",
+                    "TEMP_RMSspatialresid", "TEMP_RMSresid", "TEMP_sumofwgts", "TEMP_map_error", "TEMP_anomaly", "PSAL",
+                    "PSAL_mean", "PSAL_std_dev", "PSAL_RMSspatialresid", "PSAL_RMSresid", "PSAL_sumofwgts",
+                    "PSAL_map_error", "PSAL_anomaly", "DOX2", "DOX2_mean", "DOX2_RMSspatialresid", "DOX2_RMSresid",
+                    "DOX2_sumofwgts", "DOX2_anomaly", "DENS", "DENS_mean", "DENS_anomaly", "NTR2", "NTR2_mean",
+                    "NTR2_RMSspatialresid", "NTR2_RMSresid", "NTR2_sumofwgts", "NTR2_anomaly", "SLC2", "SLC2_mean",
+                    "SLC2_RMSspatialresid", "SLC2_RMSresid", "SLC2_sumofwgts", "SLC2_anomaly", "PHOS", "PHOS_mean",
+                    "PHOS_RMSspatialresid", "PHOS_RMSresid", "PHOS_sumofwgts", "PHOS_anomaly"
+                    )
+                ),
+                // Ensure type has been overridden as required
+                hasXPath("/netcdf/variable[@name='sea_surface_temperature']/@type", equalTo("float"))
         );
     }
 
