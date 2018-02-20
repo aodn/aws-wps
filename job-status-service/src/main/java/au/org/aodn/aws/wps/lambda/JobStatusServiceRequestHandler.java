@@ -121,7 +121,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
 
             String statusDescription = null;
             ExecuteResponse executeResponse = null;
-//executeResponse.getStatus().getProcessFailed().getExceptionReport().getException().get(0).getExceptionText()
+
             try {
                 //  Read the status file for the jobId passed
                 executeResponse = JobFileUtil.getExecuteResponse(jobFileS3KeyPrefix, jobId, statusFilename, statusS3Bucket);
