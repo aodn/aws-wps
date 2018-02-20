@@ -1,5 +1,7 @@
 package au.org.aodn.aws.util;
 
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.util.StringInputStream;
 import net.opengis.ows.v_1_1_0.ExceptionReport;
 import net.opengis.ows.v_1_1_0.ExceptionType;
@@ -15,6 +17,7 @@ import javax.xml.bind.Unmarshaller;
 import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.datatype.DatatypeFactory;
 import javax.xml.datatype.XMLGregorianCalendar;
+import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Date;
 import java.util.GregorianCalendar;
@@ -145,5 +148,38 @@ public class JobFileUtil {
             return true;
         }
         return false;
+    }
+
+
+    public static ExecuteResponse getExecuteResponse(String jobFileS3KeyPrefix, String jobId, String statusFilename, String statusS3Bucket) {
+        String s3Key = jobFileS3KeyPrefix + jobId + "/" + statusFilename;
+
+        //  Check for the existence of the status document
+        AmazonS3 s3Client = AmazonS3ClientBuilder.defaultClient();
+        boolean statusExists = s3Client.doesObjectExist(statusS3Bucket, s3Key);
+
+
+        LOGGER.info("Status file exists for jobId [" + jobId + "]? " + statusExists);
+
+        //  If the status file exists and the job is in an 'waiting' state (we have accepted the job but processing
+        //  has not yet commenced) we will attempt to work out the queue position of the job and add that to
+        //  the status information we send back to the caller.  If the job is being processed or processing has
+        //  completed (successful or failed), then we will return the information contained in the status file unaltered.
+        if (statusExists) {
+
+            String statusXMLString = null;
+
+            LOGGER.info("Reading status file: Bucket [" + statusS3Bucket + "],  Key [" + s3Key + "]");
+            try {
+                statusXMLString = S3Utils.readS3ObjectAsString(statusS3Bucket, s3Key);
+
+                //  Read the status document
+                return JobFileUtil.unmarshallExecuteResponse(statusXMLString);
+            } catch(IOException ioex) {
+                LOGGER.error("Unable to unmarshall execute response.", ioex);
+            }
+        }
+
+        return null;
     }
 }
