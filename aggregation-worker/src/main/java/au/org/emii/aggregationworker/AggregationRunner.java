@@ -318,16 +318,7 @@ public class AggregationRunner implements CommandLineRunner {
             //  Send failed job email to user
             if (contactEmail != null) {
                 try {
-                    emailService.sendFailedJobEmail(contactEmail, batchJobId);
-                } catch (EmailException ex) {
-                    logger.error(ex.getMessage(), ex);
-                }
-            }
-
-            //  Send failed job email to administrator if an admin email address was specified
-            if(administratorEmail != null && administratorEmail.trim().length() > 0) {
-                try {
-                    emailService.sendFailedJobEmail(administratorEmail, batchJobId);
+                    emailService.sendFailedJobEmail(contactEmail, administratorEmail, batchJobId);
                 } catch (EmailException ex) {
                     logger.error(ex.getMessage(), ex);
                 }

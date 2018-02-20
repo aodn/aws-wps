@@ -9,6 +9,8 @@ import com.amazonaws.services.simpleemail.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+
 public class EmailService {
 
     public static final String EMAIL_TEMPLATES_LOCATION = "templates";
@@ -33,10 +35,17 @@ public class EmailService {
         templateManager = new EmailTemplateManager();
     }
 
-    public void sendEmail(String to, String from, String subject, String htmlBody, String textBody) {
+    public void sendEmail(String to, String bccAddress,  String from, String subject, String htmlBody, String textBody) {
         try {
             LOGGER.info(String.format("Sending email to %s", to));
             Destination destination = new Destination().withToAddresses(to);
+
+            if(bccAddress != null) {
+                ArrayList<String> bccAddresses = new ArrayList();
+                bccAddresses.add(bccAddress);
+                destination.setBccAddresses(bccAddresses);
+            }
+
             Body body = new Body();
 
             if (htmlBody != null) {
@@ -65,10 +74,11 @@ public class EmailService {
                     .withMessage(message)
                     .withSource(from);
             client.sendEmail(request);
-            LOGGER.info(String.format("Email sent to %s", to));
+            LOGGER.info(String.format("Email sent to %s.  Bcc: %s", to, bccAddress));
         } catch (Exception e) {
             LOGGER.error(String.format("Unable to send email. Error message: %s", e.getMessage()), e);
             LOGGER.error(String.format("To: %s", to));
+            LOGGER.error(String.format("Bcc: %s", bccAddress));
             LOGGER.error(String.format("From: %s", from));
             LOGGER.error(String.format("Subject: %s", subject));
             LOGGER.error(String.format("Html Body: %s", htmlBody));
@@ -81,7 +91,7 @@ public class EmailService {
         String textBody = templateManager.getRegisteredEmailContent(uuid);
         String from = JOB_EMAIL_FROM_ADDRESS;
 
-        sendEmail(to, from, subject, null, textBody);
+        sendEmail(to, null, from, subject, null, textBody);
     }
 
     public void sendCompletedJobEmail(String to, String uuid, String statusPageLink, int expirationPeriodInDays) throws EmailException {
@@ -90,15 +100,15 @@ public class EmailService {
         String textBody = templateManager.getCompletedEmailContent(uuid, expirationPeriod, statusPageLink);
         String from = JOB_EMAIL_FROM_ADDRESS;
 
-        sendEmail(to, from, subject, null, textBody);
+        sendEmail(to, null, from, subject, null, textBody);
     }
 
-    public void sendFailedJobEmail(String to, String uuid) throws EmailException {
+    public void sendFailedJobEmail(String to, String bccAddress, String uuid) throws EmailException {
         String subject = FAILED_JOB_EMAIL_SUBJECT + uuid;
         String textBody = templateManager.getFailedEmailContent(uuid);
         String from = JOB_EMAIL_FROM_ADDRESS;
 
-        sendEmail(to, from, subject, null, textBody);
+        sendEmail(to, bccAddress, from, subject, null, textBody);
     }
 
 
