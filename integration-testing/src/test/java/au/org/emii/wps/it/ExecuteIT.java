@@ -263,11 +263,11 @@ public class ExecuteIT {
                 hasXPath("/netcdf/attribute[@name='time_coverage_start']/@value", equalTo("2009-12-19T00:00:00Z")),
                 hasXPath("/netcdf/attribute[@name='time_coverage_end']/@value", equalTo("2009-12-26T00:00:00Z")),
                 hasXPath("/netcdf/attribute[@name='geospatial_lat_max']/@value", equalTo("-32.5 ")),
-                hasXPath("/netcdf/attribute[@name='geospatial_lat_min']/@value", equalTo("-33. ")),
+                hasXPath("/netcdf/attribute[@name='geospatial_lat_min']/@value", equalTo("-33.0 ")),
                 hasXPath("/netcdf/attribute[@name='geospatial_lon_max']/@value", equalTo("115.5 ")),
                 hasXPath("/netcdf/attribute[@name='geospatial_lon_min']/@value", equalTo("114.5 ")),
-                hasXPath("/netcdf/attribute[@name='geospatial_vertical_max']/@value", equalTo("100. ")),
-                hasXPath("/netcdf/attribute[@name='geospatial_vertical_min']/@value", equalTo("0. ")),
+                hasXPath("/netcdf/attribute[@name='geospatial_vertical_max']/@value", equalTo("100.0 ")),
+                hasXPath("/netcdf/attribute[@name='geospatial_vertical_min']/@value", equalTo("0.0 ")),
                 // Check only requested variables have been included
                 hasGPath("netcdf.variable.@name", containsInAnyOrder(
                     "DAY_OF_YEAR", "DEPTH", "LATITUDE", "LONGITUDE", "TEMP", "TEMP_mean", "TEMP_std_dev",
@@ -279,9 +279,7 @@ public class ExecuteIT {
                     "SLC2_RMSspatialresid", "SLC2_RMSresid", "SLC2_sumofwgts", "SLC2_anomaly", "PHOS", "PHOS_mean",
                     "PHOS_RMSspatialresid", "PHOS_RMSresid", "PHOS_sumofwgts", "PHOS_anomaly"
                     )
-                ),
-                // Ensure type has been overridden as required
-                hasXPath("/netcdf/variable[@name='sea_surface_temperature']/@type", equalTo("float"))
+                )
         );
     }
 
