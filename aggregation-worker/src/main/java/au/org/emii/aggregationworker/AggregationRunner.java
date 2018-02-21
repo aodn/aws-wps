@@ -306,7 +306,7 @@ public class AggregationRunner implements CommandLineRunner {
                 if (batchJobId != null) {
                     String statusDocument = null;
                     try {
-                        statusDocument = statusBuilder.createResponseDocument(EnumStatus.FAILED, GOGODUCK_PROCESS_IDENTIFIER,"Exception occurred during aggregation :" + e.getMessage(), "AggregationError", null);
+                        statusDocument = statusBuilder.createResponseDocument(EnumStatus.FAILED, GOGODUCK_PROCESS_IDENTIFIER,"Exception occurred during aggregation : " + e.getMessage(), "AggregationError", null);
                         statusFileManager.write(statusDocument, statusFilename, STATUS_FILE_MIME_TYPE);
                     } catch (IOException ioe) {
                         logger.error("Unable to update status for job [" + batchJobId + "]. Status: " + statusDocument);
