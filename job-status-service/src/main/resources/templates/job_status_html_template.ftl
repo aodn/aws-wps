@@ -1,25 +1,8 @@
 <html>
     <head>
-        <script type="text/javascript">
-            function formatTime(timeStamp) {
-                if (timeStamp != -1) {
-                    var submitTime = new Date(0);
-                    submitTime.setUTCSeconds(timeParamValue);
-                    var dateString = ('0' + submitTime.getDate()).slice(-2) + "/" +
-                            ('0' + (submitTime.getMonth() + 1)).slice(-2) + "/" +
-                            submitTime.getFullYear() + " " +
-                            ('0' + submitTime.getHours()).slice(-2) + ":" +
-                            ('0' + submitTime.getMinutes()).slice(-2) + ":" +
-                            ('0' + submitTime.getSeconds()).slice(-2);
-                    return dateString;
-                } else {
-                    return "Unknown";
-                }
-            }
-        </script>
         <style type="text/css">
             html {background-color: white; margin-top: 0 ! important;}
-            body, html, td, p, button { font-family: Arimo; }
+            body, html, td, p, button { font-family: 'Arimo', sans-serif; }
             body, html, td { color: #4D5B63; }
             h2 {margin-bottom: 14px;}
             h1, h2, h3, h4,.x-panel-header,.x-window-header-text,.search-filter-panel,.filter-selection-panel-header-selected {color: #4D5B63;cursor: default;}
@@ -55,7 +38,13 @@
         <dd>
             <script type="text/javascript">
                 var timeParamValue = ${submittedTime}/1000;
-                document.write(formatTime(timeParamValue));
+                if(timeParamValue != -1) {
+                    var submitTime = new Date(0);
+                    submitTime.setUTCSeconds(timeParamValue);
+                    document.write( submitTime.toString() );
+                } else {
+                    document.write("Unknown");
+                }
             </script>
         </dd>
         <#if executeResponse.status.processFailed??>
