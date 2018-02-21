@@ -15,8 +15,6 @@ import com.amazonaws.services.batch.AWSBatchClientBuilder;
 import com.amazonaws.services.batch.model.JobDetail;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import freemarker.cache.StringTemplateLoader;
@@ -30,18 +28,10 @@ import net.opengis.wps.v_1_0_0.StatusType;
 import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.util.JAXBSource;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.stream.StreamResult;
-import javax.xml.transform.stream.StreamSource;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
-import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,7 +46,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
     private static final String SUCCEEDED_STATUS_DESCRIPTION = "Download ready";
     private static final String PAUSED_STATUS_DESCRIPTION = "Job processing paused";
     private static final String UNKNOWN_STATUS_DESCRIPTION = "Job status unknown";
-    private static final String JOB_STATUS_HTML_TRANSFORM_XSL = "/templates/job_status_html_transform.xsl";
+    private static final String JOB_STATUS_HTML_TEMPLATE = "/templates/job_status_html_template.ftl";
     private static final String JOB_QUEUE_HTML_TEMPLATE = "/templates/job_queue_html_template.ftl";
 
     private Logger LOGGER = LoggerFactory.getLogger(JobStatusServiceRequestHandler.class);
@@ -107,10 +97,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
 
 
 
-        ExecuteResponse executeResponse = null;
         int httpStatus;
-        String statusDescription = null;
-
         if (requestedStatusFormat.equals(JobStatusFormatEnum.QUEUE)) {
             LOGGER.info("Queue contents requested.");
 
@@ -131,35 +118,23 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
             }
 
         } else {
-            //  Read the status file for the jobId passed (if it exists)
+
+            String statusDescription = null;
+            ExecuteResponse executeResponse = null;
+
             try {
-
-                String s3Key = jobFileS3KeyPrefix + jobId + "/" + statusFilename;
-
-                //  Check for the existence of the status document
-                AmazonS3 s3Client = AmazonS3ClientBuilder.defaultClient();
-                boolean statusExists = s3Client.doesObjectExist(statusS3Bucket, s3Key);
-
-
-                LOGGER.info("Status file exists for jobId [" + jobId + "]? " + statusExists);
+                //  Read the status file for the jobId passed
+                executeResponse = JobFileUtil.getExecuteResponse(jobFileS3KeyPrefix, jobId, statusFilename, statusS3Bucket);
 
                 //  If the status file exists and the job is in an 'waiting' state (we have accepted the job but processing
                 //  has not yet commenced) we will attempt to work out the queue position of the job and add that to
                 //  the status information we send back to the caller.  If the job is being processed or processing has
                 //  completed (successful or failed), then we will return the information contained in the status file unaltered.
-                if (statusExists) {
-
-                    String statusXMLString = S3Utils.readS3ObjectAsString(statusS3Bucket, s3Key);
-
-                    //  Read the status document
-                    executeResponse = JobFileUtil.unmarshallExecuteResponse(statusXMLString);
-
-                    LOGGER.info("Unmarshalled XML for jobId [" + jobId + "]");
-
+                if (executeResponse != null) {
 
                     StatusType currentStatus = executeResponse.getStatus();
                     //  Get a friendly description of the status
-                    statusDescription = getStatusDescription(currentStatus);
+                    statusDescription = getWpsStatusDescription(currentStatus);
 
                     /**  PARKED UNTIL WE CAN RELIABLY DETERMINE THE QUEUE POSITION OF
                      *   THE JOB USING THE BATCH API.
@@ -193,7 +168,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
                      responseBody = statusXMLString;
                      }
                      **/
-                    responseBody = statusXMLString;
+                    responseBody = executeResponse.toString();
 
                     httpStatus = HttpStatus.SC_OK;
                 } else {
@@ -202,15 +177,11 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
                     LOGGER.info(statusDescription);
                     //  Status document was not found in the S3 bucket
                     httpStatus = HttpStatus.SC_OK;
-                    //  Create an empty response object
-                    executeResponse = new ExecuteResponse();
                 }
             } catch (Exception ex) {
                 statusDescription = "Exception retrieving status of job [" + jobId + "]: " + ex.getMessage();
-                //  TODO: FORM AN EXCEPTION REPORT?
                 //  Bad stuff happened
                 LOGGER.error(statusDescription, ex);
-                executeResponse = new ExecuteResponse();
                 httpStatus = HttpStatus.SC_INTERNAL_SERVER_ERROR;
             }
 
@@ -272,17 +243,33 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
 
 
 
-    private String generateStatusHTML(ExecuteResponse xmlStatus, String statusDescription, String jobId, boolean includeAdminDetails) {
-        // Create Transformer
-        TransformerFactory tf = TransformerFactory.newInstance();
+    private String generateStatusHTML(ExecuteResponse response, String statusDescription, String jobId, boolean includeAdminDetails) {
 
-        try (InputStream statusXslInputStream = this.getClass().getResourceAsStream(JOB_STATUS_HTML_TRANSFORM_XSL)) {
-            StreamSource statusXsltSource = new StreamSource(statusXslInputStream);
+        //  Invoke freemarker template
+        try (InputStream contentStream = this.getClass().getResourceAsStream(JOB_STATUS_HTML_TEMPLATE)) {
 
-            Transformer statusFileTransformer = tf.newTransformer(statusXsltSource);
+            //  read file to String
+            String templateString = Utils.inputStreamToString(contentStream);
+
+            StringTemplateLoader stringLoader = new StringTemplateLoader();
+            stringLoader.putTemplate("HtmlViewTemplate", templateString);
+
+            Configuration config = new Configuration();
+            config.setClassForTemplateLoading(JobStatusServiceRequestHandler.class, "");
+            config.setObjectWrapper(new DefaultObjectWrapper());
+            config.setTemplateLoader(stringLoader);
+            config.setDefaultEncoding("UTF-8");
+            config.setTemplateExceptionHandler(TemplateExceptionHandler.RETHROW_HANDLER);
+
+            Map<String, Object> params = new HashMap<String, Object>();
+
+            params.put("jobId", jobId);
+            params.put("statusDescription", statusDescription);
+            params.put("executeResponse", response);
+
 
             //  If we can't determine the submission timestamp pass a -1.
-            //  The javascript generated by the XSLT will recognise this as an
+            //  The javascript generated by the Freemarker template will recognise this as an
             // unknown timestamp.
             long unixTimestampSeconds = -1;
 
@@ -296,7 +283,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
 
                 if (requestS3Object != null) {
                     long lastModifiedTimestamp = requestS3Object.getObjectMetadata().getLastModified().getTime();
-                    unixTimestampSeconds = lastModifiedTimestamp / 1000;
+                    unixTimestampSeconds = lastModifiedTimestamp;
                     LOGGER.info("Request xml file timestamp = " + unixTimestampSeconds);
 
                     if(includeAdminDetails) {
@@ -304,13 +291,13 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
                         LOGGER.info("Generating request summary HTML for request [" + jobId + "]");
                         String requestSummary = getRequestSummary(requestS3Object);
                         if(requestSummary != null) {
-                            statusFileTransformer.setParameter("requestXML", "" + requestSummary);
+                            params.put("requestXML", "" + requestSummary);
                         }
 
                         String logFileLink = getBatchLogFileLink(jobId);
                         LOGGER.info("Adding log file link to status page: " + logFileLink);
                         if(logFileLink != null) {
-                            statusFileTransformer.setParameter("logFileLink", logFileLink);
+                            params.put("logFileLink", logFileLink);
                         }
                     }
                 }
@@ -319,31 +306,24 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
                 LOGGER.error("Unable to determine submission time for job [" + jobId + "]: " + ex.getMessage(), ex);
             }
 
-            //  Pass the job ID & status description
-            statusFileTransformer.setParameter("jobid", jobId);
-            statusFileTransformer.setParameter("statusDescription", statusDescription);
-            //  Pass the unix timestamp to the XSLT - which will render the date in the
-            //  locale of the browser.  Passed as seconds since epoch.
-            statusFileTransformer.setParameter("submittedTime", "" + unixTimestampSeconds);
+            params.put("submittedTime", unixTimestampSeconds + "");
 
-            // Source
-            JAXBContext jc = JAXBContext.newInstance(ExecuteResponse.class);
-            JAXBSource source = new JAXBSource(jc, xmlStatus);
+            //  Run the freemarker template
+            Template template = config.getTemplate("HtmlViewTemplate");
 
-            // Transform
-            StringWriter htmlWriter = new StringWriter();
-            statusFileTransformer.transform(source, new StreamResult(htmlWriter));
+            LOGGER.info("Got template [HtmlViewTemplate]");
+            StringWriter out = new StringWriter();
 
-            return htmlWriter.toString();
+            template.process(params, out);
 
-        } catch (JAXBException jex) {
-            LOGGER.error("Unable to generate JAXB context : " + jex.getMessage(), jex);
-        } catch (TransformerException tex) {
-            LOGGER.error("Unable to generate JAXB context : " + tex.getMessage(), tex);
-        } catch (UnsupportedEncodingException uex) {
-            LOGGER.error("Unable to generate JAXB context : " + uex.getMessage(), uex);
+            LOGGER.info("Ran template.");
+
+            return out.toString();
+
         } catch (IOException ioex) {
-            LOGGER.error("Unable to read status XSL file from classpath. Path [" + JOB_STATUS_HTML_TRANSFORM_XSL + "]: " + ioex.getMessage(), ioex);
+            LOGGER.error("Exception running template:", ioex);
+        } catch (TemplateException tex) {
+            LOGGER.error("Exception running template:", tex);
         }
 
         return null;
@@ -351,7 +331,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
 
 
 
-    private String getStatusDescription(StatusType currentStatus) {
+    private String getWpsStatusDescription(StatusType currentStatus) {
 
         if(currentStatus != null) {
             if (currentStatus.isSetProcessAccepted()) {
@@ -420,7 +400,6 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
         }
 
         //  Invoke freemarker template
-
         try (InputStream contentStream = this.getClass().getResourceAsStream(JOB_QUEUE_HTML_TEMPLATE)) {
 
             //  read file to String
@@ -446,11 +425,40 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
             }
 
             if (runningJobDetails != null) {
-                params.put("runningJobsList", runningJobDetails);
+                //  Add a log link to the job detail for display on the queue HTML page
+                ArrayList<ExtendedJobDetail> extendedJobDetailList = new ArrayList();
+
+                for(JobDetail currentJobDetail : runningJobDetails) {
+                    ExtendedJobDetail extendedJobDetail = new ExtendedJobDetail();
+                    extendedJobDetail.setAwsBatchJobDetail(currentJobDetail);
+                    extendedJobDetail.setLogFileLink(getBatchLogFileLink(currentJobDetail.getJobId()));
+                    extendedJobDetailList.add(extendedJobDetail);
+                }
+
+                params.put("runningJobsList", extendedJobDetailList);
             }
 
             if (completedJobDetails != null) {
-                params.put("completedJobsList", completedJobDetails);
+                //  Determine the full status of a completed job.
+                //  This involves looking up the WPS status file for the job + adding that to the AWS batch status information.
+                //  For completed jobs we'll add a WPS status description & a log link
+                ArrayList<ExtendedJobDetail> extendedJobDetailList = new ArrayList();
+
+                for(JobDetail currentJobDetail : completedJobDetails) {
+                    //  Get the jobs WPS status from the WPS status file.
+                    ExtendedJobDetail extendedJobDetails = new ExtendedJobDetail();
+                    extendedJobDetails.setAwsBatchJobDetail(currentJobDetail);
+                    ExecuteResponse wpsResponse = JobFileUtil.getExecuteResponse(jobFileS3KeyPrefix, currentJobDetail.getJobId(), statusFilename, statusS3Bucket);
+                    if(wpsResponse != null && wpsResponse.getStatus() != null) {
+                        extendedJobDetails.setWpsStatusDescription(getWpsStatusDescription(wpsResponse.getStatus()));
+                    } else {
+                        extendedJobDetails.setWpsStatusDescription("Unknown - could not read status file.");
+                    }
+
+                    extendedJobDetails.setLogFileLink(getBatchLogFileLink(currentJobDetail.getJobId()));
+                    extendedJobDetailList.add(extendedJobDetails);
+                }
+                params.put("completedJobsList", extendedJobDetailList);
             }
 
             Template template = config.getTemplate("QueueViewHtmlTemplate");

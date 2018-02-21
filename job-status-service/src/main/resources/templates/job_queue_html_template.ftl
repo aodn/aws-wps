@@ -1,9 +1,9 @@
 <html>
     <head>
-        <style>
+        <style type="text/css">
             html {background-color: white; margin-top: 0 ! important;}
-            body, html, td, p, button {font-family: 'Arimo', sans-serif;}
-            body, html, td {color: #4D5B63;}
+            body, html, td, p, button { font-family: 'Arimo', sans-serif; }
+            body, html, td { color: #4D5B63; }
             h2 {margin-bottom: 14px;}
             h1, h2, h3, h4,.x-panel-header,.x-window-header-text,.search-filter-panel,.filter-selection-panel-header-selected {color: #4D5B63;cursor: default;}
             p {margin-bottom: 10px;}
@@ -11,11 +11,10 @@
             .jumbotronFooter {padding: 48px 0;}
             .jumbotronFooter * {color: #ffffff;}
             .jumbotronFooter a {color: #ccc;}
-            table {border: 0;}
-            table * {border-collapse: collapse;padding: 6px}
-            th {border: 1px solid black;color:#ffffff;;background:#1a5273;padding:inherit;}
-            tr:hover td {background:#dfe4e6;}
-            td {border: 1px solid black;padding:6px;text-align:left;font-weight:300;font-size:12px;}
+            table { border: 0; width: 95%; font-size: 14px; }
+            th {border: 1px solid black; color: #ffffff; background:#1a5273; }
+            tr:hover td { background:#dfe4e6; }
+            table td {border: 1px solid black; padding: 0px 10px 0px 10px; text-align: left; }
         </style>
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css"/>
 
@@ -79,22 +78,24 @@
 
             <#if runningJobsList??>
                 <TABLE BORDER="1">
-                <TR><TH>Job ID</TH><TH>Submitted</TH><TH>Started</TH><TH>Status</TH></TR>
+                <TR><TH>Job ID</TH><TH>Submitted</TH><TH>Started</TH><TH>Status</TH><TH>Log File</TH></TR>
                 <#list runningJobsList as job>
-                    <TR><TD><A HREF="javascript:openJobStatusLink('${job.jobId}');">${job.jobId}</A></TD>
+                    <TR><TD><A HREF="javascript:openJobStatusLink('${job.awsBatchJobDetail.jobId}');">${job.awsBatchJobDetail.jobId}</A></TD>
                         <TD>
                             <script type="text/javascript">
-                                var timeParamValue = ${job.startedAt?c}/1000;
+                                var timeParamValue = ${job.awsBatchJobDetail.startedAt?c}/1000;
                                 document.write(formatTime(timeParamValue));
                             </script>
                         </TD>
                         <TD>
                             <script type="text/javascript">
-                                var timeParamValue = ${job.createdAt?c}/1000;
+                                var timeParamValue = ${job.awsBatchJobDetail.createdAt?c}/1000;
                                 document.write(formatTime(timeParamValue));
                             </script>
                         </TD>
-                        <TD>${job.status}</TD></TR>
+                        <TD>${job.awsBatchJobDetail.status}</TD>
+                        <TD><A HREF="${job.logFileLink}" rel="noopener noreferrer" target="_blank">Log</A></TD>
+                    </TR>
                 </#list>
                 </TABLE>
             <#else>
@@ -105,32 +106,35 @@
 
             <#if completedJobsList??>
                 <TABLE BORDER="1">
-                <TR><TH>Job ID</TH><TH>Submitted</TH><TH>Started</TH><TH>Completed</TH><TH>Status</TH></TR>
+                <TR><TH>Job ID</TH><TH>Submitted</TH><TH>Started</TH><TH>Completed</TH><TH>Job Status</TH><TH>Aggregation Result</TH><TH>Log File</TH></TR>
                 <#list completedJobsList as job>
-                <TR><TD><A HREF="javascript:openJobStatusLink('${job.jobId}');">${job.jobId}</A></TD>
+                <TR><TD><A HREF="javascript:openJobStatusLink('${job.awsBatchJobDetail.jobId}');">${job.awsBatchJobDetail.jobId}</A></TD>
                     <TD>
                         <script type="text/javascript">
-                            var timeParamValue = ${job.createdAt?c}/1000;
+                            var timeParamValue = ${job.awsBatchJobDetail.createdAt?c}/1000;
                             document.write(formatTime(timeParamValue));
                         </script>
                     </TD>
                     <TD>
-                        <#if (job.startedAt)??>
+                        <#if (job.awsBatchJobDetail.startedAt)??>
                             <script type="text/javascript">
-                                var timeParamValue = ${job.startedAt?c}/1000;
+                                var timeParamValue = ${job.awsBatchJobDetail.startedAt?c}/1000;
                                 document.write(formatTime(timeParamValue));
                             </script>
                         </#if>
                     </TD>
                     <TD>
-                        <#if (job.stoppedAt)??>
+                        <#if (job.awsBatchJobDetail.stoppedAt)??>
                             <script type="text/javascript">
-                                var timeParamValue = ${job.stoppedAt?c}/1000;
+                                var timeParamValue = ${job.awsBatchJobDetail.stoppedAt?c}/1000;
                                 document.write(formatTime(timeParamValue));
                             </script>
                         </#if>
                     </TD>
-                    <TD>${job.status}</TD></TR>
+                    <TD>${job.awsBatchJobDetail.status}</TD>
+                    <TD>${job.wpsStatusDescription}</TD>
+                    <TD><A HREF="${job.logFileLink}" rel="noopener noreferrer" target="_blank">Log</A></TD>
+                </TR>
                 </#list>
             </TABLE>
             <#else>
