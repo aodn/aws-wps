@@ -83,13 +83,13 @@
                     <TR><TD><A HREF="javascript:openJobStatusLink('${job.awsBatchJobDetail.jobId}');">${job.awsBatchJobDetail.jobId}</A></TD>
                         <TD>
                             <script type="text/javascript">
-                                var timeParamValue = ${job.awsBatchJobDetail.startedAt?c}/1000;
+                                var timeParamValue = ${job.awsBatchJobDetail.createdAt?c}/1000;
                                 document.write(formatTime(timeParamValue));
                             </script>
                         </TD>
                         <TD>
                             <script type="text/javascript">
-                                var timeParamValue = ${job.awsBatchJobDetail.createdAt?c}/1000;
+                                var timeParamValue = ${job.awsBatchJobDetail.startedAt?c}/1000;
                                 document.write(formatTime(timeParamValue));
                             </script>
                         </TD>
