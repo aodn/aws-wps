@@ -73,6 +73,12 @@ public class AggregationRunner implements CommandLineRunner {
     @Override
     public void run(String... args) {
 
+        //  Log environment variables
+        logger.info("Environment Variables");
+        for (String key : System.getenv().keySet()) {
+            logger.info(String.format("%s = %s", key, System.getenv(key)));
+        }
+
         checkLoggingConfiguration();
 
         DateTime startTime = new DateTime(DateTimeZone.UTC);
