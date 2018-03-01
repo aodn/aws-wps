@@ -28,12 +28,6 @@ Parameters:
   bucketName:
     Type: String
     Default: aws-wps-dev
-    AllowedValues:
-      - aws-wps-production
-      - aws-wps-systest
-      - aws-wps-sandbox
-      - aws-wps-edge
-      - aws-wps-dev
   awsRegionSes:
     Type: String
     Default: us-east-1
