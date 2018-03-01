@@ -441,8 +441,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
     }
 
 
-    private String runFreemarkerTemplate(String templatePath, Map<String, Object> templateParams)
-    throws TemplateException, IOException {
+    private String runFreemarkerTemplate(String templatePath, Map<String, Object> templateParams) throws TemplateException, IOException {
 
         //  Invoke freemarker template
         try (InputStream contentStream = this.getClass().getResourceAsStream(templatePath)) {
