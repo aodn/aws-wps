@@ -31,6 +31,12 @@ public class WpsLambdaRequestHandler implements RequestHandler<AwsApiRequest, Aw
 
         Map<String, String> httpHeaders = request.getHeaders();
 
+        //  Log environment variables
+        LOGGER.info("Environment Variables");
+        for (String key : System.getenv().keySet()) {
+            LOGGER.info(String.format("%s = %s", key, System.getenv(key)));
+        }
+
         String ipAddress = getClientIpAddress(request);
 
         //  Log all HTTP headers
