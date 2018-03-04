@@ -1,11 +1,15 @@
 package au.org.emii.wps.it;
 
+import static com.jayway.awaitility.Awaitility.catchUncaughtExceptions;
+import static com.jayway.restassured.RestAssured.when;
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.junit.Assert.*;
 import au.org.emii.wps.util.ExecuteRequestBuilder;
+import com.jayway.awaitility.Awaitility;
 import com.jayway.awaitility.Duration;
+import com.jayway.awaitility.core.ConditionTimeoutException;
 import com.jayway.restassured.builder.RequestSpecBuilder;
 import com.jayway.restassured.filter.log.RequestLoggingFilter;
 import com.jayway.restassured.filter.log.ResponseLoggingFilter;
@@ -419,13 +423,22 @@ public class ExecuteIT {
     private String submitAndWaitToComplete(Execute request, Duration maxWait) {
         String statusUrl = submit(request);
 
+        System.out.println("Waiting for process to complete...");
+
         await().atMost(maxWait).until(() ->
-            get(statusUrl).then()
+            given()
+                .log().method()
+                .log().path()
+            .get(statusUrl)
+            .then()
+                .log().status()
                 .statusCode(200)
                 .body(anyOf(
                     hasXPath("/ExecuteResponse/Status/ProcessSucceeded"),
                     hasXPath("/ExecuteResponse/Status/ProcessFailed")))
         );
+
+        System.out.println("Process completed");
 
         return statusUrl;
     }
