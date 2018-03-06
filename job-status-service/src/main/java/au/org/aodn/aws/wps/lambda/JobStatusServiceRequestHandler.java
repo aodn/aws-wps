@@ -77,7 +77,6 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
         int httpStatus;
         //  Display the QUEUE view
         if (requestedStatusFormat.equals(JobStatusFormatEnum.QUEUE)) {
-            LOGGER.info("Queue contents requested.");
 
             AWSBatch batchClient = AWSBatchClientBuilder.defaultClient();
             String queueName = WpsConfig.getProperty(WpsConfig.AWS_BATCH_JOB_QUEUE_NAME_CONFIG_KEY);
@@ -330,6 +329,8 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
 
     private String generateQueueViewHTML(AWSBatch batchClient, String queueName) throws IOException, TemplateException {
 
+        LOGGER.info("Querying jobs for queue [" + queueName + "]");
+
         List<JobDetail> waitingJobDetails = AWSBatchUtil.getJobDetails(batchClient, queueName, AWSBatchUtil.waitingQueueStatuses);
         if(waitingJobDetails != null) {
             LOGGER.info("Waiting jobs: " + waitingJobDetails.size());
@@ -346,6 +347,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
         }
 
 
+        //  Build parameters for passing to Freemarker template
         Map<String, Object> params = new HashMap<String, Object>();
 
         params.put("queueName", queueName);
@@ -392,6 +394,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
             params.put("completedJobsList", extendedJobDetailList);
         }
 
+        //  Run the template
         return runFreemarkerTemplate(JOB_QUEUE_HTML_TEMPLATE, params);
     }
 
@@ -440,7 +443,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
             //  Run the freemarker template
             Template template = config.getTemplate("StringTemplate");
 
-            LOGGER.info("Loaded template [" + templatePath +"]");
+            LOGGER.info("Loaded template [" + templatePath + "]");
             StringWriter out = new StringWriter();
 
             template.process(params, out);
