@@ -18,22 +18,22 @@
     <ac:template match=".*csiro_cars.*" name="csiro_cars">
         <ac:attributes>
             <ac:attribute>
-                <ac:name>geospatial_lat_min</ac:name><ac:type>String</ac:type><ac:value>${LAT_MIN}</ac:value>
+                <ac:name>geospatial_lat_min</ac:name><ac:type>Double</ac:type><ac:value>${LAT_MIN}</ac:value>
             </ac:attribute>
             <ac:attribute>
-                <ac:name>geospatial_lat_max</ac:name><ac:type>String</ac:type><ac:value>${LAT_MAX}</ac:value>
+                <ac:name>geospatial_lat_max</ac:name><ac:type>Double</ac:type><ac:value>${LAT_MAX}</ac:value>
             </ac:attribute>
             <ac:attribute>
-                <ac:name>geospatial_lon_min</ac:name><ac:type>String</ac:type><ac:value>${LON_MIN}</ac:value>
+                <ac:name>geospatial_lon_min</ac:name><ac:type>Double</ac:type><ac:value>${LON_MIN}</ac:value>
             </ac:attribute>
             <ac:attribute>
-                <ac:name>geospatial_lon_max</ac:name><ac:type>String</ac:type><ac:value>${LON_MAX}</ac:value>
+                <ac:name>geospatial_lon_max</ac:name><ac:type>Double</ac:type><ac:value>${LON_MAX}</ac:value>
             </ac:attribute>
             <ac:attribute>
-                <ac:name>geospatial_vertical_max</ac:name><ac:type>String</ac:type><ac:value>${Z_MAX}</ac:value>
+                <ac:name>geospatial_vertical_max</ac:name><ac:type>Double</ac:type><ac:value>${Z_MAX}</ac:value>
             </ac:attribute>
             <ac:attribute>
-                <ac:name>geospatial_vertical_min</ac:name><ac:type>String</ac:type><ac:value>${Z_MIN}</ac:value>
+                <ac:name>geospatial_vertical_min</ac:name><ac:type>Double</ac:type><ac:value>${Z_MIN}</ac:value>
             </ac:attribute>
         </ac:attributes>
     </ac:template>
