@@ -34,34 +34,67 @@
     <dl>
         <dt>Job Id :</dt>
         <dd>${jobId}</dd>
-        <dt>Submitted :</dt>
-        <dd>
-            <script type="text/javascript">
-                var timeParamValue = ${submittedTime}/1000;
-                if(timeParamValue != -1) {
-                    var submitTime = new Date(0);
-                    submitTime.setUTCSeconds(timeParamValue);
-                    document.write( submitTime.toString() );
-                } else {
-                    document.write("Unknown");
-                }
-            </script>
-        </dd>
-        <#if executeResponse.status.processFailed??>
-            <dt>
-                Status :
-            </dt>
+        <#if submittedTime??>
+            <dt>Submitted :</dt>
             <dd>
-                Failed
-                <br />
+                <script type="text/javascript">
+                    var timeParamValue = ${submittedTime}/1000;
+                    if(timeParamValue != -1) {
+                        var submitTime = new Date(0);
+                        submitTime.setUTCSeconds(timeParamValue);
+                        document.write( submitTime.toString() );
+                    } else {
+                        document.write("Unknown");
+                    }
+                </script>
             </dd>
-            <dt>
-                Error message :
-            </dt>
-            <dd>
-                ${executeResponse.status.processFailed.exceptionReport.exception[0].exceptionText[0]}
-                <br />
-            </dd>
+        </#if>
+        <#if executeResponse??>
+            <#if executeResponse.status.processFailed??>
+                <dt>
+                    Status :
+                </dt>
+                <dd>
+                    Failed
+                    <br />
+                </dd>
+                <dt>
+                    Error message :
+                </dt>
+                <dd>
+                    ${executeResponse.status.processFailed.exceptionReport.exception[0].exceptionText[0]}
+                    <br />
+                </dd>
+            <#else>
+                <dt>
+                    Status :
+                </dt>
+                <dd>
+                    ${statusDescription}
+                    <br />
+                </dd>
+                <#if executeResponse??>
+                    <#if executeResponse.processOutputs??>
+                        <dt>
+                            Download :
+                        </dt>
+                        <#list executeResponse.processOutputs.output as currentOutput>
+                            <#if currentOutput.identifier.value == "result">
+                                <dd>
+                                    <a href="${currentOutput.reference.href}">IMOS download - ${jobId}</a>
+                                    <br />
+                                </dd>
+                            </#if>
+                            <#if currentOutput.identifier.value == "provenance">
+                                <dd>
+                                    <a href="${currentOutput.reference.href}">Provenance file - ${jobId}</a>
+                                    <br />
+                                </dd>
+                            </#if>
+                        </#list>
+                    </#if>
+                </#if>
+            </#if>
         <#else>
             <dt>
                 Status :
@@ -70,25 +103,6 @@
                 ${statusDescription}
                 <br />
             </dd>
-            <#if executeResponse.processOutputs??>
-                <dt>
-                    Download :
-                </dt>
-                <#list executeResponse.processOutputs.output as currentOutput>
-                    <#if currentOutput.identifier.value == "result">
-                        <dd>
-                            <a href="${currentOutput.reference.href}">IMOS download - ${jobId}</a>
-                            <br />
-                        </dd>
-                    </#if>
-                    <#if currentOutput.identifier.value == "provenance">
-                        <dd>
-                            <a href="${currentOutput.reference.href}">Provenance file - ${jobId}</a>
-                            <br />
-                        </dd>
-                    </#if>
-                </#list>
-            </#if>
         </#if>
         <#if requestXML??>
             <dt>

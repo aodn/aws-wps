@@ -72,32 +72,10 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
 
 
         //  Determine the format to send the response in
-        JobStatusFormatEnum requestedStatusFormat;
-        if (format != null) {
-            try {
-                requestedStatusFormat = JobStatusFormatEnum.valueOf(format.toUpperCase());
-                LOGGER.info("Valid job status format requested : " + requestedStatusFormat.name());
-            } catch (IllegalArgumentException iae) {
-                String jobStatusValuesString = "";
-
-                JobStatusFormatEnum[] validJobStatuses = JobStatusFormatEnum.values();
-                for (int index = 0; index <= validJobStatuses.length - 1; index++) {
-                    jobStatusValuesString += validJobStatuses[index].name();
-                    if (index + 1 <= validJobStatuses.length - 1) {
-                        jobStatusValuesString += ", ";
-                    }
-                }
-                LOGGER.error("UNKNOWN job status format requested [" + format + "].  Supported values : [" + jobStatusValuesString + "].  Defaulting to [" + DEFAULT_FORMAT.name() + "]");
-                requestedStatusFormat = DEFAULT_FORMAT;
-            }
-        } else {
-            LOGGER.info("No format parameter passed.  Defaulting to [" + DEFAULT_FORMAT.name() + "]");
-            requestedStatusFormat = DEFAULT_FORMAT;
-        }
-
-
+        JobStatusFormatEnum requestedStatusFormat = getRequestedStatusFormat(format);
 
         int httpStatus;
+        //  Display the QUEUE view
         if (requestedStatusFormat.equals(JobStatusFormatEnum.QUEUE)) {
             LOGGER.info("Queue contents requested.");
 
@@ -119,88 +97,80 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
 
         } else {
 
-            String statusDescription = null;
-            ExecuteResponse executeResponse = null;
-
-            try {
-                //  Read the status file for the jobId passed
-                executeResponse = JobFileUtil.getExecuteResponse(jobFileS3KeyPrefix, jobId, statusFilename, statusS3Bucket);
-
-                //  If the status file exists and the job is in an 'waiting' state (we have accepted the job but processing
-                //  has not yet commenced) we will attempt to work out the queue position of the job and add that to
-                //  the status information we send back to the caller.  If the job is being processed or processing has
-                //  completed (successful or failed), then we will return the information contained in the status file unaltered.
-                if (executeResponse != null) {
-
-                    StatusType currentStatus = executeResponse.getStatus();
-                    //  Get a friendly description of the status
-                    statusDescription = getWpsStatusDescription(currentStatus);
-
-                    /**  PARKED UNTIL WE CAN RELIABLY DETERMINE THE QUEUE POSITION OF
-                     *   THE JOB USING THE BATCH API.
-                     *   CURRENTLY THE AWS QUEUES SEEM TO BE NON-FIFO : SO IMPOSSIBLE TO
-                     *   DETERMINE THE ORDER IN WHICH QUEUED JOBS WILL EXECUTE!!
-                     *
-                     //  If the ExecuteResponse indicates that the job has been accepted but not
-                     //  started, completed or failed - then we will update the position indicator.
-
-
-                     if(AWSBatchUtil.isJobWaiting(currentStatus)) {
-                     AWSBatch batchClient = AWSBatchClientBuilder.defaultClient();
-
-                     LOGGER.info("Updating XML with progress description for jobId [" + jobId + "]");
-
-                     //  Perform a queue position lookup + insert the position information into the XML
-                     //  All we have to do is setProcessAccepted to a string that includes some queue
-                     //  position information.
-                     String jobProgressDescription = getProgressDescription(batchClient, jobId);
-
-                     LOGGER.info("Progress description: " + jobProgressDescription);
-
-                     if(jobProgressDescription != null) {
-                     currentStatus.setProcessAccepted(currentStatus.getProcessAccepted() + " " + jobProgressDescription);
-                     executeResponse.setStatus(currentStatus);
-                     }
-
-                     responseBody = JobFileUtil.createXmlDocument(executeResponse);
-                     } else {
-                     //  Return unaltered status XML
-                     responseBody = statusXMLString;
-                     }
-                     **/
-                    responseBody = executeResponse.toString();
-
-                    httpStatus = HttpStatus.SC_OK;
-                } else {
-
-                    statusDescription = "Unknown status, error retrieving status [Job ID not found]";
-                    LOGGER.info(statusDescription);
-                    //  Status document was not found in the S3 bucket
-                    httpStatus = HttpStatus.SC_OK;
-                }
-            } catch (Exception ex) {
-                statusDescription = "Exception retrieving status of job [" + jobId + "]: " + ex.getMessage();
-                //  Bad stuff happened
-                LOGGER.error(statusDescription, ex);
-                httpStatus = HttpStatus.SC_INTERNAL_SERVER_ERROR;
-            }
-
-            //  If requested output format is HTML - perform a transform on the XML
             if (requestedStatusFormat.equals(JobStatusFormatEnum.HTML) || requestedStatusFormat.equals(JobStatusFormatEnum.ADMIN)) {
+
+                ExecuteResponse executeResponse = JobFileUtil.getExecuteResponse(jobFileS3KeyPrefix, jobId, statusFilename, statusS3Bucket);
+                String statusDescription = null;
+
                 LOGGER.info("HTML output format requested.  Running transform.");
                 boolean adminInfoRequested = false;
                 if (requestedStatusFormat.equals(JobStatusFormatEnum.ADMIN)) {
                     adminInfoRequested = true;
                 }
 
+                if(executeResponse != null) {
+                    StatusType currentStatus = executeResponse.getStatus();
+                    //  Get a friendly description of the status
+                    statusDescription = getWpsStatusDescription(currentStatus);
+                } else {
+                    statusDescription = "Unknown status. Error retrieving status. Job ID [" + jobId + "] not found.";
+                }
+
                 try {
                     responseBody = generateStatusHTML(executeResponse, statusDescription, jobId, adminInfoRequested);
+                    httpStatus = HttpStatus.SC_OK;
                 } catch (TemplateException | IOException ex) {
                     LOGGER.error("Exception while generating HTML output.", ex);
                     httpStatus = HttpStatus.SC_INTERNAL_SERVER_ERROR;
                     responseBody = "Unable to generate HTML output";
                 }
+            } else {  //  Default format = XML
+
+                String executeResponseString = JobFileUtil.getExecuteResponseString(jobFileS3KeyPrefix, jobId, statusFilename, statusS3Bucket);
+                if (executeResponseString != null) {
+                    responseBody = executeResponseString;
+                    LOGGER.info("Retrieved status file XML.");
+                    httpStatus = HttpStatus.SC_OK;
+                } else {
+                    responseBody = "Unable to retrieve status file XML for Job ID [" + jobId + "]";
+                    LOGGER.info(responseBody);
+                    httpStatus = HttpStatus.SC_NOT_FOUND;
+                }
             }
+
+
+            /**  PARKED UNTIL WE CAN RELIABLY DETERMINE THE QUEUE POSITION OF
+             *   THE JOB USING THE BATCH API.
+             *   CURRENTLY THE AWS QUEUES SEEM TO BE NON-FIFO : SO IMPOSSIBLE TO
+             *   DETERMINE THE ORDER IN WHICH QUEUED JOBS WILL EXECUTE!!
+             *
+             //  If the ExecuteResponse indicates that the job has been accepted but not
+             //  started, completed or failed - then we will update the position indicator.
+
+
+             if(AWSBatchUtil.isJobWaiting(currentStatus)) {
+             AWSBatch batchClient = AWSBatchClientBuilder.defaultClient();
+
+             LOGGER.info("Updating XML with progress description for jobId [" + jobId + "]");
+
+             //  Perform a queue position lookup + insert the position information into the XML
+             //  All we have to do is setProcessAccepted to a string that includes some queue
+             //  position information.
+             String jobProgressDescription = getProgressDescription(batchClient, jobId);
+
+             LOGGER.info("Progress description: " + jobProgressDescription);
+
+             if(jobProgressDescription != null) {
+             currentStatus.setProcessAccepted(currentStatus.getProcessAccepted() + " " + jobProgressDescription);
+             executeResponse.setStatus(currentStatus);
+             }
+
+             responseBody = JobFileUtil.createXmlDocument(executeResponse);
+             } else {
+             //  Return unaltered status XML
+             responseBody = statusXMLString;
+             }
+             **/
         }
 
         //  Build the response
@@ -264,7 +234,6 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
         // unknown timestamp.
         long unixTimestampSeconds = -1;
 
-        //  Generate request summary for admin format (if requested)
         try {
             //  Use the request.xml we write to S3 on accepting a job to determine the
             //  submission time of the job
@@ -275,8 +244,11 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
             if (requestS3Object != null) {
                 long lastModifiedTimestamp = requestS3Object.getObjectMetadata().getLastModified().getTime();
                 unixTimestampSeconds = lastModifiedTimestamp;
+                params.put("submittedTime", unixTimestampSeconds + "");
+
                 LOGGER.info("Request xml file timestamp = " + unixTimestampSeconds);
 
+                //  Pass a couple of extra parameters (requestXML + logFileLink) to the template if the admin view is requested
                 if(includeAdminDetails) {
                     //  Generate request summary details
                     LOGGER.info("Generating request summary HTML for request [" + jobId + "]");
@@ -297,7 +269,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
             LOGGER.error("Unable to determine submission time for job [" + jobId + "]: " + ex.getMessage(), ex);
         }
 
-        params.put("submittedTime", unixTimestampSeconds + "");
+
 
 
         return runFreemarkerTemplate(JOB_STATUS_HTML_TEMPLATE, params);
@@ -481,5 +453,35 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
             LOGGER.error("Exception running template:", ex);
             throw ex;
         }
+    }
+
+
+    private JobStatusFormatEnum getRequestedStatusFormat(String format) {
+
+        JobStatusFormatEnum requestedFormat;
+
+        if (format != null) {
+            try {
+                requestedFormat = JobStatusFormatEnum.valueOf(format.toUpperCase());
+                LOGGER.info("Valid job status format requested : " + requestedFormat.name());
+            } catch (IllegalArgumentException iae) {
+                String jobStatusValuesString = "";
+
+                JobStatusFormatEnum[] validJobStatuses = JobStatusFormatEnum.values();
+                for (int index = 0; index <= validJobStatuses.length - 1; index++) {
+                    jobStatusValuesString += validJobStatuses[index].name();
+                    if (index + 1 <= validJobStatuses.length - 1) {
+                        jobStatusValuesString += ", ";
+                    }
+                }
+                LOGGER.error("UNKNOWN job status format requested [" + format + "].  Supported values : [" + jobStatusValuesString + "].  Defaulting to [" + DEFAULT_FORMAT.name() + "]");
+                requestedFormat = DEFAULT_FORMAT;
+            }
+        } else {
+            LOGGER.info("No format parameter passed.  Defaulting to [" + DEFAULT_FORMAT.name() + "]");
+            requestedFormat = DEFAULT_FORMAT;
+        }
+
+        return requestedFormat;
     }
 }

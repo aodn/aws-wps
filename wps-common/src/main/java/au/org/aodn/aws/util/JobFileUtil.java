@@ -152,6 +152,18 @@ public class JobFileUtil {
 
 
     public static ExecuteResponse getExecuteResponse(String jobFileS3KeyPrefix, String jobId, String statusFilename, String statusS3Bucket) {
+        String statusXMLString = getExecuteResponseString(jobFileS3KeyPrefix, jobId, statusFilename, statusS3Bucket);
+        if(statusXMLString != null)
+        {
+            //  Read the status document
+            return JobFileUtil.unmarshallExecuteResponse(statusXMLString);
+        }
+
+        return null;
+    }
+
+
+    public static String getExecuteResponseString(String jobFileS3KeyPrefix, String jobId, String statusFilename, String statusS3Bucket) {
         String s3Key = jobFileS3KeyPrefix + jobId + "/" + statusFilename;
 
         //  Check for the existence of the status document
@@ -173,8 +185,7 @@ public class JobFileUtil {
             try {
                 statusXMLString = S3Utils.readS3ObjectAsString(statusS3Bucket, s3Key);
 
-                //  Read the status document
-                return JobFileUtil.unmarshallExecuteResponse(statusXMLString);
+                return statusXMLString;
             } catch(IOException ioex) {
                 LOGGER.error("Unable to unmarshall execute response.", ioex);
             }
