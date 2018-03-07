@@ -270,7 +270,7 @@ public class ExecuteIT {
                 hasXPath("/netcdf/attribute[@name='geospatial_lat_min']/@value", equalTo("-33.0 ")),
                 hasXPath("/netcdf/attribute[@name='geospatial_lon_max']/@value", equalTo("115.5 ")),
                 hasXPath("/netcdf/attribute[@name='geospatial_lon_min']/@value", equalTo("114.5 ")),
-                hasXPath("/netcdf/attribute[@name='geospatial_vertical_max']/@value", equalTo("5000.0 ")),
+                hasXPath("/netcdf/attribute[@name='geospatial_vertical_max']/@value", equalTo("100.0 ")),
                 hasXPath("/netcdf/attribute[@name='geospatial_vertical_min']/@value", equalTo("0.0 ")),
                 // Check only requested variables have been included
                 hasGPath("netcdf.variable.@name", containsInAnyOrder(
