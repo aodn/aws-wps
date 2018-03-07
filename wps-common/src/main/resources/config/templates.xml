@@ -18,6 +18,12 @@
     <ac:template match=".*csiro_cars.*" name="csiro_cars">
         <ac:attributes>
             <ac:attribute>
+                <ac:name>time_coverage_start</ac:name><ac:type>String</ac:type><ac:value>${TIME_START}</ac:value>
+            </ac:attribute>
+            <ac:attribute>
+                <ac:name>time_coverage_end</ac:name><ac:type>String</ac:type><ac:value>${TIME_END}</ac:value>
+            </ac:attribute>
+            <ac:attribute>
                 <ac:name>geospatial_lat_min</ac:name><ac:type>Double</ac:type><ac:value>${LAT_MIN}</ac:value>
             </ac:attribute>
             <ac:attribute>
