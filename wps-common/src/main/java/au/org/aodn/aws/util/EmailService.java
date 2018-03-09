@@ -13,16 +13,6 @@ import java.util.ArrayList;
 
 public class EmailService {
 
-    public static final String EMAIL_TEMPLATES_LOCATION = "templates";
-    public static final String COMPLETED_JOB_EMAIL_TEMPLATE_NAME = "jobComplete.vm";
-    public static final String FAILED_JOB_EMAIL_TEMPLATE_NAME = "jobFailed.vm";
-    public static final String REGISTERED_JOB_EMAIL_TEMPLATE_NAME = "jobRegistered.vm";
-    public static final String REGISTERED_JOB_EMAIL_SUBJECT = "IMOS download request registered - ";
-    public static final String COMPLETED_JOB_EMAIL_SUBJECT = "IMOS download available - ";
-    public static final String FAILED_JOB_EMAIL_SUBJECT = "IMOS download error - ";
-    public static final String JOB_EMAIL_CONTACT_ADDRESS = "info@aodn.org.au";
-    public static final String JOB_EMAIL_FROM_ADDRESS = "administrator@aodn.org.au";
-
 
     private static final Logger LOGGER = LoggerFactory.getLogger(EmailService.class);
     private AmazonSimpleEmailService client;
@@ -87,40 +77,40 @@ public class EmailService {
     }
 
     public void sendRegisteredJobEmail(String to, String uuid) throws EmailException {
-        String subject = REGISTERED_JOB_EMAIL_SUBJECT + uuid;
+        String subject = WpsConfig.REGISTERED_JOB_EMAIL_SUBJECT + uuid;
         String textBody = templateManager.getRegisteredEmailContent(uuid);
-        String from = JOB_EMAIL_FROM_ADDRESS;
+        String from = WpsConfig.JOB_EMAIL_FROM_ADDRESS;
 
         sendEmail(to, null, from, subject, null, textBody);
     }
 
     public void sendCompletedJobEmail(String to, String uuid, String statusPageLink, int expirationPeriodInDays) throws EmailException {
-        String subject = COMPLETED_JOB_EMAIL_SUBJECT + uuid;
+        String subject = WpsConfig.COMPLETED_JOB_EMAIL_SUBJECT + uuid;
         String expirationPeriod = String.format("%d days", expirationPeriodInDays);
         String textBody = templateManager.getCompletedEmailContent(uuid, expirationPeriod, statusPageLink);
-        String from = JOB_EMAIL_FROM_ADDRESS;
+        String from = WpsConfig.JOB_EMAIL_FROM_ADDRESS;
 
         sendEmail(to, null, from, subject, null, textBody);
     }
 
     public void sendFailedJobEmail(String to, String bccAddress, String uuid) throws EmailException {
-        String subject = FAILED_JOB_EMAIL_SUBJECT + uuid;
+        String subject = WpsConfig.FAILED_JOB_EMAIL_SUBJECT + uuid;
         String textBody = templateManager.getFailedEmailContent(uuid);
-        String from = JOB_EMAIL_FROM_ADDRESS;
+        String from = WpsConfig.JOB_EMAIL_FROM_ADDRESS;
 
         sendEmail(to, bccAddress, from, subject, null, textBody);
     }
 
 
     public static String getRegisteredJobEmailTemplate() {
-        return String.format("%s/%s", EMAIL_TEMPLATES_LOCATION, REGISTERED_JOB_EMAIL_TEMPLATE_NAME);
+        return String.format("%s/%s", WpsConfig.EMAIL_TEMPLATES_LOCATION, WpsConfig.REGISTERED_JOB_EMAIL_TEMPLATE_NAME);
     }
 
     public static String getCompletedJobEmailTemplate() {
-        return String.format("%s/%s", EMAIL_TEMPLATES_LOCATION, COMPLETED_JOB_EMAIL_TEMPLATE_NAME);
+        return String.format("%s/%s", WpsConfig.EMAIL_TEMPLATES_LOCATION, WpsConfig.COMPLETED_JOB_EMAIL_TEMPLATE_NAME);
     }
 
     public static String getFailedJobEmailTemplate() {
-        return String.format("%s/%s", EMAIL_TEMPLATES_LOCATION, FAILED_JOB_EMAIL_TEMPLATE_NAME);
+        return String.format("%s/%s", WpsConfig.EMAIL_TEMPLATES_LOCATION, WpsConfig.FAILED_JOB_EMAIL_TEMPLATE_NAME);
     }
 }
