@@ -101,7 +101,7 @@ public class AggregationRunner implements CommandLineRunner {
             //  These values are passed as environment variables set in the AWS Batch job definition
             String outputBucketName = WpsConfig.getProperty(OUTPUT_S3_BUCKET_CONFIG_KEY);
             String outputFilename = WpsConfig.getProperty(OUTPUT_S3_FILENAME_CONFIG_KEY);
-            statusS3Bucket = WpsConfig.getProperty(STATUS_S3_BUCKET_CONFIG_KEY);
+            statusS3Bucket = WpsConfig.getProperty(OUTPUT_S3_BUCKET_CONFIG_KEY);
             String jobFileS3KeyPrefix = WpsConfig.getProperty(AWS_BATCH_JOB_S3_KEY_PREFIX);
             statusFilename = WpsConfig.getProperty(STATUS_S3_FILENAME_CONFIG_KEY);
             requestFilename = WpsConfig.getProperty(REQUEST_S3_FILENAME_CONFIG_KEY);

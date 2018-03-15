@@ -1,5 +1,6 @@
 package au.org.aodn.aws.wps.operation;
 
+import au.org.aodn.aws.exception.OGCException;
 import au.org.aodn.aws.util.EmailService;
 import au.org.aodn.aws.util.JobFileUtil;
 import au.org.aodn.aws.wps.request.ExecuteRequestHelper;
@@ -30,7 +31,7 @@ public class ExecuteOperation implements Operation {
 
 
     @Override
-    public String execute() {
+    public String execute() throws OGCException {
 
         //  Config items:
         //      queue names
@@ -38,7 +39,7 @@ public class ExecuteOperation implements Operation {
         //      AWS region
         //      status filename
         //      status location
-        String statusS3BucketName = WpsConfig.getProperty(STATUS_S3_BUCKET_CONFIG_KEY);
+        String statusS3BucketName = WpsConfig.getProperty(OUTPUT_S3_BUCKET_CONFIG_KEY);
         String jobFileS3KeyPrefix = WpsConfig.getProperty(AWS_BATCH_JOB_S3_KEY_PREFIX);
         String statusFileName = WpsConfig.getProperty(STATUS_S3_FILENAME_CONFIG_KEY);
         String requestFileName = WpsConfig.getProperty(REQUEST_S3_FILENAME_CONFIG_KEY);
@@ -56,17 +57,33 @@ public class ExecuteOperation implements Operation {
         ExecuteRequestHelper helper = new ExecuteRequestHelper(executeRequest);
         String email = helper.getEmail();
 
+        //  Do some validation on the jobDefinitionName
+        if(executeRequest.getIdentifier() == null || executeRequest.getIdentifier().getValue() == null) {
+            //  Throw an error
+            throw new OGCException("ProcessError", "No process identifier was supplied.");
+        }
+
+        //  The requested process identifier
         String processIdentifier = executeRequest.getIdentifier().getValue();  // code spaces not supported for the moment
+
+        //  Determine the name of the batch job definition to run for the indicated process
         JobMapper jobMapper = new JobMapper(processIdentifier);
         String jobDefinitionName = jobMapper.getJobDefinitionName();
+
+        //  If a job definition wasn't returned, then the process identifier must not be one we support.  throw an error indicating that.
+        if(jobDefinitionName == null) {
+            //  Throw an error
+            throw new OGCException("ProcessError", "Unknown process identifier supplied [" + processIdentifier + "]");
+        }
 
         LOGGER.info("Execute operation requested. Identifier [" + processIdentifier + "], Email [" + email + "]");
         LOGGER.info("Submitting job request...");
         SubmitJobRequest submitJobRequest = new SubmitJobRequest();
 
-        //  TODO: at this point we will need to invoke the correct AWS batch processing job for the function that is specified in the Execute Operation
-        //  This will probably involve selecting the appropriate queue, jobName (mainly for display in AWS console) & job definition based on the processIdentifier.
-        submitJobRequest.setJobQueue(jobQueueName);  //TODO: config/jobqueue selection
+        //  Invoke the correct AWS batch processing job for the function that is specified in the Execute Operation
+        //  TODO: Select the appropriate queue, jobName (mainly for display in AWS console) based on the processIdentifier.
+        //  TODO: we only have one job definition so far - but will need some mapping mechanism if/when we have more process types t support
+        submitJobRequest.setJobQueue(jobQueueName);
         submitJobRequest.setJobName(jobName);
         submitJobRequest.setJobDefinition(jobDefinitionName);  //TODO: either map to correct job def or set vcpus/memory required appropriately
 

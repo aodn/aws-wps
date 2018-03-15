@@ -23,7 +23,6 @@ public class WpsConfig {
     public static final String SUMOLOGIC_ENDPOINT_ENV_VARIABLE_NAME = "SUMO_ENDPOINT";
     public static final String AWS_REGION_CONFIG_KEY = "AWS_REGION";
     public static final String AWS_REGION_SES_CONFIG_KEY = "AWS_REGION_SES";
-    public static final String STATUS_S3_BUCKET_CONFIG_KEY = "STATUS_S3_BUCKET";
     public static final String STATUS_S3_FILENAME_CONFIG_KEY = "STATUS_S3_FILENAME";
     public static final String REQUEST_S3_FILENAME_CONFIG_KEY = "REQUEST_S3_FILENAME";
     public static final String OUTPUT_S3_BUCKET_CONFIG_KEY = "OUTPUT_S3_BUCKET";
@@ -68,6 +67,9 @@ public class WpsConfig {
     public static final String FAILED_JOB_EMAIL_SUBJECT = "IMOS download error - ";
     public static final String JOB_EMAIL_CONTACT_ADDRESS = "info@aodn.org.au";
     public static final String JOB_EMAIL_FROM_ADDRESS = "administrator@aodn.org.au";
+
+    public static final String DATA_URL_PREFIX = "http://data.aodn.org.au/";
+    public static final String DATA_DOWNLOAD_URL_PREFIX_CONFIG_KEY = "DATA_DOWNLOAD_URL_PREFIX";
 
     public static final String DEFAULT_LANGUAGE = "en-US";
 
