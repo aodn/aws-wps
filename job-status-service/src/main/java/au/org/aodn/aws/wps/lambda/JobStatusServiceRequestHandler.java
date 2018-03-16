@@ -53,7 +53,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
 
     private String statusFilename = WpsConfig.getProperty(WpsConfig.STATUS_S3_FILENAME_CONFIG_KEY);
     private String jobFileS3KeyPrefix = WpsConfig.getProperty(WpsConfig.AWS_BATCH_JOB_S3_KEY_PREFIX);
-    private String statusS3Bucket = WpsConfig.getProperty(WpsConfig.STATUS_S3_BUCKET_CONFIG_KEY);
+    private String statusS3Bucket = WpsConfig.getProperty(WpsConfig.OUTPUT_S3_BUCKET_CONFIG_KEY);
     private String requestFilename = WpsConfig.getProperty(WpsConfig.REQUEST_S3_FILENAME_CONFIG_KEY);
 
 

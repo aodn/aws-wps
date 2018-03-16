@@ -44,6 +44,7 @@ Mappings:
       requestHandlerApiPath: wps
       jobStatusApiPath: jobStatus
       wpsApiStage: LATEST
+      dataDownloadUrlPrefix: "http://data.aodn.org.au/"
   AccountConstants:
     '615645230945':  # non-production
       AllowEphemeralBuckets: true
@@ -307,9 +308,6 @@ Resources:
             Name: OUTPUT_S3_BUCKET
             Value: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !Ref bucketName]
           -
-            Name: STATUS_S3_BUCKET
-            Value: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !Ref bucketName]
-          -
             Name: STATUS_S3_FILENAME
             Value: !FindInMap [ConfigurationFileMap, Filename, status]
           -
@@ -321,6 +319,9 @@ Resources:
           -
             Name: AWS_REGION_SES
             Value: !Ref awsRegionSes
+          -
+            Name: DATA_DOWNLOAD_URL_PREFIX
+            Value: !FindInMap [Constants, ConstantMap, dataDownloadUrlPrefix]
           -
             Name: SUMO_ENDPOINT
             Value: !Ref sumoEndpoint
@@ -567,7 +568,7 @@ Resources:
           AWS_BATCH_JOB_QUEUE_NAME: !Ref JobQueue
           AWS_BATCH_JOB_DEFINITION_NAME: !Select [1, !Split ['/', !Ref JobDefinition]]
           ADMINISTRATOR_EMAIL: !Ref administratorEmail
-          STATUS_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !Ref bucketName]
+          OUTPUT_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !Ref bucketName]
           STATUS_S3_FILENAME: !FindInMap [ConfigurationFileMap, Filename, status]
           REQUEST_S3_FILENAME: !FindInMap [ConfigurationFileMap, Filename, request]
           AWS_WPS_ENDPOINT_URL: !If
@@ -680,7 +681,7 @@ Resources:
       Code: ./job-status-service/target/job-status-service-lambda-package.zip
       Environment:
         Variables:
-          STATUS_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !Ref bucketName]
+          OUTPUT_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !Ref bucketName]
           STATUS_S3_FILENAME: !FindInMap [ConfigurationFileMap, Filename, status]
           REQUEST_S3_FILENAME: !FindInMap [ConfigurationFileMap, Filename, request]
           JOB_S3_KEY: !FindInMap [Constants, ConstantMap, S3JobKeyPrefix]

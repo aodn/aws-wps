@@ -24,12 +24,13 @@ public class DescribeProcessHelper {
 
         String processName = qualifiedProcessName;
 
+        //  Strip off the imos: from the process name (if it was passed)
         if(processName.indexOf(":")!=-1)
         {
             processName = processName.substring(processName.indexOf(":") + 1);
         }
 
-        String processDescription = String.format("/processes/%s%s", processName, PROCESS_DESCRIPTION_FILE_EXTENSION);
+        String processDescription = String.format("/capabilities/%s%s", processName, PROCESS_DESCRIPTION_FILE_EXTENSION);
 
         LOGGER.info("Process description: " + processDescription);
 

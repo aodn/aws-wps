@@ -2,8 +2,10 @@ package au.org.emii.geoserver.client;
 
 
 import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
@@ -13,6 +15,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import au.org.aodn.aws.wps.status.WpsConfig;
 import au.org.emii.aggregator.exception.AggregationException;
 import au.org.emii.download.DownloadRequest;
 import org.slf4j.Logger;
@@ -37,7 +40,7 @@ public class HttpIndexReader {
 
         try {
 
-            Map<String, String> params = new HashMap<String, String>();
+            Map<String, String> params = new HashMap<>();
             //  TODO: source from configuration?
             params.put("typeName", layer);
             params.put("SERVICE", "WFS");
@@ -74,49 +77,54 @@ public class HttpIndexReader {
             conn.setDoOutput(true);
             conn.getOutputStream().write(getParamsBytes);
 
-            InputStream inputStream = conn.getInputStream();
-            DataInputStream dataInputStream = new DataInputStream(new BufferedInputStream(inputStream));
+            try (
+                    InputStream inputStream = conn.getInputStream();
+                    DataInputStream dataInputStream = new DataInputStream(new BufferedInputStream(inputStream));
+                    InputStreamReader streamReader = new InputStreamReader(dataInputStream);
+                    BufferedReader reader = new BufferedReader(streamReader)
+            ) {
 
-            String line = null;
-            Integer i = 0;
-            int fileUrlIndex = 0;
-            int fileSizeIndex = 0;
+                String line = null;
+                Integer i = 0;
+                int fileUrlIndex = 0;
+                int fileSizeIndex = 0;
 
-            while ((line = dataInputStream.readLine()) != null) {
+                while ((line = reader.readLine()) != null) {
 
-                if (i > 0) { // First line is the headers
-                    String[] lineParts = line.split(",");
-                    long fileSize = Long.parseLong(lineParts[fileSizeIndex]);
-                    URI fileURI = new URI(lineParts[fileUrlIndex]);
+                    if (i > 0) { // First line is the headers
+                        String[] lineParts = line.split(",");
+                        long fileSize = Long.parseLong(lineParts[fileSizeIndex]);
+                        URI fileURI = new URI(lineParts[fileUrlIndex]);
 
-                    //  TODO:  source the base URL from configuration
-                    URL fileURL = new URL("http://data.aodn.org.au/" + fileURI.toString());
+                        //  TODO:  source the base URL from configuration
+                        URL fileURL = new URL(WpsConfig.getProperty(WpsConfig.DATA_DOWNLOAD_URL_PREFIX_CONFIG_KEY) + fileURI.toString());
 
-                    DownloadRequest downloadRequest = new DownloadRequest(fileURL, fileSize);
-                    downloadList.add(downloadRequest);
-                } else {
-                    //  The first line is the header - which lists all of the fields returned.
-                    //  We are actually only really interested in the 'file_url' field- because
-                    //  that is the URL of the file (obviously).  Some collections return different
-                    //  sets of columns in the CSV - so find the column position where the file_url is located.
-                    String[] headerFields = line.split(",");
+                        DownloadRequest downloadRequest = new DownloadRequest(fileURL, fileSize);
+                        downloadList.add(downloadRequest);
+                    } else {
+                        //  The first line is the header - which lists all of the fields returned.
+                        //  We are actually only really interested in the 'file_url' field- because
+                        //  that is the URL of the file (obviously).  Some collections return different
+                        //  sets of columns in the CSV - so find the column position where the file_url is located.
+                        String[] headerFields = line.split(",");
 
-                    int headerFieldIndex = 0;
-                    for (String currentField : headerFields) {
+                        int headerFieldIndex = 0;
+                        for (String currentField : headerFields) {
 
-                        if (currentField.trim().equalsIgnoreCase(urlField)) {
-                            logger.info("Found [" + urlField + "] field in CSV output at position [" + headerFieldIndex + "]");
-                            fileUrlIndex = headerFieldIndex;
+                            if (currentField.trim().equalsIgnoreCase(urlField)) {
+                                logger.info("Found [" + urlField + "] field in CSV output at position [" + headerFieldIndex + "]");
+                                fileUrlIndex = headerFieldIndex;
+                            }
+
+                            if (currentField.trim().equalsIgnoreCase("size")) {
+                                logger.info("Found [size] field in CSV output at position [" + headerFieldIndex + "]");
+                                fileSizeIndex = headerFieldIndex;
+                            }
+                            headerFieldIndex++;
                         }
-
-                        if (currentField.trim().equalsIgnoreCase("size")) {
-                            logger.info("Found [size] field in CSV output at position [" + headerFieldIndex + "]");
-                            fileSizeIndex = headerFieldIndex;
-                        }
-                        headerFieldIndex++;
                     }
+                    i++;
                 }
-                i++;
             }
             logger.debug("DownloadRequest - # files requested : " + downloadList.size());
         } catch (Exception e) {
