@@ -32,8 +32,8 @@ public class JobMapper {
         }
 
         //  Set the job queue name
-        //  If the job contains an indicator that it is a test transaction (a specific process identifier) return the test queue
         if(processIdentifier.equalsIgnoreCase(WpsConfig.GOGODUCK_PROCESS_IDENTIFIER)) {
+            //  If the job is a test transaction return the test queue name
             if(isTestTransaction(executeRequest)) {
                 settings.setJobQueueName(WpsConfig.getProperty(AWS_BATCH_TEST_QUEUE_NAME_CONFIG_KEY));
             } else {
