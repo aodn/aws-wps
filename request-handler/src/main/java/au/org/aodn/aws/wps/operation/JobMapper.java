@@ -27,13 +27,13 @@ public class JobMapper {
 
         //  TODO:  Can map to different queues + job definitions here based on process identifiers
         //  Set job definition name
-        if(processIdentifier.equalsIgnoreCase("gs:gogoduck")) {
+        if(processIdentifier.equalsIgnoreCase(WpsConfig.GOGODUCK_PROCESS_IDENTIFIER)) {
             settings.setJobDefinitionName(WpsConfig.getProperty(AWS_BATCH_JOB_DEFINITION_NAME_CONFIG_KEY));
         }
 
         //  Set the job queue name
         //  If the job contains an indicator that it is a test transaction (a specific process identifier) return the test queue
-        if(processIdentifier.equalsIgnoreCase("gs:gogoduck")) {
+        if(processIdentifier.equalsIgnoreCase(WpsConfig.GOGODUCK_PROCESS_IDENTIFIER)) {
             if(isTestTransaction(executeRequest)) {
                 settings.setJobQueueName(WpsConfig.getProperty(AWS_BATCH_TEST_QUEUE_NAME_CONFIG_KEY));
             } else {
