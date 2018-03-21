@@ -17,6 +17,7 @@ public class WpsConfig {
     //  Configuration key names
     public static final String AWS_BATCH_JOB_NAME_CONFIG_KEY = "AWS_BATCH_JOB_NAME";
     public static final String AWS_BATCH_JOB_QUEUE_NAME_CONFIG_KEY = "AWS_BATCH_JOB_QUEUE_NAME";
+    public static final String AWS_BATCH_TEST_QUEUE_NAME_CONFIG_KEY = "AWS_BATCH_TEST_QUEUE_NAME";
     public static final String AWS_BATCH_JOB_DEFINITION_NAME_CONFIG_KEY = "AWS_BATCH_JOB_DEFINITION_NAME";
     public static final String AWS_BATCH_LOG_GROUP_NAME_CONFIG_KEY = "AWS_BATCH_LOG_GROUP_NAME";
 
