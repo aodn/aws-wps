@@ -384,12 +384,20 @@ Resources:
   JobQueue:
     Type: AWS::Batch::JobQueue
     Properties:
-      JobQueueName: !Sub 'JavaDuckQueue1-${AWS::StackName}'
+      JobQueueName: !Sub 'JavaDuckExecuteQueue-${AWS::StackName}'
       Priority: 2
       ComputeEnvironmentOrder:
         - Order: 1
-          ComputeEnvironment: !Ref ComputeEnvironment
-  ComputeEnvironment:
+          ComputeEnvironment: !Ref JobComputeEnvironment
+  TestQueue:
+      Type: AWS::Batch::JobQueue
+      Properties:
+        JobQueueName: !Sub 'JavaDuckTestQueue-${AWS::StackName}'
+        Priority: 2
+        ComputeEnvironmentOrder:
+          - Order: 1
+            ComputeEnvironment: !Ref TestComputeEnvironment
+  JobComputeEnvironment:
     Type: AWS::Batch::ComputeEnvironment
     DeletionPolicy: Delete
     Properties:
@@ -414,6 +422,31 @@ Resources:
         SpotIamFleetRole: !Ref SpotIamFleetRole
         BidPercentage: 100
       ServiceRole: !Ref BatchServiceRole
+  TestComputeEnvironment:
+      Type: AWS::Batch::ComputeEnvironment
+      DeletionPolicy: Delete
+      Properties:
+        Type: MANAGED
+        ComputeResources:
+          Type: SPOT
+          MinvCpus: 0
+          DesiredvCpus: 0
+          MaxvCpus: !Ref maxVCPUs
+          InstanceTypes:
+            - c3.large
+            - c4.large
+            - m3.large
+            - m4.large
+            - r4.large
+            - r3.large
+          ImageId: !If [UseCustomAmi, !FindInMap [AccountConstants, !Ref 'AWS::AccountId', CustomAmiId], !Ref 'AWS::NoValue']
+          Subnets: !FindInMap [!Ref 'AWS::AccountId', !Ref 'AWS::Region', subnets]
+          SecurityGroupIds:
+            - !Ref ComputeEnvironmentInstanceSecurityGroup
+          InstanceRole: !Ref IamInstanceProfile
+          SpotIamFleetRole: !Ref SpotIamFleetRole
+          BidPercentage: 100
+        ServiceRole: !Ref BatchServiceRole
   ComputeEnvironmentInstanceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -566,6 +599,7 @@ Resources:
         Variables:
           AWS_BATCH_JOB_NAME: javaduck
           AWS_BATCH_JOB_QUEUE_NAME: !Ref JobQueue
+          AWS_BATCH_TEST_QUEUE_NAME: !Ref TestQueue
           AWS_BATCH_JOB_DEFINITION_NAME: !Select [1, !Split ['/', !Ref JobDefinition]]
           ADMINISTRATOR_EMAIL: !Ref administratorEmail
           OUTPUT_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !Ref bucketName]
@@ -816,9 +850,13 @@ Outputs:
       - CreateWpsApiGatewayDomainName
       - !Sub ['https://${WpsRoute53RecordSet}/${requestHandlerApiPath}/${jobStatusApiPath}',{requestHandlerApiPath: !FindInMap [Constants, ConstantMap, requestHandlerApiPath], jobStatusApiPath: !FindInMap [Constants, ConstantMap, jobStatusApiPath]}]
       - !Sub ['https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}/${jobStatusApiPath}',{wpsApiStage: !FindInMap [Constants, ConstantMap, wpsApiStage], requestHandlerApiPath: !FindInMap [Constants, ConstantMap, requestHandlerApiPath], jobStatusApiPath: !FindInMap [Constants, ConstantMap, jobStatusApiPath]}]
-  ComputeEnvironmentArn:
-    Value: !Ref ComputeEnvironment
+  JobComputeEnvironmentArn:
+    Value: !Ref JobComputeEnvironment
+  TestComputeEnvironmentArn:
+    Value: !Ref TestComputeEnvironment
   JobQueueArn:
     Value: !Ref JobQueue
+  TestQueueArn:
+    Value: !Ref TestQueue
   JobDefinitionArn:
     Value: !Ref JobDefinition
