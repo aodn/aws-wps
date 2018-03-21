@@ -398,6 +398,8 @@ Resources:
           - Order: 1
             ComputeEnvironment: !Ref TestComputeEnvironment
   JobComputeEnvironment:
+    Metadata:
+      Comment: Please apply any changes made to this ComputeEnvironment to TestComputeEnvironment also!!!!!
     Type: AWS::Batch::ComputeEnvironment
     DeletionPolicy: Delete
     Properties:
@@ -423,6 +425,8 @@ Resources:
         BidPercentage: 100
       ServiceRole: !Ref BatchServiceRole
   TestComputeEnvironment:
+      Metadata:
+        Comment: Please keep in sync with JobComputeEnvironment!!!!!
       Type: AWS::Batch::ComputeEnvironment
       DeletionPolicy: Delete
       Properties:
