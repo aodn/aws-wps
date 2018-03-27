@@ -18,6 +18,9 @@ import java.util.Map;
 import au.org.aodn.aws.wps.status.WpsConfig;
 import au.org.emii.aggregator.exception.AggregationException;
 import au.org.emii.download.DownloadRequest;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,7 +64,7 @@ public class HttpIndexReader {
             getParametersString = encodeMapForPostRequest(params);
 
             if(timeField != null) {
-                getParametersString += getTimeSortClause(timeField);
+                getParametersString += getTimeSortClauseAsc(timeField);
             }
 
             byte[] getParamsBytes = getParametersString.getBytes();
@@ -137,6 +140,119 @@ public class HttpIndexReader {
     }
 
 
+    public String getLatestTimeStep(String layer, String timeField) throws AggregationException {
+
+        String geoserverWfsEndpoint = String.format("%s/wfs", geoserver);
+        String getParametersString = "";
+
+        try {
+
+            Map<String, String> params = new HashMap<>();
+            //  TODO: source from configuration?
+            params.put("typeName", layer);
+            params.put("SERVICE", "WFS");
+            params.put("outputFormat", "application/json");
+            params.put("maxFeatures", "1");
+            params.put("REQUEST", "GetFeature");
+            params.put("VERSION", "1.0.0");
+
+            //  URL encode the parameters - except the sortBy parameter
+            getParametersString = encodeMapForPostRequest(params);
+
+            if(timeField != null) {
+                getParametersString += getTimeSortClauseDesc(timeField);
+            }
+
+            byte[] getParamsBytes = getParametersString.getBytes();
+
+            logger.info(String.format("GETting list of files from [%s]", geoserverWfsEndpoint));
+            logger.info(String.format("GET Parameters: [%s]", new String(getParamsBytes)));
+
+            URL url = new URL(geoserverWfsEndpoint);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+            conn.setRequestProperty("Content-Length", String.valueOf(getParamsBytes.length));
+            conn.setDoOutput(true);
+            conn.getOutputStream().write(getParamsBytes);
+
+            try (
+                    InputStream inputStream = conn.getInputStream();
+                    DataInputStream dataInputStream = new DataInputStream(new BufferedInputStream(inputStream));
+                    InputStreamReader streamReader = new InputStreamReader(dataInputStream);
+                    BufferedReader reader = new BufferedReader(streamReader)
+            ) {
+
+                String line;
+                StringBuilder jsonBuilder = new StringBuilder();
+                //  The request should have returned us a JSON object (only 1 due to the maxFeatures=1 parameter)
+                while((line = reader.readLine()) != null) {
+                    jsonBuilder.append(line);
+                }
+
+                logger.info("JSON OUTPUT: [" + jsonBuilder.toString() + "]");
+                if(!jsonBuilder.toString().isEmpty()) {
+                    ObjectMapper mapper = new ObjectMapper();
+                    JsonNode jsonRoot = mapper.readTree(jsonBuilder.toString());
+
+                    // When
+                    ArrayNode featuresNode = (ArrayNode) jsonRoot.get("features");
+                    logger.info("Features node: " + featuresNode.toString());
+                    JsonNode propertiesNode = featuresNode.get(0).get("properties");
+                    logger.info("Properties node: " + propertiesNode.toString());
+                    JsonNode timePropertyNode = propertiesNode.get("time");
+                    String time = timePropertyNode.asText();
+                    logger.info("TIME NODE VALUE: " + time);
+                    return time;
+                }
+
+                /*
+                String line = null;
+                Integer i = 0;
+                int timeFieldIndex = 0;
+
+                while ((line = reader.readLine()) != null) {
+
+                    if (i > 0) { // First line is the headers
+                        String[] lineParts = line.split(",");
+                        String timestamp = lineParts[timeFieldIndex];
+
+                        logger.debug("Last timestamp for collection: " + timestamp);
+
+                        //  The list is sorted in descending timestamp order - so the first
+                        //  row after the headers should be the most recent timestamp
+                        return timestamp;
+                    } else {
+                        //  The first line is the header - which lists all of the fields returned.
+                        //  We are actually only really interested in the 'file_url' field- because
+                        //  that is the URL of the file (obviously).  Some collections return different
+                        //  sets of columns in the CSV - so find the column position where the file_url is located.
+                        String[] headerFields = line.split(",");
+
+                        int headerFieldIndex = 0;
+                        for (String currentField : headerFields) {
+
+                            if (currentField.trim().equalsIgnoreCase(timeField)) {
+                                logger.info("Found [" + timeField + "] field in CSV output at position [" + headerFieldIndex + "]");
+                                timeFieldIndex = headerFieldIndex;
+                            }
+
+                            headerFieldIndex++;
+                        }
+                    }
+                    i++;
+                }*/
+            }
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+            logger.error("Unable to determine latest timestamp. Layer name [" + layer + "], HttpIndex request [" + geoserverWfsEndpoint + "?" + getParametersString + "]");
+            throw new AggregationException(String.format("Could not obtain list of files: '%s'", e.getMessage()));
+        }
+
+        return null;
+    }
+
+
     private String encodeMapForPostRequest(Map<String, String> params) {
         byte[] postDataBytes = null;
         try {
@@ -200,11 +316,25 @@ public class HttpIndexReader {
      * @param timeField
      * @return
      */
-    private String getTimeSortClause(String timeField) {
-        String sortClause = "";
+    private String getTimeSortClauseAsc(String timeField) {
         if(timeField != null) {
-            sortClause = "&sortBy=" + timeField + "+A";
+            return "&sortBy=" + timeField + "+A";
         }
-        return sortClause;
+        return "";
+    }
+
+
+    /**
+     * Form sort clause for CQL filter of the form:
+     *   &sortBy=<time_field>+D
+     *
+     * @param timeField
+     * @return
+     */
+    private String getTimeSortClauseDesc(String timeField) {
+        if(timeField != null) {
+            return "&sortBy=" + timeField + "+D";
+        }
+        return "";
     }
 }

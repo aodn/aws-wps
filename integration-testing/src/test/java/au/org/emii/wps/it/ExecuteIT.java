@@ -1,15 +1,11 @@
 package au.org.emii.wps.it;
 
-import static com.jayway.awaitility.Awaitility.catchUncaughtExceptions;
-import static com.jayway.restassured.RestAssured.when;
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.junit.Assert.*;
 import au.org.emii.wps.util.ExecuteRequestBuilder;
-import com.jayway.awaitility.Awaitility;
 import com.jayway.awaitility.Duration;
-import com.jayway.awaitility.core.ConditionTimeoutException;
 import com.jayway.restassured.builder.RequestSpecBuilder;
 import com.jayway.restassured.filter.log.RequestLoggingFilter;
 import com.jayway.restassured.filter.log.ResponseLoggingFilter;
@@ -36,7 +32,6 @@ import static au.org.emii.wps.util.GPathMatcher.hasGPath;
 import static au.org.emii.wps.util.Matchers.validateWith;
 import static au.org.emii.wps.util.NcmlValidatable.getNcml;
 import static com.jayway.awaitility.Awaitility.await;
-import static com.jayway.restassured.RestAssured.get;
 import static com.jayway.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.xml.HasXPath.hasXPath;

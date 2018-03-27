@@ -158,6 +158,16 @@ public class AggregationRunner implements CommandLineRunner {
             String requestedMimeType = requestHelper.getRequestedMimeType("result");
             String resultMime = requestedMimeType != null ? requestedMimeType : "application/x-netcdf";
 
+            HttpIndexReader indexReader = new HttpIndexReader(WpsConfig.getProperty(WpsConfig.GEOSERVER_CATALOGUE_ENDPOINT_URL_CONFIG_KEY));
+
+            //  If the transaction is a test transaction - we want to limit the temporal extent to a small (one time step) extent.
+            //  We'll just limit the test transaction to the latest timestep.
+            if(ExecuteRequestHelper.isTestTransaction(request)) {
+                String timestamp = indexReader.getLatestTimeStep(layer, "time");
+                logger.info("Last timestamp for layer [" + layer + "] = " + timestamp);
+                subset = overrideTestSubsetTimeRange(subset, timestamp);
+            }
+
             SubsetParameters subsetParams = SubsetParameters.parse(subset);
 
             //  Initialise email service
@@ -168,7 +178,7 @@ public class AggregationRunner implements CommandLineRunner {
             //  TODO: Qa the parameters/settings passed?
 
             //  Query geoserver to get a list of files for the aggregation
-            HttpIndexReader indexReader = new HttpIndexReader(WpsConfig.getProperty(WpsConfig.GEOSERVER_CATALOGUE_ENDPOINT_URL_CONFIG_KEY));
+
             List<DownloadRequest> downloads = indexReader.getDownloadRequestList(layer, "time", "file_url", subsetParams);
 
             //  Apply subset parameters
@@ -178,6 +188,8 @@ public class AggregationRunner implements CommandLineRunner {
             }
 
             CalendarDateRange subsetTimeRange = subsetParams.getTimeRange();
+            //  Use the supplied time extent
+            subsetTimeRange = subsetParams.getTimeRange();
             if (subsetTimeRange != null) {
                 logger.info("Time range specified for aggregation: START [" + subsetTimeRange.getStart() + "], END [" + subsetTimeRange.getEnd() + "]");
             }
@@ -282,8 +294,15 @@ public class AggregationRunner implements CommandLineRunner {
                 statusDocument = statusBuilder.createResponseDocument(EnumStatus.SUCCEEDED, GOGODUCK_PROCESS_IDENTIFIER, null, null, outputMap);
                 statusFileManager.write(statusDocument, statusFilename, STATUS_FILE_MIME_TYPE);
 
-                //  Send completed job email to user
-                emailService.sendCompletedJobEmail(contactEmail, batchJobId, statusUrl, S3Utils.getExpirationinDays(outputBucketName));
+                //  Send email - if email address was provided
+                if (contactEmail != null) {
+                    try {
+                        //  Send completed job email to user
+                        emailService.sendCompletedJobEmail(contactEmail, batchJobId, statusUrl, S3Utils.getExpirationinDays(outputBucketName));
+                    } catch (EmailException ex) {
+                        logger.error(ex.getMessage(), ex);
+                    }
+                }
 
             } finally {
                 if (jobDir != null) {
@@ -371,5 +390,42 @@ public class AggregationRunner implements CommandLineRunner {
                 .toFormatter();
 
         return formatter.print(period);
+    }
+
+
+    private String overrideTestSubsetTimeRange(String originalSubset, String timestamp) {
+
+        String newTimeSubsetParam = SubsetParameters.TIME + "," + timestamp + "," + timestamp;
+
+        if(timestamp != null) {
+            if(timestamp.contains(SubsetParameters.TIME)) {
+                String modifiedSubset = "";
+
+                logger.info("ORIGINAL SUBSET STRING: " + modifiedSubset);
+
+                //  Find the time subset parameter + replace it with revised start and end values
+                String[] parts = modifiedSubset.split(";");
+                for(String part : parts) {
+                    if(part.startsWith(SubsetParameters.TIME)) {
+                        logger.info("FOUND TIME PART: " + part);
+                        logger.info("REPLACING WITH : " + SubsetParameters.TIME + "," + timestamp + "," + timestamp + ";");
+
+                        //  Prepend the time subset section
+                        modifiedSubset = newTimeSubsetParam + ";" + modifiedSubset;
+                    } else {
+                        modifiedSubset += part + ";";
+                    }
+                }
+
+                logger.info("NEW SUBSET STRING: " + modifiedSubset);
+
+                return modifiedSubset;
+            } else {
+                logger.info("Prepending new timestamp param : " + newTimeSubsetParam);
+                return newTimeSubsetParam + ";" + originalSubset;
+            }
+        }
+
+        return originalSubset;
     }
 }
