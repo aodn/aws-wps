@@ -398,30 +398,24 @@ public class AggregationRunner implements CommandLineRunner {
         String newTimeSubsetParam = SubsetParameters.TIME + "," + timestamp + "," + timestamp;
 
         if(timestamp != null) {
-            if(timestamp.contains(SubsetParameters.TIME)) {
+            if(originalSubset.toUpperCase().contains(SubsetParameters.TIME.toUpperCase())) {
                 String modifiedSubset = "";
 
-                logger.info("ORIGINAL SUBSET STRING: " + modifiedSubset);
-
-                //  Find the time subset parameter + replace it with revised start and end values
-                String[] parts = modifiedSubset.split(";");
+                //  Find the TIME subset parameter + replace it with revised start and end values
+                String[] parts = originalSubset.split(";");
                 for(String part : parts) {
                     if(part.startsWith(SubsetParameters.TIME)) {
-                        logger.info("FOUND TIME PART: " + part);
-                        logger.info("REPLACING WITH : " + SubsetParameters.TIME + "," + timestamp + "," + timestamp + ";");
-
                         //  Prepend the time subset section
                         modifiedSubset = newTimeSubsetParam + ";" + modifiedSubset;
                     } else {
                         modifiedSubset += part + ";";
                     }
                 }
-
-                logger.info("NEW SUBSET STRING: " + modifiedSubset);
+                logger.info("Modified subset string : " + modifiedSubset);
 
                 return modifiedSubset;
             } else {
-                logger.info("Prepending new timestamp param : " + newTimeSubsetParam);
+                logger.info("Prepending new TIME subset param : " + newTimeSubsetParam);
                 return newTimeSubsetParam + ";" + originalSubset;
             }
         }
