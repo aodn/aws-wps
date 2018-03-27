@@ -190,58 +190,17 @@ public class HttpIndexReader {
                     jsonBuilder.append(line);
                 }
 
-                logger.info("JSON OUTPUT: [" + jsonBuilder.toString() + "]");
+
                 if(!jsonBuilder.toString().isEmpty()) {
                     ObjectMapper mapper = new ObjectMapper();
                     JsonNode jsonRoot = mapper.readTree(jsonBuilder.toString());
 
                     // When
                     ArrayNode featuresNode = (ArrayNode) jsonRoot.get("features");
-                    logger.info("Features node: " + featuresNode.toString());
                     JsonNode propertiesNode = featuresNode.get(0).get("properties");
-                    logger.info("Properties node: " + propertiesNode.toString());
                     JsonNode timePropertyNode = propertiesNode.get("time");
-                    String time = timePropertyNode.asText();
-                    logger.info("TIME NODE VALUE: " + time);
-                    return time;
+                    return timePropertyNode.asText();
                 }
-
-                /*
-                String line = null;
-                Integer i = 0;
-                int timeFieldIndex = 0;
-
-                while ((line = reader.readLine()) != null) {
-
-                    if (i > 0) { // First line is the headers
-                        String[] lineParts = line.split(",");
-                        String timestamp = lineParts[timeFieldIndex];
-
-                        logger.debug("Last timestamp for collection: " + timestamp);
-
-                        //  The list is sorted in descending timestamp order - so the first
-                        //  row after the headers should be the most recent timestamp
-                        return timestamp;
-                    } else {
-                        //  The first line is the header - which lists all of the fields returned.
-                        //  We are actually only really interested in the 'file_url' field- because
-                        //  that is the URL of the file (obviously).  Some collections return different
-                        //  sets of columns in the CSV - so find the column position where the file_url is located.
-                        String[] headerFields = line.split(",");
-
-                        int headerFieldIndex = 0;
-                        for (String currentField : headerFields) {
-
-                            if (currentField.trim().equalsIgnoreCase(timeField)) {
-                                logger.info("Found [" + timeField + "] field in CSV output at position [" + headerFieldIndex + "]");
-                                timeFieldIndex = headerFieldIndex;
-                            }
-
-                            headerFieldIndex++;
-                        }
-                    }
-                    i++;
-                }*/
             }
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
