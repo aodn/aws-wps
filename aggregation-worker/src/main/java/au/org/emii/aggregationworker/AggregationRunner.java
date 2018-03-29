@@ -187,9 +187,8 @@ public class AggregationRunner implements CommandLineRunner {
                 logger.info("Bounding box: LAT [" + bbox.getLatMin() + ", " + bbox.getLatMax() + "], LON [" + bbox.getLonMin() + ", " + bbox.getLonMax() + "]");
             }
 
-            CalendarDateRange subsetTimeRange = subsetParams.getTimeRange();
             //  Use the supplied time extent
-            subsetTimeRange = subsetParams.getTimeRange();
+            CalendarDateRange subsetTimeRange = subsetParams.getTimeRange();
             if (subsetTimeRange != null) {
                 logger.info("Time range specified for aggregation: START [" + subsetTimeRange.getStart() + "], END [" + subsetTimeRange.getEnd() + "]");
             }
