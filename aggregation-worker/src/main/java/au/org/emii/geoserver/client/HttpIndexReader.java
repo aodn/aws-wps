@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ucar.nc2.time.CalendarDateRange;
 
 
 public class HttpIndexReader {
@@ -36,7 +37,7 @@ public class HttpIndexReader {
         this.geoserver = geoserver;
     }
 
-    public List<DownloadRequest> getDownloadRequestList(String layer, String timeField, String urlField, SubsetParameters subset) throws AggregationException {
+    public List<DownloadRequest> getDownloadRequestList(String layer, String timeField, String urlField, CalendarDateRange subsetTimeRange) throws AggregationException {
 
         ArrayList<DownloadRequest> downloadList = new ArrayList<>();
         String geoserverWfsEndpoint = String.format("%s/wfs", geoserver);
@@ -51,7 +52,7 @@ public class HttpIndexReader {
             params.put("VERSION", "1.0.0");
 
             try (
-                    InputStream inputStream = doWfsGet(subset, timeField, params, getTimeSortClauseAsc(timeField));
+                    InputStream inputStream = doWfsGet(subsetTimeRange, timeField, params, getTimeSortClauseAsc(timeField));
                     DataInputStream dataInputStream = new DataInputStream(new BufferedInputStream(inputStream));
                     InputStreamReader streamReader = new InputStreamReader(dataInputStream);
                     BufferedReader reader = new BufferedReader(streamReader)
@@ -185,7 +186,7 @@ public class HttpIndexReader {
         List<DownloadRequest> downloadList = null;
 
         try {
-            downloadList = indexReader.getDownloadRequestList("imos:acorn_hourly_avg_rot_qc_timeseries_url", "time", "file_url", subsetParams);
+            downloadList = indexReader.getDownloadRequestList("imos:acorn_hourly_avg_rot_qc_timeseries_url", "time", "file_url", subsetParams.getTimeRange());
             System.out.println("File list size: " + downloadList.size());
             for (DownloadRequest currentDownload : downloadList) {
                 System.out.println("  - " + currentDownload.getUrl().toString());
@@ -196,12 +197,12 @@ public class HttpIndexReader {
         }
     }
 
-    private String getCqlTimeFilter(SubsetParameters subset, String timeField) {
+    private String getCqlTimeFilter(CalendarDateRange subsetTimeRange, String timeField) {
         String cqlTimeFilter = null;
 
-        if (subset.getTimeRange() != null) {
-            String timeCoverageStart = subset.getTimeRange().getStart().toString();
-            String timeCoverageEnd = subset.getTimeRange().getEnd().toString();
+        if (subsetTimeRange != null) {
+            String timeCoverageStart = subsetTimeRange.getStart().toString();
+            String timeCoverageEnd = subsetTimeRange.getEnd().toString();
 
             if (timeCoverageStart != null && timeCoverageEnd != null) {  //  Start + end dates
                 cqlTimeFilter = String.format("%s >= %s AND %s <= %s",
@@ -246,12 +247,12 @@ public class HttpIndexReader {
     }
 
 
-    private InputStream doWfsGet(SubsetParameters subset, String timeField, Map<String, String> params, String timeSortClause) throws IOException {
+    private InputStream doWfsGet(CalendarDateRange subsetTimeRange, String timeField, Map<String, String> params, String timeSortClause) throws IOException {
         String geoserverWfsEndpoint = String.format("%s/wfs", geoserver);
 
-        if(subset != null) {
+        if(subsetTimeRange != null) {
             //  Apply time filter if time parameters supplied
-            String cqlTimeFilter = getCqlTimeFilter(subset, timeField);
+            String cqlTimeFilter = getCqlTimeFilter(subsetTimeRange, timeField);
             if (cqlTimeFilter != null) {
                 //  Add sortBy clause to order the files by descending timestamp
                 params.put("CQL_FILTER", cqlTimeFilter);
