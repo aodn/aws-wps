@@ -190,13 +190,12 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
      * 'Queue position <POSITION_OF_THE_JOB> of <TOTAL_NUMBER_OF_JOBS_QUEUED>'
      *
      * @param jobId
-     * @param batchClient
      * @return
      */
-    private String getProgressDescription(AWSBatch batchClient, String jobId) {
+    private String getProgressDescription(String jobId) {
 
         String description = null;
-        JobDetail jobDetail = AWSBatchUtil.getJobDetail(batchClient, jobId);
+        JobDetail jobDetail = AWSBatchUtil.getJobDetail(jobId);
 
         if (jobDetail != null && jobDetail.getJobId() != null) {
 
@@ -206,7 +205,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
 
             if (queueName != null) {
                 //  Determine the position of the job in the queue
-                QueuePosition queuePosition = AWSBatchUtil.getQueuePosition(batchClient, jobDetail);
+                QueuePosition queuePosition = AWSBatchUtil.getQueuePosition(jobDetail);
 
                 if (queuePosition != null) {
                     description = "Queue position " + queuePosition.getPosition() + " of " + queuePosition.getNumberInQueue();
@@ -364,7 +363,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
             for(JobDetail currentJobDetail : runningJobDetails) {
                 ExtendedJobDetail extendedJobDetail = new ExtendedJobDetail();
                 extendedJobDetail.setAwsBatchJobDetail(currentJobDetail);
-                extendedJobDetail.setLogFileLink(getBatchLogFileLink(currentJobDetail.getJobId()));
+                extendedJobDetail.setLogFileLink(getBatchLogFileLink(currentJobDetail));
                 extendedJobDetailList.add(extendedJobDetail);
             }
 
@@ -388,7 +387,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
                     extendedJobDetails.setWpsStatusDescription("Unknown - could not read status file.");
                 }
 
-                extendedJobDetails.setLogFileLink(getBatchLogFileLink(currentJobDetail.getJobId()));
+                extendedJobDetails.setLogFileLink(getBatchLogFileLink(currentJobDetail));
                 extendedJobDetailList.add(extendedJobDetails);
             }
             params.put("completedJobsList", extendedJobDetailList);
@@ -400,18 +399,24 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
 
 
     private String getBatchLogFileLink(String jobId) {
+        JobDetail jobDetail = AWSBatchUtil.getJobDetail(jobId);
+        return getBatchLogFileLink(jobDetail);
+    }
+
+
+    private String getBatchLogFileLink(JobDetail jobDetail) {
         //  Cloudwatch links are of this form:
         //  https://ap-southeast-2.console.aws.amazon.com/cloudwatch/home?region=ap-southeast-2#logEventViewer:group=/aws/batch/job;stream=JavaDuckSmall1-dev-cam/default/7714fa46-0b24-4e21-a4ff-45f1160d1ba0
         //  ie: https://<AWS_REGION>.console.aws.amazon.com/cloudwatch/home?region=<AWS_REGION>#logEventViewer:group=<LOG_GROUP_NAME>;stream=<LOG_STREAM_NAME>/default/<JOB_ID>
         String awsRegion = WpsConfig.getProperty(WpsConfig.AWS_REGION_CONFIG_KEY);
         String logGroup = WpsConfig.getProperty(WpsConfig.AWS_BATCH_LOG_GROUP_NAME_CONFIG_KEY);
-        String logStream = AWSBatchUtil.getJobLogStream(jobId);
+        String logStream = jobDetail.getContainer().getLogStreamName();
         if(logStream != null) {
             String logUrl = "https://" + awsRegion + ".console.aws.amazon.com/cloudwatch/home?region=" + awsRegion + "#logEventViewer:group=" + logGroup + ";stream=" + logStream;
             return logUrl;
         }
 
-        LOGGER.info("Unable to get log file link for job [" + jobId + "]. Region [" + awsRegion + "], LogGroup [" + logGroup + "], LogStream [" + logStream + "]");
+        LOGGER.info("Unable to get log file link for job [" + jobDetail.getJobId() + "]. Region [" + awsRegion + "], LogGroup [" + logGroup + "], LogStream [" + logStream + "]");
         return null;
     }
 

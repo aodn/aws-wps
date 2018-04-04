@@ -24,18 +24,20 @@ public class AWSBatchUtil {
 
     private static Logger LOGGER = LoggerFactory.getLogger(AWSBatchUtil.class);
 
+    //  The DescribeJobs operation has a limit of the number of Job IDs you can pass in one call
+    public static final int DESCRIBE_JOBS_ID_NUMBER_LIMIT = 100;
     public static final JobStatus[] waitingQueueStatuses = {JobStatus.SUBMITTED, JobStatus.PENDING, JobStatus.RUNNABLE, JobStatus.STARTING};
     public static final JobStatus[] completedQueueStatuses = {JobStatus.SUCCEEDED, JobStatus.FAILED};
     public static final JobStatus[] runningQueueStatuses = {JobStatus.RUNNING};
 
     /**
      *
-     * @param batchClient
      * @param jobDetail
      * @return
      */
-    public static QueuePosition getQueuePosition(AWSBatch batchClient, JobDetail jobDetail) {
+    public static QueuePosition getQueuePosition(JobDetail jobDetail) {
 
+        AWSBatch batchClient = AWSBatchClientBuilder.defaultClient();
         List<JobSummary> allJobs = listJobs(batchClient, jobDetail.getJobQueue(), waitingQueueStatuses);
 
         LOGGER.info("TOTAL WAITING JOBS : " + allJobs.size());
@@ -61,20 +63,9 @@ public class AWSBatchUtil {
     }
 
 
-    public static String getJobLogStream(String jobId) {
+    public static JobDetail getJobDetail(String jobId) {
+
         AWSBatch batchClient = AWSBatchClientBuilder.defaultClient();
-        JobDetail jobDetail = getJobDetail(batchClient, jobId);
-
-        if(jobDetail != null && jobDetail.getContainer() != null) {
-            return jobDetail.getContainer().getLogStreamName();
-        }
-
-        return null;
-    }
-
-
-    public static JobDetail getJobDetail(AWSBatch batchClient, String jobId) {
-
         if (batchClient != null && jobId != null) {
 
             try {
@@ -94,23 +85,33 @@ public class AWSBatchUtil {
     public static List<JobDetail> getJobDetails(AWSBatch batchClient, List<String> jobIds) {
 
         if (batchClient != null && jobIds != null) {
-
-
+            List<JobDetail> jobDetails = new ArrayList<>();
             try {
-                DescribeJobsRequest describeRequest = new DescribeJobsRequest();
 
-                describeRequest.setJobs(jobIds);
+                List<String> jobIdList;
+                int startIndex = 0;
 
-                DescribeJobsResult describeResult = batchClient.describeJobs(describeRequest);
+                //  Make numerous call the DescribeJobs with chunks of Job IDs up to the
+                //  AWS limit (100 job ids per call)
+                while(startIndex <= jobIds.size() - 1) {
 
-                if (describeResult != null && describeResult.getJobs().size() > 0) {
+                    int endIndex = Math.min(jobIds.size(), startIndex + DESCRIBE_JOBS_ID_NUMBER_LIMIT);
 
-                    for(JobDetail jobDetail : describeResult.getJobs()) {
-                        LOGGER.info("Job [" + jobDetail.getJobId() + "] : Submitted [" + jobDetail.getCreatedAt() + "], Started [" + jobDetail.getStartedAt() + "], Stopped [" + jobDetail.getStoppedAt() + "]");
+                    jobIdList = jobIds.subList(startIndex, endIndex);
+                    startIndex = endIndex;
+
+                    //  Call DescribeJobs
+                    DescribeJobsRequest describeRequest = new DescribeJobsRequest();
+                    describeRequest.setJobs(jobIdList);
+                    DescribeJobsResult describeResult = batchClient.describeJobs(describeRequest);
+
+                    if (describeResult != null && describeResult.getJobs().size() > 0) {
+                        jobDetails.addAll(describeResult.getJobs());
                     }
-
-                    return describeResult.getJobs();
                 }
+
+                return jobDetails;
+
             } catch (Exception ex) {
                 LOGGER.error("Unable to retrieve job details [" + jobIds.toString() + "]", ex);
             }

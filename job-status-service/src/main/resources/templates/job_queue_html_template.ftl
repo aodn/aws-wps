@@ -94,7 +94,11 @@
                             </script>
                         </TD>
                         <TD>${job.awsBatchJobDetail.status}</TD>
-                        <TD><A HREF="${job.logFileLink}" rel="noopener noreferrer" target="_blank">Log</A></TD>
+                        <TD>
+                            <#if job.logFileLink??>
+                                <A HREF="${job.logFileLink}" rel="noopener noreferrer" target="_blank">Log</A>
+                            </#if>
+                        </TD>
                     </TR>
                 </#list>
                 </TABLE>
@@ -133,7 +137,11 @@
                     </TD>
                     <TD>${job.awsBatchJobDetail.status}</TD>
                     <TD>${job.wpsStatusDescription}</TD>
-                    <TD><A HREF="${job.logFileLink}" rel="noopener noreferrer" target="_blank">Log</A></TD>
+                    <TD>
+                        <#if job.logFileLink??>
+                            <A HREF="${job.logFileLink}" rel="noopener noreferrer" target="_blank">Log</A>
+                        </#if>
+                    </TD>
                 </TR>
                 </#list>
             </TABLE>
