@@ -29,6 +29,7 @@ import org.apache.logging.log4j.core.LoggerContext;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Period;
+import org.joda.time.format.ISODateTimeFormat;
 import org.joda.time.format.PeriodFormatter;
 import org.joda.time.format.PeriodFormatterBuilder;
 import org.springframework.boot.CommandLineRunner;
@@ -158,6 +159,8 @@ public class AggregationRunner implements CommandLineRunner {
             String requestedMimeType = requestHelper.getRequestedMimeType("result");
             String resultMime = requestedMimeType != null ? requestedMimeType : "application/x-netcdf";
 
+            HttpIndexReader indexReader = new HttpIndexReader(WpsConfig.getProperty(WpsConfig.GEOSERVER_CATALOGUE_ENDPOINT_URL_CONFIG_KEY));
+
             SubsetParameters subsetParams = SubsetParameters.parse(subset);
 
             //  Initialise email service
@@ -167,17 +170,28 @@ public class AggregationRunner implements CommandLineRunner {
 
             //  TODO: Qa the parameters/settings passed?
 
-            //  Query geoserver to get a list of files for the aggregation
-            HttpIndexReader indexReader = new HttpIndexReader(WpsConfig.getProperty(WpsConfig.GEOSERVER_CATALOGUE_ENDPOINT_URL_CONFIG_KEY));
-            List<DownloadRequest> downloads = indexReader.getDownloadRequestList(layer, "time", "file_url", subsetParams);
-
             //  Apply subset parameters
             LatLonRect bbox = subsetParams.getBbox();
             if (bbox != null) {
                 logger.info("Bounding box: LAT [" + bbox.getLatMin() + ", " + bbox.getLatMax() + "], LON [" + bbox.getLonMin() + ", " + bbox.getLonMax() + "]");
             }
 
-            CalendarDateRange subsetTimeRange = subsetParams.getTimeRange();
+            //  Use the supplied time extent (unless it is a test transaction)
+            CalendarDateRange subsetTimeRange  = subsetParams.getTimeRange();
+
+            //  If the transaction is a test transaction - we want to limit the temporal extent to a small (one time step) extent.
+            //  We'll just limit the test transaction to the latest timestep.
+            if(ExecuteRequestHelper.isTestTransaction(request)) {
+                logger.info("TEST TRANSACTION.  Adjusting temporal extent to a single timestep (latest)");
+
+                String timestamp = indexReader.getLatestTimeStep(layer, "time");
+                if(timestamp != null) {
+                    logger.info("Last timestamp for layer [" + layer + "] = " + timestamp);
+                    DateTime dateTime = ISODateTimeFormat.dateTimeParser().parseDateTime(timestamp);
+                    subsetTimeRange = CalendarDateRange.of(dateTime.toDate(), dateTime.toDate());
+                }
+            }
+
             if (subsetTimeRange != null) {
                 logger.info("Time range specified for aggregation: START [" + subsetTimeRange.getStart() + "], END [" + subsetTimeRange.getEnd() + "]");
             }
@@ -186,6 +200,9 @@ public class AggregationRunner implements CommandLineRunner {
             if (depthRange != null) {
                 logger.info("Z range specified for aggregation: START [" + depthRange.first() + "], END [" + depthRange.last() + "]");
             }
+
+            //  Query geoserver to get a list of files for the aggregation
+            List<DownloadRequest> downloads = indexReader.getDownloadRequestList(layer, "time", "file_url", subsetTimeRange);
 
             //  Apply overrides (if provided)
             AggregationOverrides overrides = getAggregationOverrides(aggregatorTemplateFileURL, layer);
@@ -282,8 +299,15 @@ public class AggregationRunner implements CommandLineRunner {
                 statusDocument = statusBuilder.createResponseDocument(EnumStatus.SUCCEEDED, GOGODUCK_PROCESS_IDENTIFIER, null, null, outputMap);
                 statusFileManager.write(statusDocument, statusFilename, STATUS_FILE_MIME_TYPE);
 
-                //  Send completed job email to user
-                emailService.sendCompletedJobEmail(contactEmail, batchJobId, statusUrl, S3Utils.getExpirationinDays(outputBucketName));
+                //  Send email - if email address was provided
+                if (contactEmail != null) {
+                    try {
+                        //  Send completed job email to user
+                        emailService.sendCompletedJobEmail(contactEmail, batchJobId, statusUrl, S3Utils.getExpirationinDays(outputBucketName));
+                    } catch (EmailException ex) {
+                        logger.error(ex.getMessage(), ex);
+                    }
+                }
 
             } finally {
                 if (jobDir != null) {
@@ -371,5 +395,36 @@ public class AggregationRunner implements CommandLineRunner {
                 .toFormatter();
 
         return formatter.print(period);
+    }
+
+
+    private String overrideTestSubsetTimeRange(String originalSubset, String timestamp) {
+
+        String newTimeSubsetParam = SubsetParameters.TIME + "," + timestamp + "," + timestamp;
+
+        if(timestamp != null) {
+            if(originalSubset.toUpperCase().contains(SubsetParameters.TIME.toUpperCase())) {
+                String modifiedSubset = "";
+
+                //  Find the TIME subset parameter + replace it with revised start and end values
+                String[] parts = originalSubset.split(";");
+                for(String part : parts) {
+                    if(part.startsWith(SubsetParameters.TIME)) {
+                        //  Prepend the time subset section
+                        modifiedSubset = newTimeSubsetParam + ";" + modifiedSubset;
+                    } else {
+                        modifiedSubset += part + ";";
+                    }
+                }
+                logger.info("Modified subset string : " + modifiedSubset);
+
+                return modifiedSubset;
+            } else {
+                logger.info("Prepending new TIME subset param : " + newTimeSubsetParam);
+                return newTimeSubsetParam + ";" + originalSubset;
+            }
+        }
+
+        return originalSubset;
     }
 }

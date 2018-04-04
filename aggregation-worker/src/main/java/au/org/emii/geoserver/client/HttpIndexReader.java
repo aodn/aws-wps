@@ -4,6 +4,7 @@ package au.org.emii.geoserver.client;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.DataInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
@@ -18,8 +19,12 @@ import java.util.Map;
 import au.org.aodn.aws.wps.status.WpsConfig;
 import au.org.emii.aggregator.exception.AggregationException;
 import au.org.emii.download.DownloadRequest;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ucar.nc2.time.CalendarDateRange;
 
 
 public class HttpIndexReader {
@@ -32,59 +37,28 @@ public class HttpIndexReader {
         this.geoserver = geoserver;
     }
 
-    public List<DownloadRequest> getDownloadRequestList(String layer, String timeField, String urlField, SubsetParameters subset) throws AggregationException {
+    public List<DownloadRequest> getDownloadRequestList(String layer, String timeField, String urlField, CalendarDateRange subsetTimeRange) throws AggregationException {
 
-        ArrayList<DownloadRequest> downloadList = new ArrayList<DownloadRequest>();
+        ArrayList<DownloadRequest> downloadList = new ArrayList<>();
         String geoserverWfsEndpoint = String.format("%s/wfs", geoserver);
-        String getParametersString = "";
 
         try {
 
             Map<String, String> params = new HashMap<>();
-            //  TODO: source from configuration?
             params.put("typeName", layer);
             params.put("SERVICE", "WFS");
             params.put("outputFormat", "csv");
             params.put("REQUEST", "GetFeature");
             params.put("VERSION", "1.0.0");
 
-            //  Apply time filter if time parameters supplied
-            String cqlTimeFilter = getCqlTimeFilter(subset, timeField);
-            if (cqlTimeFilter != null) {
-                //  Add sortBy clause to order the files by descending timestamp
-                params.put("CQL_FILTER", cqlTimeFilter);
-            }
-
-            logger.info("CQL Time Filter: " + cqlTimeFilter);
-
-            //  URL encode the parameters - except the sortBy parameter
-            getParametersString = encodeMapForPostRequest(params);
-
-            if(timeField != null) {
-                getParametersString += getTimeSortClause(timeField);
-            }
-
-            byte[] getParamsBytes = getParametersString.getBytes();
-
-            logger.info(String.format("GETting list of files from [%s]", geoserverWfsEndpoint));
-            logger.info(String.format("GET Parameters: [%s]", new String(getParamsBytes)));
-
-            URL url = new URL(geoserverWfsEndpoint);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("GET");
-            conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-            conn.setRequestProperty("Content-Length", String.valueOf(getParamsBytes.length));
-            conn.setDoOutput(true);
-            conn.getOutputStream().write(getParamsBytes);
-
             try (
-                    InputStream inputStream = conn.getInputStream();
+                    InputStream inputStream = doWfsGet(subsetTimeRange, timeField, params, getTimeSortClauseAsc(timeField));
                     DataInputStream dataInputStream = new DataInputStream(new BufferedInputStream(inputStream));
                     InputStreamReader streamReader = new InputStreamReader(dataInputStream);
                     BufferedReader reader = new BufferedReader(streamReader)
             ) {
 
-                String line = null;
+                String line;
                 Integer i = 0;
                 int fileUrlIndex = 0;
                 int fileSizeIndex = 0;
@@ -96,11 +70,9 @@ public class HttpIndexReader {
                         long fileSize = Long.parseLong(lineParts[fileSizeIndex]);
                         URI fileURI = new URI(lineParts[fileUrlIndex]);
 
-                        //  TODO:  source the base URL from configuration
+                        //  Form the download url
                         URL fileURL = new URL(WpsConfig.getProperty(WpsConfig.DATA_DOWNLOAD_URL_PREFIX_CONFIG_KEY) + fileURI.toString());
-
-                        DownloadRequest downloadRequest = new DownloadRequest(fileURL, fileSize);
-                        downloadList.add(downloadRequest);
+                        downloadList.add(new DownloadRequest(fileURL, fileSize));
                     } else {
                         //  The first line is the header - which lists all of the fields returned.
                         //  We are actually only really interested in the 'file_url' field- because
@@ -129,12 +101,63 @@ public class HttpIndexReader {
             logger.debug("DownloadRequest - # files requested : " + downloadList.size());
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
-            logger.error("Unable to list file URLs. Layer name [" + layer + "], HttpIndex request [" + geoserverWfsEndpoint + "?" + getParametersString + "]");
+            logger.error("Unable to list file URLs. Layer name [" + layer + "], HttpIndex URL [" + geoserverWfsEndpoint + "]: " + e.getMessage());
             throw new AggregationException(String.format("Could not obtain list of URLs: '%s'", e.getMessage()));
         }
 
         return downloadList;
     }
+
+
+    public String getLatestTimeStep(String layer, String timeField) throws AggregationException {
+
+        String geoserverWfsEndpoint = String.format("%s/wfs", geoserver);
+
+        try {
+
+            Map<String, String> params = new HashMap<>();
+            params.put("typeName", layer);
+            params.put("SERVICE", "WFS");
+            params.put("outputFormat", "application/json");
+            params.put("maxFeatures", "1");
+            params.put("REQUEST", "GetFeature");
+            params.put("VERSION", "1.0.0");
+
+            try (
+                    InputStream inputStream = doWfsGet(null, timeField, params, getTimeSortClauseDesc(timeField));
+                    DataInputStream dataInputStream = new DataInputStream(new BufferedInputStream(inputStream));
+                    InputStreamReader streamReader = new InputStreamReader(dataInputStream);
+                    BufferedReader reader = new BufferedReader(streamReader)
+            ) {
+
+                String line;
+                StringBuilder jsonBuilder = new StringBuilder();
+                //  The request should have returned us a JSON object (only 1 due to the maxFeatures=1 parameter)
+                while((line = reader.readLine()) != null) {
+                    jsonBuilder.append(line);
+                }
+
+
+                if(!jsonBuilder.toString().isEmpty()) {
+                    ObjectMapper mapper = new ObjectMapper();
+                    JsonNode jsonRoot = mapper.readTree(jsonBuilder.toString());
+
+                    // When
+                    ArrayNode featuresNode = (ArrayNode) jsonRoot.get("features");
+                    JsonNode propertiesNode = featuresNode.get(0).get("properties");
+                    JsonNode timePropertyNode = propertiesNode.get("time");
+                    return timePropertyNode.asText();
+                }
+            }
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+            logger.error("Unable to determine latest timestamp. Layer name [" + layer + "], HttpIndex URL [" + geoserverWfsEndpoint + "]: " + e.getMessage());
+            throw new AggregationException(String.format("Could not obtain list of files: '%s'", e.getMessage()));
+        }
+
+        return null;
+    }
+
 
 
     private String encodeMapForPostRequest(Map<String, String> params) {
@@ -155,6 +178,7 @@ public class HttpIndexReader {
         return new String(postDataBytes);
     }
 
+
     public static void main(String[] args) {
         HttpIndexReader indexReader = new HttpIndexReader("http://geoserver-123.aodn.org.au/geoserver/imos");
         String subsetString = "TIME,2009-01-01T00:00:00.000Z,2017-12-25T23:04:00.000Z;LATITUDE,-33.433849,-32.150743;LONGITUDE,114.15197,115.741219;DEPTH,0.0,100.0";
@@ -162,7 +186,7 @@ public class HttpIndexReader {
         List<DownloadRequest> downloadList = null;
 
         try {
-            downloadList = indexReader.getDownloadRequestList("imos:acorn_hourly_avg_rot_qc_timeseries_url", "time", "file_url", subsetParams);
+            downloadList = indexReader.getDownloadRequestList("imos:acorn_hourly_avg_rot_qc_timeseries_url", "time", "file_url", subsetParams.getTimeRange());
             System.out.println("File list size: " + downloadList.size());
             for (DownloadRequest currentDownload : downloadList) {
                 System.out.println("  - " + currentDownload.getUrl().toString());
@@ -173,12 +197,12 @@ public class HttpIndexReader {
         }
     }
 
-    private String getCqlTimeFilter(SubsetParameters subset, String timeField) {
+    private String getCqlTimeFilter(CalendarDateRange subsetTimeRange, String timeField) {
         String cqlTimeFilter = null;
 
-        if (subset.getTimeRange() != null) {
-            String timeCoverageStart = subset.getTimeRange().getStart().toString();
-            String timeCoverageEnd = subset.getTimeRange().getEnd().toString();
+        if (subsetTimeRange != null) {
+            String timeCoverageStart = subsetTimeRange.getStart().toString();
+            String timeCoverageEnd = subsetTimeRange.getEnd().toString();
 
             if (timeCoverageStart != null && timeCoverageEnd != null) {  //  Start + end dates
                 cqlTimeFilter = String.format("%s >= %s AND %s <= %s",
@@ -200,11 +224,61 @@ public class HttpIndexReader {
      * @param timeField
      * @return
      */
-    private String getTimeSortClause(String timeField) {
-        String sortClause = "";
+    private String getTimeSortClauseAsc(String timeField) {
         if(timeField != null) {
-            sortClause = "&sortBy=" + timeField + "+A";
+            return "&sortBy=" + timeField + "+A";
         }
-        return sortClause;
+        return "";
+    }
+
+
+    /**
+     * Form sort clause for CQL filter of the form:
+     *   &sortBy=<time_field>+D
+     *
+     * @param timeField
+     * @return
+     */
+    private String getTimeSortClauseDesc(String timeField) {
+        if(timeField != null) {
+            return "&sortBy=" + timeField + "+D";
+        }
+        return "";
+    }
+
+
+    private InputStream doWfsGet(CalendarDateRange subsetTimeRange, String timeField, Map<String, String> params, String timeSortClause) throws IOException {
+        String geoserverWfsEndpoint = String.format("%s/wfs", geoserver);
+
+        if(subsetTimeRange != null) {
+            //  Apply time filter if time parameters supplied
+            String cqlTimeFilter = getCqlTimeFilter(subsetTimeRange, timeField);
+            if (cqlTimeFilter != null) {
+                //  Add sortBy clause to order the files by descending timestamp
+                params.put("CQL_FILTER", cqlTimeFilter);
+            }
+            logger.info("CQL Time Filter: " + cqlTimeFilter);
+        }
+
+
+        //  URL encode the parameters - except the sortBy parameter
+        String getParametersString = encodeMapForPostRequest(params);
+
+        if(timeSortClause != null) {
+            getParametersString += timeSortClause;
+        }
+
+        byte[] getParamsBytes = getParametersString.getBytes();
+
+        logger.info("GETting list of files from [" + geoserverWfsEndpoint + "?" + new String(getParamsBytes));
+
+        URL url = new URL(geoserverWfsEndpoint);
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setRequestMethod("GET");
+        conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+        conn.setRequestProperty("Content-Length", String.valueOf(getParamsBytes.length));
+        conn.setDoOutput(true);
+        conn.getOutputStream().write(getParamsBytes);
+        return conn.getInputStream();
     }
 }

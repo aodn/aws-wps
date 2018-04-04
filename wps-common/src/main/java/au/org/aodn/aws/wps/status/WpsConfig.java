@@ -69,9 +69,10 @@ public class WpsConfig {
     public static final String JOB_EMAIL_CONTACT_ADDRESS = "info@aodn.org.au";
     public static final String JOB_EMAIL_FROM_ADDRESS = "administrator@aodn.org.au";
 
-    public static final String DATA_URL_PREFIX = "http://data.aodn.org.au/";
     public static final String DATA_DOWNLOAD_URL_PREFIX_CONFIG_KEY = "DATA_DOWNLOAD_URL_PREFIX";
 
+    //  Constants
+    public static String TEST_TRANSACTION_INPUT_IDENTIFIER = "TestMode";
     public static final String DEFAULT_LANGUAGE = "en-US";
 
     public static String getProperty(String propertyName) {
