@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import static java.util.Comparator.comparing;
@@ -162,10 +163,8 @@ public class AWSBatchUtil {
 
 
     private static List<JobDetail> sortByTimestampDescending(List<JobDetail> jobList) {
-
-        //  Sorts into ascending order - so we reverse after the sort
-        Collections.sort(jobList, comparing(JobDetail::getCreatedAt));
-        Collections.reverse(jobList);
+        Comparator createdAtDescendingComparator = comparing(JobDetail::getCreatedAt).reversed();
+        Collections.sort(jobList, createdAtDescendingComparator);
 
         return jobList;
     }
