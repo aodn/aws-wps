@@ -91,6 +91,7 @@ public class ExecuteIT {
         );
     }
 
+
     @Test
     public void testTimeseries() {
         Execute request = new ExecuteRequestBuilder()
@@ -128,6 +129,63 @@ public class ExecuteIT {
             ));
 
     }
+
+
+    @Test
+    public void testTestModeTimeseries() {
+        Execute request = new ExecuteRequestBuilder()
+                .identifer("gs:GoGoDuck")
+                .input("layer", "imos:acorn_hourly_avg_rot_qc_timeseries_url")
+                .input("TestMode", "true")
+                .input("subset", "TIME,2017-01-04T10:30:00.000Z,2017-01-04T11:30:00.000Z;LATITUDE,-31.8009,-31.8009;LONGITUDE,115.0227,115.0227")
+                .input("callbackParams", "imos-wps-testing@mailinator.com")
+                .output("result", "text/csv")
+                .build();
+
+        String statusUrl = submitAndWaitToComplete(request, TWENTY_MINUTES);
+
+        String outputLocation = given()
+                .spec(spec)
+                .when()
+                .get(statusUrl)
+                .then()
+                .statusCode(200)
+                .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
+                .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"))
+                .extract()
+                .path("ExecuteResponse.ProcessOutputs.Output.Reference.@href");
+
+        Response response = given()
+                .spec(spec)
+                .when()
+                .get(outputLocation);
+
+        String csvOutput = response.getBody().print();
+
+        //  Check that there is at least one line of data in the CSV file - ie: 2 rows (1st is header)
+        try {
+            CSVParser parser = CSVParser.parse(csvOutput, CSVFormat.DEFAULT);
+            int lineNum = 0;
+            boolean dataReturned = false;
+            for(CSVRecord record : parser) {
+                if(lineNum > 0) {
+                    if(record != null && record.size() > 0) {
+                        dataReturned = true;
+                    }
+                    break;
+                }
+                lineNum++;
+            }
+
+            if(!dataReturned) {
+                fail("No data returned in CSV output file!");
+            }
+        } catch (IOException ioex) {
+            ioex.printStackTrace();
+            fail("Unable to parse CSV output [" + csvOutput + "]: " + ioex.getMessage());
+        }
+    }
+
 
     @Test
     public void testTimeseriesInTimestampOrder() {
