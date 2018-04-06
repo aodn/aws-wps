@@ -396,35 +396,4 @@ public class AggregationRunner implements CommandLineRunner {
 
         return formatter.print(period);
     }
-
-
-    private String overrideTestSubsetTimeRange(String originalSubset, String timestamp) {
-
-        String newTimeSubsetParam = SubsetParameters.TIME + "," + timestamp + "," + timestamp;
-
-        if(timestamp != null) {
-            if(originalSubset.toUpperCase().contains(SubsetParameters.TIME.toUpperCase())) {
-                String modifiedSubset = "";
-
-                //  Find the TIME subset parameter + replace it with revised start and end values
-                String[] parts = originalSubset.split(";");
-                for(String part : parts) {
-                    if(part.startsWith(SubsetParameters.TIME)) {
-                        //  Prepend the time subset section
-                        modifiedSubset = newTimeSubsetParam + ";" + modifiedSubset;
-                    } else {
-                        modifiedSubset += part + ";";
-                    }
-                }
-                logger.info("Modified subset string : " + modifiedSubset);
-
-                return modifiedSubset;
-            } else {
-                logger.info("Prepending new TIME subset param : " + newTimeSubsetParam);
-                return newTimeSubsetParam + ";" + originalSubset;
-            }
-        }
-
-        return originalSubset;
-    }
 }
