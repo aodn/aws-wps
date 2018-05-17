@@ -25,7 +25,6 @@ import freemarker.template.Configuration;
 import net.opengis.wps.v_1_0_0.Execute;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.Appender;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.joda.time.DateTime;
@@ -38,11 +37,17 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import ucar.nc2.time.CalendarDateRange;
 import ucar.unidata.geoloc.LatLonRect;
+import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
 
 import static au.org.aodn.aws.wps.status.WpsConfig.*;
 import static au.org.emii.aggregator.au.org.emii.aggregator.config.AggregationOverridesReader.getAggregationOverrides;
