@@ -18,12 +18,14 @@ import au.org.emii.download.*;
 import au.org.emii.geoserver.client.HttpIndexReader;
 import au.org.emii.geoserver.client.SubsetParameters;
 import au.org.emii.util.IntegerHelper;
+import au.org.emii.util.NumberRange;
 import au.org.emii.util.ProvenanceWriter;
 import com.amazonaws.AmazonServiceException;
 import freemarker.template.Configuration;
 import net.opengis.wps.v_1_0_0.Execute;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.Appender;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.joda.time.DateTime;
@@ -35,19 +37,12 @@ import org.joda.time.format.PeriodFormatterBuilder;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import ucar.nc2.time.CalendarDateRange;
-import ucar.ma2.Range;
 import ucar.unidata.geoloc.LatLonRect;
-import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
 
 import static au.org.aodn.aws.wps.status.WpsConfig.*;
 import static au.org.emii.aggregator.au.org.emii.aggregator.config.AggregationOverridesReader.getAggregationOverrides;
@@ -196,9 +191,9 @@ public class AggregationRunner implements CommandLineRunner {
                 logger.info("Time range specified for aggregation: START [" + subsetTimeRange.getStart() + "], END [" + subsetTimeRange.getEnd() + "]");
             }
 
-            Range depthRange = subsetParams.getVerticalRange();
+            NumberRange depthRange = subsetParams.getVerticalRange();
             if (depthRange != null) {
-                logger.info("Z range specified for aggregation: START [" + depthRange.first() + "], END [" + depthRange.last() + "]");
+                logger.info("Z range specified for aggregation: START [" + depthRange.getMin() + "], END [" + depthRange.getMax() + "]");
             }
 
             //  Query geoserver to get a list of files for the aggregation
@@ -224,7 +219,7 @@ public class AggregationRunner implements CommandLineRunner {
 
             try (
                     ParallelDownloadManager downloadManager = new ParallelDownloadManager(downloadConfig, downloader);
-                    NetcdfAggregator netcdfAggregator = new NetcdfAggregator(outputFile, overrides, chunkSize, bbox, subsetParams.getVerticalRange(), subsetTimeRange)
+                    NetcdfAggregator netcdfAggregator = new NetcdfAggregator(outputFile, overrides, chunkSize, bbox, depthRange, subsetTimeRange)
             ) {
                 for (Download download : downloadManager.download(new LinkedHashSet<>(downloads))) {
                     netcdfAggregator.add(download.getPath());
