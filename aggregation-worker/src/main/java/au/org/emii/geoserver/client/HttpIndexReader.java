@@ -138,15 +138,26 @@ public class HttpIndexReader {
                 }
 
 
+                logger.info("JSON response [" + jsonBuilder.toString() + "]");
+
                 if(!jsonBuilder.toString().isEmpty()) {
                     ObjectMapper mapper = new ObjectMapper();
                     JsonNode jsonRoot = mapper.readTree(jsonBuilder.toString());
-
-                    // When
-                    ArrayNode featuresNode = (ArrayNode) jsonRoot.get("features");
-                    JsonNode propertiesNode = featuresNode.get(0).get("properties");
-                    JsonNode timePropertyNode = propertiesNode.get("time");
-                    return timePropertyNode.asText();
+                    if(jsonRoot != null) {
+                        // When
+                        ArrayNode featuresNode = (ArrayNode) jsonRoot.get("features");
+                        if (featuresNode != null) {
+                            if(featuresNode.get(0) != null) {
+                                JsonNode propertiesNode = featuresNode.get(0).get("properties");
+                                if (propertiesNode != null) {
+                                    JsonNode timePropertyNode = propertiesNode.get("time");
+                                    if (timePropertyNode != null) {
+                                        return timePropertyNode.asText();
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         } catch (Exception e) {

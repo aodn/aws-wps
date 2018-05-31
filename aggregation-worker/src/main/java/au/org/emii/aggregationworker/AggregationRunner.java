@@ -13,6 +13,7 @@ import au.org.aodn.aws.wps.status.WpsConfig;
 import au.org.emii.aggregator.NetcdfAggregator;
 import au.org.emii.aggregator.catalogue.CatalogueReader;
 import au.org.emii.aggregator.converter.Converter;
+import au.org.emii.aggregator.exception.AggregationException;
 import au.org.emii.aggregator.overrides.AggregationOverrides;
 import au.org.emii.download.*;
 import au.org.emii.geoserver.client.HttpIndexReader;
@@ -189,6 +190,9 @@ public class AggregationRunner implements CommandLineRunner {
                     logger.info("Last timestamp for layer [" + layer + "] = " + timestamp);
                     DateTime dateTime = ISODateTimeFormat.dateTimeParser().parseDateTime(timestamp);
                     subsetTimeRange = CalendarDateRange.of(dateTime.toDate(), dateTime.toDate());
+                } else {
+                    logger.error("Unable to determine latest timestep for layer [" + layer +"].");
+                    throw new AggregationException("Unable to determine latest timestep for test transaction. Layer [" + layer + "]");
                 }
             }
 
