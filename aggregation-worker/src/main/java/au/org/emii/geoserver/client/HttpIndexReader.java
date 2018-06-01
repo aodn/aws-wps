@@ -177,6 +177,11 @@ public class HttpIndexReader {
                                             logger.info("Time value not null : " + timePropertyNode.asText());
                                             return timePropertyNode.asText();
                                         } else {
+                                            //  The reasoning behind this exception being thrown instead of a null being returned
+                                            //  is that we see this as a specific exceptional case - which is actually expected for
+                                            //  some collections.  So: we want to be able to distinguish it from other cases that
+                                            //  might return a null.  So: if the collection returns a record from the GetFeatures
+                                            //  call but the time field is null, then we throw this exception.
                                             throw new TimeNotSupportedException("Null time property value.");
                                         }
                                     }
