@@ -109,7 +109,7 @@ public class HttpIndexReader {
     }
 
 
-    public String getLatestTimeStep(String layer, String timeField) throws AggregationException {
+    public String getLatestTimeStep(String layer, String timeField) throws AggregationException, TimeNotSupportedException {
 
         String geoserverWfsEndpoint = String.format("%s/wfs", geoserver);
 
@@ -140,11 +140,31 @@ public class HttpIndexReader {
 
                 logger.info("JSON response [" + jsonBuilder.toString() + "]");
 
+                /*
+                    The JSON returned will look something like this:
+
+                    {"type":"FeatureCollection",
+                     "totalFeatures":1,
+                     "features":[{
+                        "type":"Feature",
+                        "id":"bathy_ppb_deakin_url.fid--26525c03_163b2d80395_-75c4",
+                        "geometry":null,
+                        "properties":{
+                            "timestep_id":819995,
+                            "collection_name":"bathy_ppb_deakin_url",
+                            "file_url":"Deakin_University/bathymetry/Victorian-coast_Bathy_10m.nc",
+                            "size":6.3451275957E10,
+                            "time":null}
+                        }],
+                    "crs":null}
+
+                    We would usually expect the 'time' property to have a va;ue - but it is possible that it is null
+                    for a layer that doesn't have a time extent (bathymetry for example).
+                 */
                 if(!jsonBuilder.toString().isEmpty()) {
                     ObjectMapper mapper = new ObjectMapper();
                     JsonNode jsonRoot = mapper.readTree(jsonBuilder.toString());
                     if(jsonRoot != null) {
-                        // When
                         ArrayNode featuresNode = (ArrayNode) jsonRoot.get("features");
                         if (featuresNode != null) {
                             if(featuresNode.get(0) != null) {
@@ -152,7 +172,13 @@ public class HttpIndexReader {
                                 if (propertiesNode != null) {
                                     JsonNode timePropertyNode = propertiesNode.get("time");
                                     if (timePropertyNode != null) {
-                                        return timePropertyNode.asText();
+                                        String timeNodeValue = timePropertyNode.asText();
+                                        if(timeNodeValue != null && timeNodeValue.compareTo("null") != 0) {
+                                            logger.info("Time value not null : " + timePropertyNode.asText());
+                                            return timePropertyNode.asText();
+                                        } else {
+                                            throw new TimeNotSupportedException("Null time property value.");
+                                        }
                                     }
                                 }
                             }
@@ -160,6 +186,8 @@ public class HttpIndexReader {
                     }
                 }
             }
+        } catch (TimeNotSupportedException e) {
+            throw e;
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             logger.error("Unable to determine latest timestamp. Layer name [" + layer + "], HttpIndex URL [" + geoserverWfsEndpoint + "]: " + e.getMessage());

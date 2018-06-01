@@ -18,6 +18,7 @@ import au.org.emii.aggregator.overrides.AggregationOverrides;
 import au.org.emii.download.*;
 import au.org.emii.geoserver.client.HttpIndexReader;
 import au.org.emii.geoserver.client.SubsetParameters;
+import au.org.emii.geoserver.client.TimeNotSupportedException;
 import au.org.emii.util.IntegerHelper;
 import au.org.emii.util.ProvenanceWriter;
 import com.amazonaws.AmazonServiceException;
@@ -185,14 +186,19 @@ public class AggregationRunner implements CommandLineRunner {
             if(ExecuteRequestHelper.isTestTransaction(request)) {
                 logger.info("TEST TRANSACTION.  Adjusting temporal extent to a single timestep (latest)");
 
-                String timestamp = indexReader.getLatestTimeStep(layer, "time");
-                if(timestamp != null) {
-                    logger.info("Last timestamp for layer [" + layer + "] = " + timestamp);
-                    DateTime dateTime = ISODateTimeFormat.dateTimeParser().parseDateTime(timestamp);
-                    subsetTimeRange = CalendarDateRange.of(dateTime.toDate(), dateTime.toDate());
-                } else {
-                    logger.error("Unable to determine latest timestep for layer [" + layer +"].");
-                    throw new AggregationException("Unable to determine latest timestep for test transaction. Layer [" + layer + "]");
+                String timestamp = null;
+                try {
+                    timestamp = indexReader.getLatestTimeStep(layer, "time");
+                    if (timestamp != null) {
+                        logger.info("Last timestamp for layer [" + layer + "] = " + timestamp);
+                        DateTime dateTime = ISODateTimeFormat.dateTimeParser().parseDateTime(timestamp);
+                        subsetTimeRange = CalendarDateRange.of(dateTime.toDate(), dateTime.toDate());
+                    } else {
+                        logger.error("Unable to determine latest timestep for layer [" + layer + "].");
+                        throw new AggregationException("Unable to determine latest timestep for test transaction. Layer [" + layer + "]");
+                    }
+                } catch(TimeNotSupportedException ex) {
+                    logger.info("Time parameter does not appear to be supported for this layer.");
                 }
             }
 
@@ -230,6 +236,8 @@ public class AggregationRunner implements CommandLineRunner {
                     ParallelDownloadManager downloadManager = new ParallelDownloadManager(downloadConfig, downloader);
                     NetcdfAggregator netcdfAggregator = new NetcdfAggregator(outputFile, overrides, chunkSize, bbox, subsetParams.getVerticalRange(), subsetTimeRange)
             ) {
+                logger.info("Commencing download of [" + downloads.size() + "] files.");
+
                 for (Download download : downloadManager.download(new LinkedHashSet<>(downloads))) {
                     netcdfAggregator.add(download.getPath());
                     downloadManager.remove();

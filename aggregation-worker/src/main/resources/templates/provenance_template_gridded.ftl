@@ -25,23 +25,25 @@
         <dc:description>The GoGoDuck subsets and aggregates gridded data. Data is returned as a NetCDF file</dc:description>
     </prov:activity>
 
-    <prov:entity prov:id="timeExtent">
-        <gnprov:temporalExtent>
-            <gex:EX_Extent>
-                <gex:temporalElement>
-                    <gex:EX_TemporalExtent>
-                        <gex:extent>
-                            <gml:TimePeriod gml:id="A1234">
-                                <gml:beginPosition>${parameters.timeRange.start}</gml:beginPosition>
-                                <gml:endPosition>${parameters.timeRange.end}</gml:endPosition>
-                            </gml:TimePeriod>
-                        </gex:extent>
-                    </gex:EX_TemporalExtent>
-                </gex:temporalElement>
-            </gex:EX_Extent>
-        </gnprov:temporalExtent>
-        <prov:type codeList="codeListLocation#type" codeListValue="timeExtent">timeExtent</prov:type>
-    </prov:entity>
+    <#if parameters.timeRange ??>
+        <prov:entity prov:id="timeExtent">
+            <gnprov:temporalExtent>
+                <gex:EX_Extent>
+                    <gex:temporalElement>
+                        <gex:EX_TemporalExtent>
+                            <gex:extent>
+                                <gml:TimePeriod gml:id="A1234">
+                                    <gml:beginPosition>${parameters.timeRange.start}</gml:beginPosition>
+                                    <gml:endPosition>${parameters.timeRange.end}</gml:endPosition>
+                                </gml:TimePeriod>
+                            </gex:extent>
+                        </gex:EX_TemporalExtent>
+                    </gex:temporalElement>
+                </gex:EX_Extent>
+            </gnprov:temporalExtent>
+            <prov:type codeList="codeListLocation#type" codeListValue="timeExtent">timeExtent</prov:type>
+        </prov:entity>
+    </#if>
 
 <#assign westBL = parameters.bbox.lonMin>
 <#assign eastBL = parameters.bbox.lonMax>
