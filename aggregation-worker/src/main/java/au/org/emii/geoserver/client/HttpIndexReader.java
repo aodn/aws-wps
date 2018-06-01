@@ -158,7 +158,7 @@ public class HttpIndexReader {
                         }],
                     "crs":null}
 
-                    We would usually expect the 'time' property to have a va;ue - but it is possible that it is null
+                    We would usually expect the 'time' property to have a value - but it is possible that it is null
                     for a layer that doesn't have a time extent (bathymetry for example).
                  */
                 if(!jsonBuilder.toString().isEmpty()) {
