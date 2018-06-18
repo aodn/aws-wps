@@ -29,7 +29,7 @@
         </div>
     </div>
     <div class="container">
-    <h2>WPS status</h2>
+    <h2>Job Status</h2>
 
     <dl>
         <dt>Job Id :</dt>
