@@ -21,6 +21,7 @@ public class EmailTemplateManager {
     public static final String JOB_REPORT_URL = "jobReportUrl";
     public static final String EXPIRATION_PERIOD = "expirationPeriod";
     public static final String CONTACT_EMAIL = "contactEmail";
+    public static final String REQUEST_DETAIL = "requestDetail";
 
     private VelocityEngine velocityEngine;
 
@@ -54,7 +55,8 @@ public class EmailTemplateManager {
         }
     }
 
-    public String getCompletedEmailContent(String uuid, String expirationPeriod, String statusUrl) throws EmailException {
+    public String getCompletedEmailContent(String uuid, String expirationPeriod, String statusUrl, String requestDetail)
+            throws EmailException {
         try {
             Template t = velocityEngine.getTemplate(EmailService.getCompletedJobEmailTemplate());
             VelocityContext context = new VelocityContext();
@@ -62,6 +64,7 @@ public class EmailTemplateManager {
             context.put(JOB_REPORT_URL, statusUrl);
             context.put(EXPIRATION_PERIOD, expirationPeriod);
             context.put(CONTACT_EMAIL, WpsConfig.JOB_EMAIL_CONTACT_ADDRESS);
+            context.put(REQUEST_DETAIL, requestDetail);
 
             StringWriter writer = new StringWriter();
             t.merge(context, writer);

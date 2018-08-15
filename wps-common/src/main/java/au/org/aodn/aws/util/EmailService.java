@@ -84,10 +84,11 @@ public class EmailService {
         sendEmail(to, null, from, subject, null, textBody);
     }
 
-    public void sendCompletedJobEmail(String to, String uuid, String statusPageLink, int expirationPeriodInDays) throws EmailException {
+    public void sendCompletedJobEmail(String to, String uuid, String statusPageLink, int expirationPeriodInDays, String requestDetail) throws EmailException {
         String subject = WpsConfig.COMPLETED_JOB_EMAIL_SUBJECT + uuid;
         String expirationPeriod = String.format("%d days", expirationPeriodInDays);
-        String textBody = templateManager.getCompletedEmailContent(uuid, expirationPeriod, statusPageLink);
+
+        String textBody = templateManager.getCompletedEmailContent(uuid, expirationPeriod, statusPageLink, requestDetail);
         String from = WpsConfig.JOB_EMAIL_FROM_ADDRESS;
 
         sendEmail(to, null, from, subject, null, textBody);

@@ -2,6 +2,10 @@ Hi,
 
 Your AODN subset has been created. You can download it by clicking here: $jobReportUrl
 
+Parameters for this subset
+-----------------------------
+$requestDetail
+
 The download will be available for $expirationPeriod.
 
 Kind regards,

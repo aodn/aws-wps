@@ -311,11 +311,18 @@ public class AggregationRunner implements CommandLineRunner {
                 statusDocument = statusBuilder.createResponseDocument(EnumStatus.SUCCEEDED, GOGODUCK_PROCESS_IDENTIFIER, null, null, outputMap);
                 statusFileManager.write(statusDocument, statusFilename, STATUS_FILE_MIME_TYPE);
 
+                String collection = "placeholder collection";
+
                 //  Send email - if email address was provided
                 if (contactEmail != null) {
                     try {
                         //  Send completed job email to user
-                        emailService.sendCompletedJobEmail(contactEmail, batchJobId, statusUrl, S3Utils.getExpirationinDays(outputBucketName));
+                        emailService.sendCompletedJobEmail(
+                                contactEmail,
+                                batchJobId,
+                                statusUrl,
+                                S3Utils.getExpirationinDays(outputBucketName),
+                                this.portalFormatRequestDetail(subsetParams, collection));
                     } catch (EmailException ex) {
                         logger.error(ex.getMessage(), ex);
                     }
@@ -407,5 +414,18 @@ public class AggregationRunner implements CommandLineRunner {
                 .toFormatter();
 
         return formatter.print(period);
+    }
+
+    private String portalFormatRequestDetail(SubsetParameters subsetParameters, String collection) {
+        String spatialStr = subsetParameters.portalFormatSpatial();
+        String temporalStr = subsetParameters.portalFormatTemoral();
+        String depthStr = subsetParameters.portalFormatDepth();
+
+        String details = "";
+        details = collection != null ? details.concat("Collection: " + collection + '\n') : details;
+        details = spatialStr != null ? details.concat(spatialStr + '\n') : details;
+        details = temporalStr != null ? details.concat(temporalStr + '\n') : details;
+        details = depthStr != null ? details.concat(depthStr + '\n') : details;
+        return details;
     }
 }
