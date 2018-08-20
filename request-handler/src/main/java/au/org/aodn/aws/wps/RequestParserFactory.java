@@ -1,9 +1,17 @@
 package au.org.aodn.aws.wps;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Map;
+
 /**
  * Created by craigj on 8/08/17.
  */
 public class RequestParserFactory {
+    Logger logger = LoggerFactory.getLogger(RequestParserFactory.class);
+
     public RequestParser getRequestParser(AwsApiRequest request) {
         if (request.getHttpMethod().equals("POST")) {
             return new XmlBodyParser(request.getBody());
@@ -11,7 +19,23 @@ public class RequestParserFactory {
             return new QueryStringParameterParser(request);
         } else {
             // TODO: handle as required by spec
-            throw new UnsupportedOperationException(request.getHttpMethod() + "not supported");
+            Map<String, String> parameters = request.getQueryStringParameters();
+            Map<String, String> headers = request.getHeaders();
+
+            //  Log some debugging information
+            logger.error("Unsupported HTTP method invoked: " + request.getHttpMethod());
+
+            for(String key : headers.keySet()) {
+                logger.error("  - Query header: Key [" + key + "], Value [" + headers.get(key) + "]");
+            }
+
+            for(String key : parameters.keySet()) {
+                logger.error("  - Query parameter: Key [" + key + "], Value [" + parameters.get(key) + "]");
+            }
+
+            logger.error("BODY: [" + request.getBody() + "]");
+
+            throw new UnsupportedOperationException(request.getHttpMethod() + " not supported");
         }
     }
 }
