@@ -43,7 +43,6 @@ import org.springframework.stereotype.Component;
 import ucar.nc2.time.CalendarDateRange;
 import ucar.unidata.geoloc.LatLonRect;
 import org.apache.logging.log4j.Logger;
-
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -168,11 +167,24 @@ public class AggregationRunner implements CommandLineRunner {
             logger.info("AWS BATCH QUEUE NAME : " + awsBatchQueueName);
             logger.info("-----------------------------------------------------");
 
+            //  Hold the content to be added to the output zip file
+            List<File> zipContent = new ArrayList<>();
+
             // Get request details.  The request handler Lambda function writes the XML
             // request to S3.  We read it directly from there.
-            String requestFileContent = statusFileManager.read(requestFilename);
+            String requestXML = statusFileManager.read(requestFilename);
             XmlRequestParser parser = new XmlRequestParser();
-            Execute request = (Execute) parser.parse(requestFileContent);
+            Execute request = (Execute) parser.parse(requestXML);
+
+            //  Write the request file locally to add to the zip file
+            File localRequestFile = new File(jobDir.toFile(), requestFilename);
+            try (FileWriter requestFileWriter = new FileWriter(localRequestFile)) {
+                requestFileWriter.write(requestXML);
+                requestFileWriter.flush();
+
+                //  Add to zip
+                zipContent.add(localRequestFile);
+            }
 
             // Get inputs
             ExecuteRequestHelper requestHelper = new ExecuteRequestHelper(request);
@@ -191,11 +203,12 @@ public class AggregationRunner implements CommandLineRunner {
             String requestedMimeType = requestHelper.getRequestedMimeType("result");
             String resultMime = requestedMimeType != null ? requestedMimeType : DEFAULT_OUTPUT_MIME;
 
-
+            //  Create a geonetwork index reader - this is used to lookup the list of files for the named layer & to
+            //  work out the latest timestep (the latest file in the collection) for test transactions
             HttpIndexReader indexReader = new HttpIndexReader(WpsConfig.getProperty(WpsConfig.GEOSERVER_CATALOGUE_ENDPOINT_URL_CONFIG_KEY));
+
             //  Initialise email service
             emailService = new EmailService();
-            List<File> zipContent = new ArrayList<>();
 
             //  Parse the subset parameters passed
             SubsetParameters subsetParams = SubsetParameters.parse(subset);
@@ -298,7 +311,6 @@ public class AggregationRunner implements CommandLineRunner {
                 //  Add the converted file to the zip file
                 zipContent.add(convertedFile.toFile());
 
-
                 //  URL for the status page for this job
                 String statusUrl = WpsConfig.getStatusServiceHtmlEndpoint(batchJobId);
 
@@ -306,44 +318,46 @@ public class AggregationRunner implements CommandLineRunner {
                 String catalogueURL = WpsConfig.getProperty(GEONETWORK_CATALOGUE_URL_CONFIG_KEY);
                 String layerSearchField = WpsConfig.getProperty(GEONETWORK_CATALOGUE_LAYER_FIELD_CONFIG_KEY);
                 CatalogueReader catalogueReader = new CatalogueReader(catalogueURL, layerSearchField);
-                String metadataXML = catalogueReader.getMetadataXML(layer);
+                String metadataResponseXML = catalogueReader.getMetadataXML(layer);
 
                 //  Try and determine the point of truth and the collection title
                 String pointOfTruth = "";
                 String collectionTitle = "";
 
-                if(metadataXML != null && metadataXML.length() > 0) {
-                    logger.info("Metadata file content: [" + metadataXML + "]");
+                if(metadataResponseXML != null && metadataResponseXML.length() > 0) {
 
-                    File metadataFile = null;
+                    //  We only need the <metadata> tag and its contents
+                    String metadataRecord = catalogueReader.getMetadataRecord(metadataResponseXML);
 
-                    if (metadataXML != null) {
-                        pointOfTruth = catalogueReader.getMetadataPointOfTruthUrl(metadataXML);
+                    logger.info("Metadata file content: [" + metadataRecord + "]");
+
+
+
+                    if (metadataRecord != null) {
+                        pointOfTruth = catalogueReader.getMetadataPointOfTruthUrl(metadataRecord);
                         logger.info("Metadata Point Of Truth URL: " + pointOfTruth);
 
-                        collectionTitle = catalogueReader.getCollectionTitle(metadataXML);
+                        collectionTitle = catalogueReader.getCollectionTitle(metadataRecord);
                         logger.info("Metadata collection title: " + collectionTitle);
 
                         //  Write the metadata to a file
-                        FileWriter fileWriter = null;
-                        try {
-                            //  Form the metadata filename from the title of the collection
-                            String metadataFilename = getMetadataFilename(collectionTitle);
-                            metadataFile = new File(jobDir.toFile(), metadataFilename);
-                            fileWriter = new FileWriter(metadataFile);
-                            fileWriter.write(metadataXML);
 
+                        //  Form the metadata filename from the title of the collection
+                        String metadataFilename = getMetadataFilename(collectionTitle);
+                        File metadataFile = new File(jobDir.toFile(), metadataFilename);
+
+                        try (FileWriter metadataFileWriter = new FileWriter(metadataFile)) {
+
+                            metadataFileWriter.write(metadataRecord);
+                            metadataFileWriter.flush();
+
+                            logger.info("Metadata file size [" + metadataFile.length() + "] bytes");
                             //  Add to the zip file
                             zipContent.add(metadataFile);
 
                             logger.info("Wrote metadata file to: " + metadataFile.getAbsolutePath() + ", Size: " + metadataFile.length());
                         } catch (IOException ioex) {
                             logger.error("Unable to write metadata XML file: " + metadataFile.getAbsolutePath(), ioex);
-                        } finally {
-                            if (fileWriter != null) {
-                                fileWriter.flush();
-                                fileWriter.close();
-                            }
                         }
                     }
                 } else {
@@ -391,9 +405,9 @@ public class AggregationRunner implements CommandLineRunner {
 
                     File provenanceFile = new File(jobDir.toFile(), "provenance.xml");
 
-                    FileWriter fileWriter = new FileWriter(provenanceFile);
-                    fileWriter.write(provenanceDocument);
-                    fileWriter.close();
+                    FileWriter provenanceFileWriter = new FileWriter(provenanceFile);
+                    provenanceFileWriter.write(provenanceDocument);
+                    provenanceFileWriter.close();
 
                     //  Upload provenance document to S3
                     outputFileManager.upload(provenanceFile, "provenance.xml", PROVENANCE_FILE_MIME_TYPE);

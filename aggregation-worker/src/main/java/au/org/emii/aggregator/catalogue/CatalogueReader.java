@@ -7,22 +7,23 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
-
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpression;
-import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 import java.io.BufferedInputStream;
-import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.URLConnection;
+
 
 public class CatalogueReader {
     private static final Logger logger = LoggerFactory.getLogger(CatalogueReader.class);
@@ -68,16 +69,14 @@ public class CatalogueReader {
                 logger.info("HTTP ResponseCode: " + responseCode);
 
                 InputStream in = new BufferedInputStream(urlConnection.getInputStream());
-                logger.info("Got URL inputStream.");
                 BufferedInputStream bufferedInStream = new BufferedInputStream(in);
                 int bytesAvailable = bufferedInStream.available();
-                logger.info("Bytes available: " + bytesAvailable);
 
                 byte[] bytes = new byte[bytesAvailable];
                 bufferedInStream.read(bytes);
 
                 String content = new String(bytes);
-                logger.info("Metadata response content: [" + content + "]");
+                logger.info("Metadata response size: [" + content.length() + "] bytes");
 
                 return content;
             } finally {
@@ -172,6 +171,52 @@ public class CatalogueReader {
 
         } catch (Exception e) {
             logger.error("Could not retrieve metadata Point Of Truth URL from XML [{}]", xmlMetadataRecord, e);
+        }
+
+        return "";
+    }
+
+
+    //  The metadata response from geoserver includes the metadata record and a summary element in the form:
+    //  <response>
+    //      <summary>...</summary>
+    //      <metadata>...</metadata>
+    //  </response>
+    //  This method extracts the metadata record.
+    public String getMetadataRecord(String xmlMetadataResponse) {
+        try {
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+
+            DocumentBuilder docBuilder = factory.newDocumentBuilder();
+            Document doc = docBuilder.parse(new StringInputStream(xmlMetadataResponse));
+
+            XPathFactory xPathfactory = XPathFactory.newInstance();
+            XPath xpath = xPathfactory.newXPath();
+            XPathExpression expr = xpath.compile("//metadata");
+            NodeList nl = (NodeList) expr.evaluate(doc, XPathConstants.NODESET);
+
+            if (nl.getLength() == 0 || nl.item(0) == null) {
+                logger.error("No metadata title found in XML [{}]. Nodelist empty.", xmlMetadataResponse);
+                return "";
+            }
+
+
+
+            //  Stream out the whole node (including children)
+            StringWriter strWriter = new StringWriter();
+            StreamResult streamResult = new StreamResult(strWriter);
+            Transformer xform = TransformerFactory.newInstance().newTransformer();
+            xform.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+            xform.setOutputProperty(OutputKeys.INDENT, "yes");
+            xform.transform(new DOMSource(nl.item(0)), streamResult);
+
+            strWriter.flush();
+
+            logger.info("Metadata node size [" + strWriter.toString().length() + "]");
+            return strWriter.toString();
+
+        } catch(Exception ex) {
+            logger.error("Unable to extract metadata element from XML", ex);
         }
 
         return "";
