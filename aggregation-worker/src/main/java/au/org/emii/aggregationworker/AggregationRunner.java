@@ -329,10 +329,6 @@ public class AggregationRunner implements CommandLineRunner {
                     //  We only need the <metadata> tag and its contents
                     String metadataRecord = catalogueReader.getMetadataRecord(metadataResponseXML);
 
-                    logger.info("Metadata file content: [" + metadataRecord + "]");
-
-
-
                     if (metadataRecord != null) {
                         pointOfTruth = catalogueReader.getMetadataPointOfTruthUrl(metadataRecord);
                         logger.info("Metadata Point Of Truth URL: " + pointOfTruth);
@@ -430,7 +426,6 @@ public class AggregationRunner implements CommandLineRunner {
                 statusDocument = statusBuilder.createResponseDocument(EnumStatus.SUCCEEDED, GOGODUCK_PROCESS_IDENTIFIER, null, null, outputMap);
                 statusFileManager.write(statusDocument, statusFilename, STATUS_FILE_MIME_TYPE);
 
-                String collection = "placeholder collection";
 
                 //  Send email - if email address was provided
                 if (contactEmail != null) {
@@ -441,7 +436,7 @@ public class AggregationRunner implements CommandLineRunner {
                                 batchJobId,
                                 statusUrl,
                                 S3Utils.getExpirationinDays(outputBucketName),
-                                this.portalFormatRequestDetail(subsetParams, collection));
+                                this.portalFormatRequestDetail(subsetParams, collectionTitle));
                     } catch (EmailException ex) {
                         logger.error(ex.getMessage(), ex);
                     }
