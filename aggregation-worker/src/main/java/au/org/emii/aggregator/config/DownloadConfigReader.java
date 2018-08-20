@@ -1,4 +1,4 @@
-package au.org.emii.aggregator.au.org.emii.aggregator.config;
+package au.org.emii.aggregator.config;
 
 import au.org.aodn.aws.wps.status.WpsConfig;
 import au.org.emii.download.DownloadConfig;

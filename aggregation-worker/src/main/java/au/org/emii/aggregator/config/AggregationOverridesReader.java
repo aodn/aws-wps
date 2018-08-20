@@ -1,4 +1,4 @@
-package au.org.emii.aggregator.au.org.emii.aggregator.config;
+package au.org.emii.aggregator.config;
 
 import au.org.aodn.aggregator.configuration.Attribute;
 import au.org.aodn.aggregator.configuration.Template;
