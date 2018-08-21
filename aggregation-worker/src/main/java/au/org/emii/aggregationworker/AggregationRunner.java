@@ -115,6 +115,8 @@ public class AggregationRunner implements CommandLineRunner {
         EmailService emailService = null;
         ExecuteStatusBuilder statusBuilder = null;
         Path downloadDirectory;
+        SubsetParameters subsetParams = null;
+        String collectionTitle = null;
 
         try {
             //  Capture the AWS job specifics - they are passed to the docker runtime as
@@ -211,7 +213,7 @@ public class AggregationRunner implements CommandLineRunner {
             emailService = new EmailService();
 
             //  Parse the subset parameters passed
-            SubsetParameters subsetParams = SubsetParameters.parse(subset);
+            subsetParams = SubsetParameters.parse(subset);
 
             logger.info("Running aggregation job. JobID [" + batchJobId + "]. Layer [" + layer + "], Subset [" + subset + "], Result MIME [" + resultMime + "], Callback email [" + contactEmail + "]");
 
@@ -322,7 +324,7 @@ public class AggregationRunner implements CommandLineRunner {
 
                 //  Try and determine the point of truth and the collection title
                 String pointOfTruth = "";
-                String collectionTitle = "";
+                collectionTitle = "";
 
                 if(metadataResponseXML != null && metadataResponseXML.length() > 0) {
 
@@ -481,7 +483,10 @@ public class AggregationRunner implements CommandLineRunner {
             //  Send failed job email to user
             if (contactEmail != null) {
                 try {
-                    emailService.sendFailedJobEmail(contactEmail, administratorEmail, batchJobId);
+                    emailService.sendFailedJobEmail(contactEmail,
+                            administratorEmail,
+                            batchJobId,
+                            this.portalFormatRequestDetail(subsetParams, collectionTitle));
                 } catch (EmailException ex) {
                     logger.error(ex.getMessage(), ex);
                 }
@@ -542,15 +547,23 @@ public class AggregationRunner implements CommandLineRunner {
     }
 
     private String portalFormatRequestDetail(SubsetParameters subsetParameters, String collection) {
-        String spatialStr = subsetParameters.portalFormatSpatial();
-        String temporalStr = subsetParameters.portalFormatTemoral();
-        String depthStr = subsetParameters.portalFormatDepth();
 
         String details = "";
-        details = collection != null ? details.concat("Collection: " + collection + '\n') : details;
-        details = spatialStr != null ? details.concat(spatialStr + '\n') : details;
-        details = temporalStr != null ? details.concat(temporalStr + '\n') : details;
-        details = depthStr != null ? details.concat(depthStr + '\n') : details;
+
+        if (subsetParameters != null && collection != null) {
+
+            String spatialStr = subsetParameters.portalFormatSpatial();
+            String temporalStr = subsetParameters.portalFormatTemoral();
+            String depthStr = subsetParameters.portalFormatDepth();
+
+            details = collection != null ? details.concat("Collection: " + collection + '\n') : details;
+            details = spatialStr != null ? details.concat(spatialStr + '\n') : details;
+            details = temporalStr != null ? details.concat(temporalStr + '\n') : details;
+            details = depthStr != null ? details.concat(depthStr + '\n') : details;
+        } else {
+            details = "(no request parameters are available)";
+        }
+
         return details;
     }
 }

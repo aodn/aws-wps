@@ -94,9 +94,9 @@ public class EmailService {
         sendEmail(to, null, from, subject, null, textBody);
     }
 
-    public void sendFailedJobEmail(String to, String bccAddress, String uuid) throws EmailException {
+    public void sendFailedJobEmail(String to, String bccAddress, String uuid, String requestDetail) throws EmailException {
         String subject = WpsConfig.FAILED_JOB_EMAIL_SUBJECT + uuid;
-        String textBody = templateManager.getFailedEmailContent(uuid);
+        String textBody = templateManager.getFailedEmailContent(uuid, requestDetail);
         String from = WpsConfig.JOB_EMAIL_FROM_ADDRESS;
 
         sendEmail(to, bccAddress, from, subject, null, textBody);
