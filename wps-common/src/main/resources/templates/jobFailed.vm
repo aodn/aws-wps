@@ -4,6 +4,10 @@ Something has gone wrong with your download request. For further information abo
 
 Please try again. If you continue to experience problems please contact us at $contactEmail. The job reference is $uuid.
 
+Parameters for this subset
+-----------------------------
+$requestDetail
+
 Kind regards,
 The AODN Team
 
