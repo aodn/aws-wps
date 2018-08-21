@@ -1,15 +1,23 @@
 package au.org.aodn.aws.util;
 
 import au.org.aodn.aws.exception.EmailException;
+import au.org.aodn.aws.geoserver.client.SubsetParameters;
 import au.org.aodn.aws.wps.status.WpsConfig;
+import au.org.emii.util.NumberRange;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.simpleemail.AmazonSimpleEmailService;
 import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClientBuilder;
 import com.amazonaws.services.simpleemail.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ucar.nc2.time.CalendarDateRange;
+import ucar.unidata.geoloc.LatLonRect;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.TimeZone;
 
 public class EmailService {
 
@@ -76,9 +84,9 @@ public class EmailService {
         }
     }
 
-    public void sendRegisteredJobEmail(String to, String uuid) throws EmailException {
+    public void sendRegisteredJobEmail(String to, String uuid, String jobDetail) throws EmailException {
         String subject = WpsConfig.REGISTERED_JOB_EMAIL_SUBJECT + uuid;
-        String textBody = templateManager.getRegisteredEmailContent(uuid);
+        String textBody = templateManager.getRegisteredEmailContent(uuid, jobDetail);
         String from = WpsConfig.JOB_EMAIL_FROM_ADDRESS;
 
         sendEmail(to, null, from, subject, null, textBody);
@@ -113,5 +121,77 @@ public class EmailService {
 
     public static String getFailedJobEmailTemplate() {
         return String.format("%s/%s", WpsConfig.EMAIL_TEMPLATES_LOCATION, WpsConfig.FAILED_JOB_EMAIL_TEMPLATE_NAME);
+    }
+
+    public static String formatRequestDetail(SubsetParameters subsetParameters, String collection) {
+
+        String details = "";
+
+        if (subsetParameters != null && collection != null) {
+
+            String spatialStr = EmailService.portalFormatSpatial(subsetParameters.getBbox());
+            String temporalStr = EmailService.portalFormatTemoral(subsetParameters.getTimeRange());
+            String depthStr = EmailService.portalFormatDepth(subsetParameters.getVerticalRange());
+
+            details = collection != null ? details.concat("Collection: " + collection + '\n') : details;
+            details = spatialStr != null ? details.concat(spatialStr + '\n') : details;
+            details = temporalStr != null ? details.concat(temporalStr + '\n') : details;
+            details = depthStr != null ? details.concat(depthStr + '\n') : details;
+        } else {
+            details = "(no request parameters are available)";
+        }
+
+        return details;
+    }
+
+    public static String portalFormatSpatial(LatLonRect bbox) {
+
+        if (bbox != null) {
+            String minLon = String.valueOf(bbox.getLonMin());
+            String minLat = String.valueOf(bbox.getLatMin());
+            String maxLon = String.valueOf(bbox.getLonMax());
+            String maxLat = String.valueOf(bbox.getLatMax());
+
+            String spatial = "";
+
+            if (minLon.equals(maxLon) && minLat.equals(maxLat)) {
+                spatial = spatial.concat("Timeseries at Lat/Lon: " + minLat + ',' + minLon);
+            } else {
+                spatial = spatial.concat("Spatial: " + minLon + ',' + minLat + ',' + maxLon + ',' + maxLat);
+            }
+
+            return spatial;
+        }
+
+        return null;
+    }
+
+    public static String formatDate(Date date) {
+
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(date);
+
+        SimpleDateFormat sdf = new SimpleDateFormat("YYYY-MMM-dd-HH:mm-'UTC'");
+        sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+        return sdf.format(cal.getTime());
+    }
+
+    public static String portalFormatTemoral(CalendarDateRange timeRange) {
+        if (timeRange != null) {
+            String startDate = formatDate(timeRange.getStart().toDate());
+            String endDate = formatDate(timeRange.getEnd().toDate());
+
+            return "Temporal: " + startDate + " to " + endDate;
+        }
+
+        return null;
+    }
+
+    public static String portalFormatDepth(NumberRange verticalRange) {
+
+        if (verticalRange != null) {
+            return "Depth: " + verticalRange.getMin() + "," + verticalRange.getMax();
+        }
+        return null;
     }
 }

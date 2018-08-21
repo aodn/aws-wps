@@ -1,4 +1,4 @@
-package au.org.emii.geoserver.client;
+package au.org.aodn.aws.geoserver.client;
 
 import au.org.emii.util.NumberRange;
 import ucar.nc2.time.CalendarDate;
@@ -8,11 +8,6 @@ import ucar.unidata.geoloc.LatLonRect;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Date;
-import java.util.Calendar;
-import java.util.TimeZone;
-
-import java.text.SimpleDateFormat;
 
 public class SubsetParameters {
     public static final String LATITUDE = "LATITUDE";
@@ -113,57 +108,6 @@ public class SubsetParameters {
         }
 
         return new SubsetParameters(bbox, calendarDateRange, depthRange);
-    }
-
-    public String portalFormatSpatial() {
-
-        if (this.bbox != null) {
-            String minLon = String.valueOf(this.bbox.getLonMin());
-            String minLat = String.valueOf(this.bbox.getLatMin());
-            String maxLon = String.valueOf(this.bbox.getLonMax());
-            String maxLat = String.valueOf(this.bbox.getLatMax());
-
-            String spatial = "";
-
-            if (minLon.equals(maxLon) && minLat.equals(maxLat)) {
-                spatial = spatial.concat("Timeseries at Lat/Lon: " + minLat + ',' + minLon);
-            } else {
-                spatial = spatial.concat("Spatial: " + minLon + ',' + minLat + ',' + maxLon + ',' + maxLat);
-            }
-
-            return spatial;
-        }
-
-        return null;
-    }
-
-    private String formatDate(Date date) {
-
-        Calendar cal = Calendar.getInstance();
-        cal.setTime(date);
-
-        SimpleDateFormat sdf = new SimpleDateFormat("YYYY-MMM-dd-HH:mm-'UTC'");
-        sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
-        return sdf.format(cal.getTime());
-    }
-
-    public String portalFormatTemoral() {
-        if (this.timeRange != null) {
-            String startDate = formatDate(this.timeRange.getStart().toDate());
-            String endDate = formatDate(this.timeRange.getEnd().toDate());
-
-            return "Temporal: " + startDate + " to " + endDate;
-        }
-
-        return null;
-    }
-
-    public String portalFormatDepth() {
-
-        if (this.verticalRange != null) {
-            return "Depth: " + this.verticalRange.getMin() + "," + this.verticalRange.getMax();
-        }
-        return null;
     }
 
     public static class ParameterRange {

@@ -1,4 +1,4 @@
-package au.org.emii.aggregator.catalogue;
+package au.org.aodn.aws.geonetwork;
 
 
 import com.amazonaws.util.StringInputStream;

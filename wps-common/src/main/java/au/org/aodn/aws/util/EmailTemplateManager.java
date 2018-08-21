@@ -36,13 +36,14 @@ public class EmailTemplateManager {
     }
 
 
-    public String getRegisteredEmailContent(String uuid) throws EmailException {
+    public String getRegisteredEmailContent(String uuid, String requestDetail) throws EmailException {
         try {
             Template t = velocityEngine.getTemplate(EmailService.getRegisteredJobEmailTemplate());
             VelocityContext context = new VelocityContext();
             context.put(UUID, uuid);
             context.put(JOB_REPORT_URL, WpsConfig.getStatusServiceHtmlEndpoint(uuid));
             context.put(CONTACT_EMAIL, WpsConfig.JOB_EMAIL_CONTACT_ADDRESS);
+            context.put(REQUEST_DETAIL, requestDetail);
 
             StringWriter writer = new StringWriter();
             t.merge(context, writer);

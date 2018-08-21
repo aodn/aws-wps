@@ -11,14 +11,14 @@ import au.org.aodn.aws.wps.status.ExecuteStatusBuilder;
 import au.org.aodn.aws.wps.status.S3JobFileManager;
 import au.org.aodn.aws.wps.status.WpsConfig;
 import au.org.emii.aggregator.NetcdfAggregator;
-import au.org.emii.aggregator.catalogue.CatalogueReader;
+import au.org.aodn.aws.geonetwork.CatalogueReader;
 import au.org.emii.aggregator.converter.Converter;
 import au.org.emii.aggregator.exception.AggregationException;
 import au.org.emii.aggregator.overrides.AggregationOverrides;
 import au.org.emii.download.*;
-import au.org.emii.geoserver.client.HttpIndexReader;
-import au.org.emii.geoserver.client.SubsetParameters;
-import au.org.emii.geoserver.client.TimeNotSupportedException;
+import au.org.aodn.aws.geoserver.client.HttpIndexReader;
+import au.org.aodn.aws.geoserver.client.SubsetParameters;
+import au.org.aodn.aws.geoserver.client.TimeNotSupportedException;
 import au.org.emii.util.FileZip;
 import au.org.emii.util.IntegerHelper;
 import au.org.emii.util.NumberRange;
@@ -438,7 +438,7 @@ public class AggregationRunner implements CommandLineRunner {
                                 batchJobId,
                                 statusUrl,
                                 S3Utils.getExpirationinDays(outputBucketName),
-                                this.portalFormatRequestDetail(subsetParams, collectionTitle));
+                                EmailService.formatRequestDetail(subsetParams, collectionTitle));
                     } catch (EmailException ex) {
                         logger.error(ex.getMessage(), ex);
                     }
@@ -486,7 +486,7 @@ public class AggregationRunner implements CommandLineRunner {
                     emailService.sendFailedJobEmail(contactEmail,
                             administratorEmail,
                             batchJobId,
-                            this.portalFormatRequestDetail(subsetParams, collectionTitle));
+                            EmailService.formatRequestDetail(subsetParams, collectionTitle));
                 } catch (EmailException ex) {
                     logger.error(ex.getMessage(), ex);
                 }
@@ -544,26 +544,5 @@ public class AggregationRunner implements CommandLineRunner {
 
         //  Replace spaces with underscores
         return collectionTitle.replace(" ", "_") + METADATA_FILE_EXTENSION;
-    }
-
-    private String portalFormatRequestDetail(SubsetParameters subsetParameters, String collection) {
-
-        String details = "";
-
-        if (subsetParameters != null && collection != null) {
-
-            String spatialStr = subsetParameters.portalFormatSpatial();
-            String temporalStr = subsetParameters.portalFormatTemoral();
-            String depthStr = subsetParameters.portalFormatDepth();
-
-            details = collection != null ? details.concat("Collection: " + collection + '\n') : details;
-            details = spatialStr != null ? details.concat(spatialStr + '\n') : details;
-            details = temporalStr != null ? details.concat(temporalStr + '\n') : details;
-            details = depthStr != null ? details.concat(depthStr + '\n') : details;
-        } else {
-            details = "(no request parameters are available)";
-        }
-
-        return details;
     }
 }

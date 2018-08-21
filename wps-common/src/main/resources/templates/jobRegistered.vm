@@ -5,6 +5,12 @@ Thank you for submitting a request for AODN data. Your job has been registered.
 You will receive an email with a link to the data when the job is complete.
 You can monitor the status of your job here: $jobReportUrl
 
+#if( $requestDetail )
+Parameters for this subset
+-----------------------------
+$requestDetail
+#end
+
 Kind regards,
 The AODN Team
 

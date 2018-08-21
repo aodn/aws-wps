@@ -107,6 +107,16 @@
             <artifactId>wps-v_1_0_0-schema</artifactId>
             <version>1.0.0</version>
         </dependency>
+        <dependency>
+            <groupId>commons-lang</groupId>
+            <artifactId>commons-lang</artifactId>
+            <version>2.6</version>
+        </dependency>
+        <dependency>
+            <groupId>au.org.emii</groupId>
+            <artifactId>aggregator</artifactId>
+            <version>1.0.0</version>
+        </dependency>
     </dependencies>
 
     <repositories>
