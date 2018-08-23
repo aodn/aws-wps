@@ -19,6 +19,7 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathFactory;
 import java.io.BufferedInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.net.HttpURLConnection;
@@ -63,19 +64,28 @@ public class CatalogueReader {
 
             try {
                 URL url = new URL(searchUrl);
-                urlConnection = (HttpURLConnection) url.openConnection();
 
+                urlConnection = (HttpURLConnection) url.openConnection();
+                InputStream inStream = urlConnection.getInputStream();
                 int responseCode = urlConnection.getResponseCode();
                 logger.info("HTTP ResponseCode: " + responseCode);
 
-                InputStream in = new BufferedInputStream(urlConnection.getInputStream());
-                BufferedInputStream bufferedInStream = new BufferedInputStream(in);
-                int bytesAvailable = bufferedInStream.available();
+                //  This will always be 0 for https!!
+                int bytesAvailable = inStream.available();
+                logger.info("Bytes available: [" + bytesAvailable + "]");
 
-                byte[] bytes = new byte[bytesAvailable];
-                bufferedInStream.read(bytes);
+                //  Read the input stream
+                BufferedInputStream bufferedInputStream = new BufferedInputStream(inStream);
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                byte[] buffer = new byte[1024];
 
-                String content = new String(bytes);
+                int bytesRead;
+                while((bytesRead = bufferedInputStream.read(buffer)) > 0) {
+                    baos.write(buffer, 0, bytesRead);
+                }
+                baos.flush();
+
+                String content = new String(baos.toByteArray());
                 logger.info("Metadata response size: [" + content.length() + "] bytes");
 
                 return content;
@@ -220,5 +230,20 @@ public class CatalogueReader {
         }
 
         return "";
+    }
+
+
+    public static void main(String[] args) {
+        String url = "https://catalogue-portal.aodn.org.au/geonetwork";
+        String layerField = "layer";
+        String layer = "srs_ghrsst_l3s_1d_day_url";
+
+        CatalogueReader reader = new CatalogueReader(url, layerField);
+        try {
+            String xml = reader.getMetadataXML(layer);
+            System.out.println("XML returned [" + xml + "]");
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
     }
 }
