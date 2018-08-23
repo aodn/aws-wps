@@ -19,7 +19,7 @@ import au.org.emii.download.*;
 import au.org.aodn.aws.geoserver.client.HttpIndexReader;
 import au.org.aodn.aws.geoserver.client.SubsetParameters;
 import au.org.aodn.aws.geoserver.client.TimeNotSupportedException;
-import au.org.emii.util.FileZip;
+import au.org.aodn.aws.util.Zip;
 import au.org.emii.util.IntegerHelper;
 import au.org.emii.util.NumberRange;
 import au.org.emii.util.ProvenanceWriter;
@@ -116,7 +116,9 @@ public class AggregationRunner implements CommandLineRunner {
         ExecuteStatusBuilder statusBuilder = null;
         Path downloadDirectory;
         SubsetParameters subsetParams = null;
-        String collectionTitle = null;
+        //  Try and determine the point of truth and the collection title
+        String pointOfTruth = "";
+        String collectionTitle = "";
 
         try {
             //  Capture the AWS job specifics - they are passed to the docker runtime as
@@ -203,6 +205,9 @@ public class AggregationRunner implements CommandLineRunner {
 
             // Determine required output mime type
             String requestedMimeType = requestHelper.getRequestedMimeType("result");
+
+            logger.info("Requested mime type: " + requestedMimeType);
+
             String resultMime = requestedMimeType != null ? requestedMimeType : DEFAULT_OUTPUT_MIME;
 
             //  Create a geonetwork index reader - this is used to lookup the list of files for the named layer & to
@@ -301,14 +306,17 @@ public class AggregationRunner implements CommandLineRunner {
                 //  Perform the conversion
                 //  Instantiate the correct converter for the requested mimeType & do the conversion
                 Converter converter = Converter.newInstance(resultMime);
-                convertedFile = jobDir.resolve("converted" + converter.getExtension());
+                convertedFile = jobDir.resolve("converted" + "." + converter.getExtension());
+
+                logger.info("Converting file to output Mime Type: " + resultMime);
+
                 converter.convert(outputFile, convertedFile);
 
                 //  Create a file manager for uploading files to S3
                 S3JobFileManager outputFileManager = new S3JobFileManager(outputBucketName, jobFileS3KeyPrefix, batchJobId);
 
                 //  Rename the converted file.
-                convertedFile = Files.move(convertedFile, jobDir.resolve(requestedOutputFilename + ".nc"));
+                convertedFile = Files.move(convertedFile, jobDir.resolve(requestedOutputFilename + "." + converter.getExtension()));
 
                 //  Add the converted file to the zip file
                 zipContent.add(convertedFile.toFile());
@@ -322,9 +330,6 @@ public class AggregationRunner implements CommandLineRunner {
                 CatalogueReader catalogueReader = new CatalogueReader(catalogueURL, layerSearchField);
                 String metadataResponseXML = catalogueReader.getMetadataXML(layer);
 
-                //  Try and determine the point of truth and the collection title
-                String pointOfTruth = "";
-                collectionTitle = "";
 
                 if(metadataResponseXML != null && metadataResponseXML.length() > 0) {
 
@@ -365,7 +370,7 @@ public class AggregationRunner implements CommandLineRunner {
                 String outputFilename = requestedOutputFilename + DEFAULT_OUTPUT_FILE_EXTENSION;
 
                 //  Form output ZIP file
-                File zipFile = FileZip.zipFiles(jobDir.toFile().getAbsolutePath() + File.separator + outputFilename, zipContent);
+                File zipFile = Zip.zipFiles(jobDir.toFile().getAbsolutePath() + File.separator + outputFilename, zipContent);
                 logger.info("Formed output ZIP file: " + zipFile.getAbsolutePath() + ", Size: " + zipFile.length());
 
                 //  Upload to S3
