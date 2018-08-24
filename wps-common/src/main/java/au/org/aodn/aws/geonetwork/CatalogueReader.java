@@ -158,7 +158,7 @@ public class CatalogueReader {
     }
 
 
-    //  The metadata response from geoserver includes the metadata record and a summary element in the form:
+    //  The metadata response from geonetwork includes the metadata record and a summary element in the form:
     //  <response>
     //      <summary>...</summary>
     //      <metadata>...</metadata>

@@ -127,14 +127,13 @@ public class EmailService {
     }
 
     public static String formatRequestDetail(SubsetParameters subsetParameters, String collection) {
-
         String details = "";
 
         if (subsetParameters != null && collection != null) {
 
-            String spatialStr = EmailService.portalFormatSpatial(subsetParameters.getBbox());
-            String temporalStr = EmailService.portalFormatTemoral(subsetParameters.getTimeRange());
-            String depthStr = EmailService.portalFormatDepth(subsetParameters.getVerticalRange());
+            String spatialStr = portalFormatSpatial(subsetParameters.getBbox());
+            String temporalStr = portalFormatTemoral(subsetParameters.getTimeRange());
+            String depthStr = portalFormatDepth(subsetParameters.getVerticalRange());
 
             details = collection != null ? details.concat("Collection: " + collection + '\n') : details;
             details = spatialStr != null ? details.concat(spatialStr + '\n') : details;
@@ -148,7 +147,6 @@ public class EmailService {
     }
 
     public static String portalFormatSpatial(LatLonRect bbox) {
-
         if (bbox != null) {
             String minLon = String.valueOf(bbox.getLonMin());
             String minLat = String.valueOf(bbox.getLatMin());
@@ -170,7 +168,6 @@ public class EmailService {
     }
 
     public static String formatDate(Date date) {
-
         Calendar cal = Calendar.getInstance();
         cal.setTime(date);
 
@@ -191,7 +188,6 @@ public class EmailService {
     }
 
     public static String portalFormatDepth(NumberRange verticalRange) {
-
         if (verticalRange != null) {
             return "Depth: " + verticalRange.getMin() + "," + verticalRange.getMax();
         }
