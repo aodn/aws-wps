@@ -84,17 +84,19 @@ public class EmailService {
         }
     }
 
-    public void sendRegisteredJobEmail(String to, String uuid, String jobDetail) throws EmailException {
+    public void sendRegisteredJobEmail(String to, String uuid, SubsetParameters subsetParams, String collectionTitle) throws EmailException {
         String subject = WpsConfig.REGISTERED_JOB_EMAIL_SUBJECT + uuid;
-        String textBody = templateManager.getRegisteredEmailContent(uuid, jobDetail);
+        String requestDetail = formatRequestDetail(subsetParams, collectionTitle);
+        String textBody = templateManager.getRegisteredEmailContent(uuid, requestDetail);
         String from = WpsConfig.JOB_EMAIL_FROM_ADDRESS;
 
         sendEmail(to, null, from, subject, null, textBody);
     }
 
-    public void sendCompletedJobEmail(String to, String uuid, String statusPageLink, int expirationPeriodInDays, String requestDetail) throws EmailException {
+    public void sendCompletedJobEmail(String to, String uuid, String statusPageLink, int expirationPeriodInDays, SubsetParameters subsetParams, String collectionTitle) throws EmailException {
         String subject = WpsConfig.COMPLETED_JOB_EMAIL_SUBJECT + uuid;
         String expirationPeriod = String.format("%d days", expirationPeriodInDays);
+        String requestDetail = formatRequestDetail(subsetParams, collectionTitle);
 
         String textBody = templateManager.getCompletedEmailContent(uuid, expirationPeriod, statusPageLink, requestDetail);
         String from = WpsConfig.JOB_EMAIL_FROM_ADDRESS;
@@ -102,8 +104,9 @@ public class EmailService {
         sendEmail(to, null, from, subject, null, textBody);
     }
 
-    public void sendFailedJobEmail(String to, String bccAddress, String uuid, String requestDetail) throws EmailException {
+    public void sendFailedJobEmail(String to, String bccAddress, String uuid, SubsetParameters subsetParams, String collectionTitle) throws EmailException {
         String subject = WpsConfig.FAILED_JOB_EMAIL_SUBJECT + uuid;
+        String requestDetail = formatRequestDetail(subsetParams, collectionTitle);
         String textBody = templateManager.getFailedEmailContent(uuid, requestDetail);
         String from = WpsConfig.JOB_EMAIL_FROM_ADDRESS;
 

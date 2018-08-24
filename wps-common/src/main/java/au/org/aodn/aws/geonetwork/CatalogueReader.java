@@ -7,8 +7,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
+
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
@@ -17,9 +20,11 @@ import javax.xml.transform.stream.StreamResult;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpression;
+import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.net.HttpURLConnection;
@@ -30,7 +35,14 @@ public class CatalogueReader {
     private static final Logger logger = LoggerFactory.getLogger(CatalogueReader.class);
 
     private static final String METADATA_PROTOCOL = "WWW:LINK-1.0-http--metadata-URL";
-    private static final String CATALOGUE_SEARCH_TEMPLATE = "%s/srv/eng/xml.search.summary?%s=%s&hitsPerPage=1&fast=index";
+    private static final String CATALOGUE_SUMMARY_SEARCH_TEMPLATE = "%s/srv/eng/xml.search.summary?%s=%s&hitsPerPage=1&fast=index";
+    private static final String CATALOGUE_METADATA_GET_TEMPLATE = "%s/srv/eng/xml.metadata.get?uuid=%s";
+
+    public static final String METADATA_SUMMARY_UUID_XPATH = "//info/uuid";
+    public static final String METADATA_SUMMARY_TITLE_XPATH = "//metadata/title";
+    public static final String METADATA_SUMMARY_POINT_OF_TRUTH_XPATH = "//metadata/link['" + METADATA_PROTOCOL + "']";
+    public static final String METADATA_SUMMARY_METADATA_ROOT_NODE_XPATH = "//metadata";
+
 
     private String catalogueUrl;
     private String layerSearchField;
@@ -40,7 +52,7 @@ public class CatalogueReader {
         this.layerSearchField = layerSearchField;
     }
 
-    public String getMetadataXML(String layer) throws Exception {
+    public String getMetadataSummaryXML(String layer) throws Exception {
 
         try {
             if (catalogueUrl == null || layerSearchField == null) {
@@ -56,44 +68,41 @@ public class CatalogueReader {
                 logger.info("Adjusted layer name: " + layer);
             }
 
-            String searchUrl = String.format(CATALOGUE_SEARCH_TEMPLATE, this.catalogueUrl,
+            String searchUrl = String.format(CATALOGUE_SUMMARY_SEARCH_TEMPLATE, this.catalogueUrl,
                     this.layerSearchField, layer);
 
             logger.info("Catalogue search URL: " + searchUrl);
-            HttpURLConnection urlConnection = null;
 
-            try {
-                URL url = new URL(searchUrl);
+            String content = doHttpGet(searchUrl);
+            logger.info("Metadata response size: [" + content.length() + "] bytes");
 
-                urlConnection = (HttpURLConnection) url.openConnection();
-                InputStream inStream = urlConnection.getInputStream();
-                int responseCode = urlConnection.getResponseCode();
-                logger.info("HTTP ResponseCode: " + responseCode);
+            return content;
 
-                //  This will always be 0 for https!!
-                int bytesAvailable = inStream.available();
-                logger.info("Bytes available: [" + bytesAvailable + "]");
+        } catch (Exception ex) {
+            logger.error("Unable to read metadata XML.", ex);
+            throw ex;
+        }
+    }
 
-                //  Read the input stream
-                BufferedInputStream bufferedInputStream = new BufferedInputStream(inStream);
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                byte[] buffer = new byte[1024];
+    public String getMetadataRecordXML(String uuid) throws Exception {
 
-                int bytesRead;
-                while((bytesRead = bufferedInputStream.read(buffer)) > 0) {
-                    baos.write(buffer, 0, bytesRead);
-                }
-                baos.flush();
-
-                String content = new String(baos.toByteArray());
-                logger.info("Metadata response size: [" + content.length() + "] bytes");
-
-                return content;
-            } finally {
-                if (urlConnection != null) {
-                    urlConnection.disconnect();
-                }
+        try {
+            if (catalogueUrl == null) {
+                logger.error("Missing configuration: Catalogue URL [" + catalogueUrl + "]");
+                return null;
             }
+
+            logger.info("Metadata UUID: " + uuid);
+
+            String getUrl = String.format(CATALOGUE_METADATA_GET_TEMPLATE, this.catalogueUrl, uuid);
+
+            logger.info("Metadata GET URL: " + getUrl);
+
+            String content = doHttpGet(getUrl);
+            logger.info("Metadata get response size: [" + content.length() + "] bytes");
+
+            return content;
+
         } catch (Exception ex) {
             logger.error("Unable to read metadata XML.", ex);
             throw ex;
@@ -101,39 +110,15 @@ public class CatalogueReader {
     }
 
 
-    public String getMetadataPointOfTruthUrl(String xmlMetadataRecord) {
-        if(xmlMetadataRecord == null) {
-            return "";
-        }
+    public String getMetadataPointOfTruthUrl(String xmlMetadataSummary) {
+        if(xmlMetadataSummary == null) { return ""; }
 
         try {
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-
-            DocumentBuilder docBuilder = factory.newDocumentBuilder();
-            Document doc = docBuilder.parse(new StringInputStream(xmlMetadataRecord));
-
-            XPathFactory xPathfactory = XPathFactory.newInstance();
-            XPath xpath = xPathfactory.newXPath();
-            XPathExpression expr = xpath.compile("//metadata/link['" + METADATA_PROTOCOL + "']");
-            NodeList nl = (NodeList) expr.evaluate(doc, XPathConstants.NODESET);
-
-            if (nl.getLength() == 0 || nl.item(0) == null) {
-                logger.error("No metadata URL found in XML [{}]. Nodelist empty.", xmlMetadataRecord);
-                return "";
-            }
-
-            String nodeValue = nl.item(0).getTextContent();
-
-            if(nodeValue == null)
-            {
-                logger.error("No metadata URL found in XML [{}]. Empty node.", xmlMetadataRecord);
-                return "";
-            }
+            String nodeValue = getNodeValue(xmlMetadataSummary, METADATA_SUMMARY_POINT_OF_TRUTH_XPATH);
 
             String[] linkInfo = nodeValue.split("\\|");
-
             if (linkInfo.length < 3) {
-                logger.error("Invalid link format in XML [{}]", xmlMetadataRecord);
+                logger.error("Invalid link format in XML [{}]", xmlMetadataSummary);
                 return "";
             }
 
@@ -141,46 +126,32 @@ public class CatalogueReader {
 
 
         } catch (Exception e) {
-            logger.error("Could not retrieve metadata Point Of Truth URL from XML [{}]", xmlMetadataRecord, e);
+            logger.error("Could not retrieve metadata Point Of Truth URL from XML [{}]", xmlMetadataSummary, e);
         }
 
         return "";
     }
 
-    public String getCollectionTitle(String xmlMetadataRecord) {
-        if(xmlMetadataRecord == null) {
-            return "";
-        }
+    public String getCollectionTitle(String xmlMetadataSummary) {
+        if(xmlMetadataSummary == null) { return ""; }
 
         try {
-
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-
-            DocumentBuilder docBuilder = factory.newDocumentBuilder();
-            Document doc = docBuilder.parse(new StringInputStream(xmlMetadataRecord));
-
-            XPathFactory xPathfactory = XPathFactory.newInstance();
-            XPath xpath = xPathfactory.newXPath();
-            XPathExpression expr = xpath.compile("//metadata/title");
-            NodeList nl = (NodeList) expr.evaluate(doc, XPathConstants.NODESET);
-
-            if (nl.getLength() == 0 || nl.item(0) == null) {
-                logger.error("No metadata title found in XML [{}]. Nodelist empty.", xmlMetadataRecord);
-                return "";
-            }
-
-            String nodeValue = nl.item(0).getTextContent();
-
-            if(nodeValue == null)
-            {
-                logger.error("No metadata title found in XML [{}]. Empty node.", xmlMetadataRecord);
-                return "";
-            }
-
-            return nodeValue;
-
+            return getNodeValue(xmlMetadataSummary, METADATA_SUMMARY_TITLE_XPATH);
         } catch (Exception e) {
-            logger.error("Could not retrieve metadata Point Of Truth URL from XML [{}]", xmlMetadataRecord, e);
+            logger.error("Could not retrieve metadata Title from XML [{}]", xmlMetadataSummary, e);
+        }
+
+        return "";
+    }
+
+
+    public String getUuid(String xmlMetadataSummary) {
+        if(xmlMetadataSummary == null) { return ""; }
+
+        try {
+            return getNodeValue(xmlMetadataSummary, METADATA_SUMMARY_UUID_XPATH);
+        } catch (Exception e) {
+            logger.error("Could not retrieve metadata UUID from XML [{}]", xmlMetadataSummary, e);
         }
 
         return "";
@@ -193,7 +164,7 @@ public class CatalogueReader {
     //      <metadata>...</metadata>
     //  </response>
     //  This method extracts the metadata record.
-    public String getMetadataRecord(String xmlMetadataResponse) {
+    public String getMetadataNodeContent(String xmlMetadataResponse) {
         try {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 
@@ -202,15 +173,13 @@ public class CatalogueReader {
 
             XPathFactory xPathfactory = XPathFactory.newInstance();
             XPath xpath = xPathfactory.newXPath();
-            XPathExpression expr = xpath.compile("//metadata");
+            XPathExpression expr = xpath.compile(METADATA_SUMMARY_METADATA_ROOT_NODE_XPATH);
             NodeList nl = (NodeList) expr.evaluate(doc, XPathConstants.NODESET);
 
             if (nl.getLength() == 0 || nl.item(0) == null) {
                 logger.error("No metadata title found in XML [{}]. Nodelist empty.", xmlMetadataResponse);
                 return "";
             }
-
-
 
             //  Stream out the whole node (including children)
             StringWriter strWriter = new StringWriter();
@@ -232,6 +201,67 @@ public class CatalogueReader {
         return "";
     }
 
+    private String doHttpGet(String urlString) throws Exception {
+        URL url = new URL(urlString);
+        HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+
+        try (InputStream inStream = urlConnection.getInputStream();
+             BufferedInputStream bufferedInputStream = new BufferedInputStream(inStream);
+             ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream()) {
+
+            int responseCode = urlConnection.getResponseCode();
+            logger.info("HTTP ResponseCode: " + responseCode);
+
+            //  This will always be 0 for https!!
+            int bytesAvailable = inStream.available();
+            logger.info("Bytes available: [" + bytesAvailable + "]");
+
+            //  Read the input stream
+            byte[] buffer = new byte[1024];
+            int bytesRead;
+
+            while ((bytesRead = bufferedInputStream.read(buffer)) > 0) {
+                byteOutputStream.write(buffer, 0, bytesRead);
+            }
+            byteOutputStream.flush();
+
+            return byteOutputStream.toString();
+        } catch(Exception ex) {
+            logger.error("Unable to GET from URL [" + url.toString() + "]: " + ex.getMessage(), ex);
+            throw ex;
+        }
+    }
+
+
+    private String getNodeValue(String xml, String nodeXpath) throws ParserConfigurationException,
+                                                                     IOException,
+                                                                     SAXException,
+                                                                     XPathExpressionException {
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+
+        DocumentBuilder docBuilder = factory.newDocumentBuilder();
+        Document doc = docBuilder.parse(new StringInputStream(xml));
+
+        XPathFactory xPathfactory = XPathFactory.newInstance();
+        XPath xpath = xPathfactory.newXPath();
+        XPathExpression expr = xpath.compile(nodeXpath);
+        NodeList nl = (NodeList) expr.evaluate(doc, XPathConstants.NODESET);
+
+        if (nl.getLength() == 0 || nl.item(0) == null) {
+            logger.error("No node found with XPath [" + nodeXpath + "] in XML [{}]. Nodelist empty.", xml);
+            return "";
+        }
+
+        String nodeValue = nl.item(0).getTextContent();
+
+        if (nodeValue == null) {
+            logger.error("No node value found with XPath [" + nodeXpath + "]. Empty node.", xml);
+            return "";
+        }
+
+        return nodeValue;
+    }
+
 
     public static void main(String[] args) {
         String url = "https://catalogue-portal.aodn.org.au/geonetwork";
@@ -240,10 +270,20 @@ public class CatalogueReader {
 
         CatalogueReader reader = new CatalogueReader(url, layerField);
         try {
-            String xml = reader.getMetadataXML(layer);
-            System.out.println("XML returned [" + xml + "]");
+            String summaryXml = reader.getMetadataSummaryXML(layer);
+            System.out.println("XML returned [" + summaryXml + "]");
+
+            String uuid = reader.getUuid(summaryXml);
+            System.out.println("METADATA Title          : " + reader.getCollectionTitle(summaryXml));
+            System.out.println("METADATA Point of Truth : " + reader.getMetadataPointOfTruthUrl(summaryXml));
+            System.out.println("METADATA UUID           : " + uuid);
+
+            String metadataXML = reader.getMetadataRecordXML(uuid);
+            System.out.println("XML returned [" + metadataXML + "]");
+
         } catch (Exception ex) {
             ex.printStackTrace();
         }
     }
+
 }

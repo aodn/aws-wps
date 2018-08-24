@@ -119,13 +119,13 @@ public class ExecuteOperation implements Operation {
                     String catalogueURL = WpsConfig.getProperty(GEONETWORK_CATALOGUE_URL_CONFIG_KEY);
                     String layerSearchField = WpsConfig.getProperty(GEONETWORK_CATALOGUE_LAYER_FIELD_CONFIG_KEY);
                     CatalogueReader catalogueReader = new CatalogueReader(catalogueURL, layerSearchField);
-                    String metadataResponseXML = catalogueReader.getMetadataXML(layer);
+                    String metadataResponseXML = catalogueReader.getMetadataSummaryXML(layer);
 
                     //  Try and determine the collection title
                     if (metadataResponseXML != null && metadataResponseXML.length() > 0) {
 
                         //  We only need the <metadata> tag and its contents
-                        String metadataRecord = catalogueReader.getMetadataRecord(metadataResponseXML);
+                        String metadataRecord = catalogueReader.getMetadataNodeContent(metadataResponseXML);
 
                         if (metadataRecord != null) {
 
@@ -141,7 +141,8 @@ public class ExecuteOperation implements Operation {
                 EmailService emailService = new EmailService();
                 emailService.sendRegisteredJobEmail(email,
                                                     jobId,
-                                                    EmailService.formatRequestDetail(subsetParams, collectionTitle));
+                                                    subsetParams,
+                                                    collectionTitle);
             }
         } catch (UnsupportedEncodingException e) {
             LOGGER.error(e.getMessage(), e);
