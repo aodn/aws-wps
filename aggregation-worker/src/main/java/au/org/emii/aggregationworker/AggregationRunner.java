@@ -353,31 +353,31 @@ public class AggregationRunner implements CommandLineRunner {
                 //  URL for the status page for this job
                 String statusUrl = WpsConfig.getStatusServiceHtmlEndpoint(batchJobId);
 
-                //  If the output requested is a ZIP - get the full metadata record for the collection to include in the
-                //  ZIP file.
-                if(resultMime.equals("application/zip")) {
-                    //  Read the metadata record for the layer
-                    String catalogueURL = WpsConfig.getProperty(GEONETWORK_CATALOGUE_URL_CONFIG_KEY);
-                    String layerSearchField = WpsConfig.getProperty(GEONETWORK_CATALOGUE_LAYER_FIELD_CONFIG_KEY);
-                    CatalogueReader catalogueReader = new CatalogueReader(catalogueURL, layerSearchField);
-                    String metadataResponseXML = catalogueReader.getMetadataSummaryXML(layer);
 
+                //  Search for the metadata record for the layer by layer name
+                String catalogueURL = WpsConfig.getProperty(GEONETWORK_CATALOGUE_URL_CONFIG_KEY);
+                String layerSearchField = WpsConfig.getProperty(GEONETWORK_CATALOGUE_LAYER_FIELD_CONFIG_KEY);
+                CatalogueReader catalogueReader = new CatalogueReader(catalogueURL, layerSearchField);
+                String metadataResponseXML = catalogueReader.getMetadataSummaryXML(layer);
 
-                    if (metadataResponseXML != null && metadataResponseXML.length() > 0) {
+                if (metadataResponseXML != null && metadataResponseXML.length() > 0) {
 
-                        //  We only need the <metadata> tag and its contents
-                        String metadataSummary = catalogueReader.getMetadataNodeContent(metadataResponseXML);
+                    //  We only need the <metadata> tag and its contents
+                    String metadataSummary = catalogueReader.getMetadataNodeContent(metadataResponseXML);
 
-                        if (metadataSummary != null) {
-                            pointOfTruth = catalogueReader.getMetadataPointOfTruthUrl(metadataSummary);
-                            logger.info("Metadata Point Of Truth URL: " + pointOfTruth);
+                    if (metadataSummary != null) {
+                        pointOfTruth = catalogueReader.getMetadataPointOfTruthUrl(metadataSummary);
+                        logger.info("Metadata Point Of Truth URL: " + pointOfTruth);
 
-                            collectionTitle = catalogueReader.getCollectionTitle(metadataSummary);
-                            logger.info("Metadata collection title: " + collectionTitle);
+                        collectionTitle = catalogueReader.getCollectionTitle(metadataSummary);
+                        logger.info("Metadata collection title: " + collectionTitle);
 
-                            metadataUuid = catalogueReader.getUuid(metadataSummary);
-                            logger.info("Metadata UUID: " + metadataUuid);
+                        metadataUuid = catalogueReader.getUuid(metadataSummary);
+                        logger.info("Metadata UUID: " + metadataUuid);
 
+                        //  If the output requested is a ZIP - get the full metadata record for the collection to include in the
+                        //  ZIP file.
+                        if(resultMime.equals("application/zip")) {
                             if (metadataUuid != null) {
 
                                 //  Get the full metadata record
