@@ -71,7 +71,7 @@ public class AggregationRunner implements CommandLineRunner {
     private static final String LITERAL_INPUT_IDENTIFIER_LAYER = "layer";
     private static final String LITERAL_INPUT_IDENTIFIER_SUBSET = "subset";
     private static final String LITERAL_INPUT_IDENTIFIER_FILENAME = "filename";
-    private static final String LITERAL_INPUT_IDENTIFIER_AGGREGATION_MIME = "requestedAggregationOutputMime";
+    private static final String LITERAL_INPUT_IDENTIFIER_AGGREGATION_MIME = "aggregationOutputMime";
     private static final String DEFAULT_OUTPUT_MIME = "application/x-netcdf";
     private static final String DOWNLOADS_DIRECTORY_NAME = "downloads";
     private static final String DEFAULT_OUTPUT_FILENAME = "IMOS_aggregation_";
@@ -200,7 +200,7 @@ public class AggregationRunner implements CommandLineRunner {
             String aggregationOutputMime;
 
             //  If the client has requested a ZIP output for the result, we need to determine the mime type requested for
-            //  the aggregation file.  The requested MIME will be passed as a literal input value called 'requestedAggregationOutputMime'
+            //  the aggregation file.  The requested MIME will be passed as a literal input value called 'aggregationOutputMime'
             if(resultMime.equals("application/zip")) {
                 aggregationOutputMime = requestHelper.getLiteralInputValue(LITERAL_INPUT_IDENTIFIER_AGGREGATION_MIME);
                 if(aggregationOutputMime == null) {
