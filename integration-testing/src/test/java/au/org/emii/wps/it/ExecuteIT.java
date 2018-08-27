@@ -5,7 +5,6 @@ import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.junit.Assert.*;
 
-import au.org.aodn.aws.util.Zip;
 import au.org.emii.wps.util.ExecuteRequestBuilder;
 import com.google.common.io.Files;
 import com.jayway.awaitility.Duration;
@@ -28,15 +27,19 @@ import org.junit.Test;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.time.Instant;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import static au.org.emii.wps.util.GPathMatcher.hasGPath;
@@ -51,6 +54,7 @@ public class ExecuteIT {
     private static final Duration TWENTY_MINUTES = new Duration(20, TimeUnit.MINUTES);
     private static RequestSpecification spec;
     private static String SERVICE_ENDPOINT = System.getenv("WPS_ENDPOINT");
+    public static final int BUFFER_SIZE = 1024;
 
     @BeforeClass
     public static void initSpec() {
@@ -795,7 +799,7 @@ public class ExecuteIT {
         File zipFile = new File(tempDir, "zipOut.zip");
         FileUtils.copyURLToFile(new URL(outputLocation), zipFile);
 
-        Zip.unzipFiles(new ZipFile(zipFile), tempDir);
+        unzipFiles(new ZipFile(zipFile), tempDir);
 
         //  Find the NC file
         String[] ls = tempDir.list(new FilenameFilter() {
@@ -817,5 +821,46 @@ public class ExecuteIT {
         }
 
         return null;
+    }
+
+
+    /**
+     * Unzip the provided zip file to the location provided.
+     *
+     * @param zipFile  The zip file
+     * @param location A location to unzip the files to
+     */
+    public static void unzipFiles(ZipFile zipFile, File location) {
+        if(zipFile != null) {
+            Enumeration<? extends ZipEntry> zipEntries = zipFile.entries();
+            while(zipEntries.hasMoreElements()) {
+                ZipEntry entry = zipEntries.nextElement();
+
+                if(location.isDirectory() && !location.exists()) {
+                    boolean created = location.mkdirs();
+                }
+
+                File parent = location.getParentFile();
+                if(parent != null) {
+                    boolean created = parent.mkdirs();
+                }
+
+                File outFile = new File(location, entry.getName());
+
+                try (FileOutputStream outStream = new FileOutputStream(outFile);
+                     InputStream inStream = zipFile.getInputStream(entry)) {
+
+                    byte[] bytes = new byte[BUFFER_SIZE];
+                    int bytesRead;
+                    while((bytesRead = inStream.read(bytes)) > 0) {
+                        outStream.write(bytes, 0, bytesRead);
+                    }
+
+                    outStream.flush();
+                } catch(Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
+        }
     }
 }
