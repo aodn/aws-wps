@@ -88,11 +88,6 @@
             <artifactId>httpservices</artifactId>
             <version>4.6.9</version>
         </dependency>
-        <dependency>
-            <groupId>au.org.emii</groupId>
-            <artifactId>wps-common</artifactId>
-            <version>4.38.14</version>
-        </dependency>
     </dependencies>
 
     <repositories>
