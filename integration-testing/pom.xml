@@ -91,7 +91,7 @@
         <dependency>
             <groupId>au.org.emii</groupId>
             <artifactId>wps-common</artifactId>
-            <version>4.38.11</version>
+            <version>4.38.14</version>
         </dependency>
     </dependencies>
 
