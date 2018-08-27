@@ -309,7 +309,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
                 byte[] inBytes = new byte[chunkSizeBytes];
                 int bytesRead;
                 while((bytesRead = requestInputStream.read(inBytes)) > 0) {
-                    String inChunk = new String(inBytes, 0, bytesRead -1);
+                    String inChunk = new String(inBytes, 0, bytesRead);
                     requestStringBuilder.append(inChunk);
                 }
 

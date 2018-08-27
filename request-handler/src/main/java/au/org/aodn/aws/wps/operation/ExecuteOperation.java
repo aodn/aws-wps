@@ -1,6 +1,8 @@
 package au.org.aodn.aws.wps.operation;
 
 import au.org.aodn.aws.exception.OGCException;
+import au.org.aodn.aws.geonetwork.CatalogueReader;
+import au.org.aodn.aws.geoserver.client.SubsetParameters;
 import au.org.aodn.aws.util.EmailService;
 import au.org.aodn.aws.util.JobFileUtil;
 import au.org.aodn.aws.wps.request.ExecuteRequestHelper;
@@ -21,6 +23,8 @@ import static au.org.aodn.aws.wps.status.WpsConfig.*;
 public class ExecuteOperation implements Operation {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ExecuteOperation.class);
+    private static final String LITERAL_INPUT_IDENTIFIER_LAYER = "layer";
+    private static final String LITERAL_INPUT_IDENTIFIER_SUBSET = "subset";
 
 
     private final Execute executeRequest;
@@ -102,8 +106,43 @@ public class ExecuteOperation implements Operation {
             s3JobFileManager.write(statusDocument, statusFileName, STATUS_FILE_MIME_TYPE);
 
             if (email != null) {
+                ExecuteRequestHelper requestHelper = new ExecuteRequestHelper(executeRequest);
+                String layer = requestHelper.getLiteralInputValue(LITERAL_INPUT_IDENTIFIER_LAYER);
+                String subset = requestHelper.getLiteralInputValue(LITERAL_INPUT_IDENTIFIER_SUBSET);
+                SubsetParameters subsetParams = SubsetParameters.parse(subset);
+
+                String collectionTitle = layer;
+
+                // Lookup collection metadata to get the collection title
+                try {
+                    //  Read the metadata record for the layer
+                    String catalogueURL = WpsConfig.getProperty(GEONETWORK_CATALOGUE_URL_CONFIG_KEY);
+                    String layerSearchField = WpsConfig.getProperty(GEONETWORK_CATALOGUE_LAYER_FIELD_CONFIG_KEY);
+                    CatalogueReader catalogueReader = new CatalogueReader(catalogueURL, layerSearchField);
+                    String metadataResponseXML = catalogueReader.getMetadataSummaryXML(layer);
+
+                    //  Try and determine the collection title
+                    if (metadataResponseXML != null && metadataResponseXML.length() > 0) {
+
+                        //  We only need the <metadata> tag and its contents
+                        String metadataRecord = catalogueReader.getMetadataNodeContent(metadataResponseXML);
+
+                        if (metadataRecord != null) {
+
+                            collectionTitle = catalogueReader.getCollectionTitle(metadataRecord);
+                            LOGGER.info("Metadata collection title: " + collectionTitle);
+                        }
+                    }
+                } catch (Exception ex) {
+                    LOGGER.error("Unable to lookup catalogue for layer [" + layer + "]: " + ex.getMessage(), ex);
+                }
+
+
                 EmailService emailService = new EmailService();
-                emailService.sendRegisteredJobEmail(email, jobId);
+                emailService.sendRegisteredJobEmail(email,
+                                                    jobId,
+                                                    subsetParams,
+                                                    collectionTitle);
             }
         } catch (UnsupportedEncodingException e) {
             LOGGER.error(e.getMessage(), e);

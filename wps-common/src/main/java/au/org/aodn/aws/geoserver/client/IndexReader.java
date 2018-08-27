@@ -1,4 +1,4 @@
-package au.org.emii.geoserver.client;
+package au.org.aodn.aws.geoserver.client;
 
 import au.org.emii.aggregator.exception.AggregationException;
 import au.org.emii.download.DownloadRequest;

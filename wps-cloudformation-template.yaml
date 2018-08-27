@@ -601,6 +601,8 @@ Resources:
       Code: ./request-handler/target/request-handler-lambda-package.zip
       Environment:
         Variables:
+          GEONETWORK_CATALOGUE_URL: !Ref geonetworkCatalogueURL
+          GEONETWORK_LAYER_SEARCH_FIELD: layer
           AWS_BATCH_JOB_NAME: javaduck
           AWS_BATCH_JOB_QUEUE_NAME: !Ref JobQueue
           AWS_BATCH_TEST_QUEUE_NAME: !Ref TestQueue

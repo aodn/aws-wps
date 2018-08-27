@@ -11,14 +11,15 @@ import au.org.aodn.aws.wps.status.ExecuteStatusBuilder;
 import au.org.aodn.aws.wps.status.S3JobFileManager;
 import au.org.aodn.aws.wps.status.WpsConfig;
 import au.org.emii.aggregator.NetcdfAggregator;
-import au.org.emii.aggregator.catalogue.CatalogueReader;
+import au.org.aodn.aws.geonetwork.CatalogueReader;
 import au.org.emii.aggregator.converter.Converter;
 import au.org.emii.aggregator.exception.AggregationException;
 import au.org.emii.aggregator.overrides.AggregationOverrides;
 import au.org.emii.download.*;
-import au.org.emii.geoserver.client.HttpIndexReader;
-import au.org.emii.geoserver.client.SubsetParameters;
-import au.org.emii.geoserver.client.TimeNotSupportedException;
+import au.org.aodn.aws.geoserver.client.HttpIndexReader;
+import au.org.aodn.aws.geoserver.client.SubsetParameters;
+import au.org.aodn.aws.geoserver.client.TimeNotSupportedException;
+import au.org.aodn.aws.util.Zip;
 import au.org.emii.util.IntegerHelper;
 import au.org.emii.util.NumberRange;
 import au.org.emii.util.ProvenanceWriter;
@@ -32,6 +33,7 @@ import org.apache.logging.log4j.core.LoggerContext;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Period;
+import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.ISODateTimeFormat;
 import org.joda.time.format.PeriodFormatter;
 import org.joda.time.format.PeriodFormatterBuilder;
@@ -40,11 +42,13 @@ import org.springframework.stereotype.Component;
 import ucar.nc2.time.CalendarDateRange;
 import ucar.unidata.geoloc.LatLonRect;
 import org.apache.logging.log4j.Logger;
-
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -52,24 +56,36 @@ import java.util.List;
 import java.util.Map;
 
 import static au.org.aodn.aws.wps.status.WpsConfig.*;
-import static au.org.emii.aggregator.au.org.emii.aggregator.config.AggregationOverridesReader.getAggregationOverrides;
-import static au.org.emii.aggregator.au.org.emii.aggregator.config.DownloadConfigReader.getDownloadConfig;
+import static au.org.emii.aggregator.config.AggregationOverridesReader.getAggregationOverrides;
+import static au.org.emii.aggregator.config.DownloadConfigReader.getDownloadConfig;
 
 @Component
 public class AggregationRunner implements CommandLineRunner {
 
     public static final int DEFAULT_CONNECT_TIMEOUT_MS = 60000;
     public static final int DEFAULT_READ_TIMEOUT_MS = 60000;
-
     public static final String SUMOLOGIC_LOG_APPENDER_NAME = "SumoAppender";
     private static final String PROVENANCE_TEMPLATE_GRIDDED = "provenance_template_gridded.ftl";
+    private static final String METADATA_FILE_EXTENSION = ".xml";
+    private static final String DEFAULT_METADATA_FILENAME = "metadata" + METADATA_FILE_EXTENSION;
+    private static final String LITERAL_INPUT_IDENTIFIER_LAYER = "layer";
+    private static final String LITERAL_INPUT_IDENTIFIER_SUBSET = "subset";
+    private static final String LITERAL_INPUT_IDENTIFIER_FILENAME = "filename";
+    private static final String LITERAL_INPUT_IDENTIFIER_AGGREGATION_MIME = "aggregationOutputMime";
+    private static final String DEFAULT_OUTPUT_MIME = "application/x-netcdf";
+    private static final String DOWNLOADS_DIRECTORY_NAME = "downloads";
+    private static final String DEFAULT_OUTPUT_FILENAME = "IMOS_aggregation_";
+    private static final String DEFAULT_OUTPUT_FILE_EXTENSION = ".zip";
+
 
     private static final Logger logger = LogManager.getRootLogger();
+    private String statusS3Bucket = null;
+    private String statusFilename = null;
+    private String requestFilename = null;
 
-    private String statusS3Bucket = null, statusFilename = null, requestFilename = null;
 
     /**
-     * Entry point for the aggregation.  Relies on command-line parameters.
+     * Entry point for the aggregation.
      *
      * @param args
      */
@@ -93,6 +109,12 @@ public class AggregationRunner implements CommandLineRunner {
         EmailService emailService = null;
         ExecuteStatusBuilder statusBuilder = null;
         Path downloadDirectory;
+        SubsetParameters subsetParams = null;
+        //  Try and determine the point of truth and the collection title
+        String pointOfTruth = "";
+        String collectionTitle = "";
+        String metadataUuid = "";
+        String resultUrl = null;
 
         try {
             //  Capture the AWS job specifics - they are passed to the docker runtime as
@@ -103,7 +125,6 @@ public class AggregationRunner implements CommandLineRunner {
 
             //  These values are passed as environment variables set in the AWS Batch job definition
             String outputBucketName = WpsConfig.getProperty(OUTPUT_S3_BUCKET_CONFIG_KEY);
-            String outputFilename = WpsConfig.getProperty(OUTPUT_S3_FILENAME_CONFIG_KEY);
             statusS3Bucket = WpsConfig.getProperty(OUTPUT_S3_BUCKET_CONFIG_KEY);
             String jobFileS3KeyPrefix = WpsConfig.getProperty(AWS_BATCH_JOB_S3_KEY_PREFIX);
             statusFilename = WpsConfig.getProperty(STATUS_S3_FILENAME_CONFIG_KEY);
@@ -135,40 +156,86 @@ public class AggregationRunner implements CommandLineRunner {
             //  TODO : validate configuration
 
             statusBuilder = new ExecuteStatusBuilder(batchJobId, statusS3Bucket, statusFilename);
-            String statusDocument = statusBuilder.createResponseDocument(EnumStatus.STARTED, GOGODUCK_PROCESS_IDENTIFIER, null, null, null);
 
             //  Update status document to indicate job has started
+            String statusDocument = statusBuilder.createResponseDocument(EnumStatus.STARTED, GOGODUCK_PROCESS_IDENTIFIER, null, null, null);
             statusFileManager = new S3JobFileManager(statusS3Bucket, jobFileS3KeyPrefix, batchJobId);
             statusFileManager.write(statusDocument, statusFilename, STATUS_FILE_MIME_TYPE);
+
 
             logger.info("AWS BATCH JOB ID     : " + batchJobId);
             logger.info("AWS BATCH CE NAME    : " + awsBatchComputeEnvName);
             logger.info("AWS BATCH QUEUE NAME : " + awsBatchQueueName);
             logger.info("-----------------------------------------------------");
 
-            // Get request details
-            String requestFileContent = statusFileManager.read(requestFilename);
+
+            //  Hold the content to be added to the output zip file
+            List<File> zipContent = new ArrayList<>();
+
+            // Get request details.  The request handler Lambda function writes the XML
+            // request to S3.  We read it directly from there.
+            String requestXML = statusFileManager.read(requestFilename);
             XmlRequestParser parser = new XmlRequestParser();
-            Execute request = (Execute) parser.parse(requestFileContent);
+            Execute request = (Execute) parser.parse(requestXML);
 
             // Get inputs
             ExecuteRequestHelper requestHelper = new ExecuteRequestHelper(request);
-            String layer = requestHelper.getLiteralInputValue("layer");
-            String subset = requestHelper.getLiteralInputValue("subset");
+            String layer = requestHelper.getLiteralInputValue(LITERAL_INPUT_IDENTIFIER_LAYER);
+            String subset = requestHelper.getLiteralInputValue(LITERAL_INPUT_IDENTIFIER_SUBSET);
+            String requestedOutputFilename = requestHelper.getLiteralInputValue(LITERAL_INPUT_IDENTIFIER_FILENAME);
             contactEmail = requestHelper.getEmail();
 
+            //  Form a default filename if we weren't passed one
+            if (requestedOutputFilename == null) {
+                DateTimeFormatter isoFmt = ISODateTimeFormat.basicDateTimeNoMillis();
+                logger.info("ISO date time format: " + isoFmt.print(startTime));
+                String timestamp = isoFmt.print(startTime);
+                requestedOutputFilename = DEFAULT_OUTPUT_FILENAME + timestamp;
+            }
+
             // Determine required output mime type
-            String requestedMimeType = requestHelper.getRequestedMimeType("result");
-            String resultMime = requestedMimeType != null ? requestedMimeType : "application/x-netcdf";
+            String resultMime = requestHelper.getRequestedMimeType("result") != null ? requestHelper.getRequestedMimeType("result") : DEFAULT_OUTPUT_MIME;
+            logger.info("Requested mime type: " + resultMime);
 
+            String aggregationOutputMime;
+
+            //  If the client has requested a ZIP output for the result, we need to determine the mime type requested for
+            //  the aggregation file.  The requested MIME will be passed as a literal input value called 'aggregationOutputMime'
+            if(resultMime.equals("application/zip")) {
+                aggregationOutputMime = requestHelper.getLiteralInputValue(LITERAL_INPUT_IDENTIFIER_AGGREGATION_MIME);
+                if(aggregationOutputMime == null) {
+                    aggregationOutputMime = DEFAULT_OUTPUT_MIME;
+                }
+            } else {
+                aggregationOutputMime = resultMime;
+            }
+
+            //  If the client has requested a ZIP output - then write the request file
+            //  to disk to be included in the ZIP
+            if(resultMime.equals("application/zip")) {
+                //  Write the request file locally to add to the zip file
+                File localRequestFile = new File(jobDir.toFile(), requestFilename);
+                try (FileWriter requestFileWriter = new FileWriter(localRequestFile)) {
+                    requestFileWriter.write(requestXML);
+                    requestFileWriter.flush();
+
+                    //  Add to zip
+                    zipContent.add(localRequestFile);
+                }
+            }
+
+            //  Create a geonetwork index reader - this is used to lookup the list of files for the named layer & to
+            //  work out the latest timestep (the latest file in the collection) for test transactions
             HttpIndexReader indexReader = new HttpIndexReader(WpsConfig.getProperty(WpsConfig.GEOSERVER_CATALOGUE_ENDPOINT_URL_CONFIG_KEY));
-
-            SubsetParameters subsetParams = SubsetParameters.parse(subset);
 
             //  Initialise email service
             emailService = new EmailService();
 
+            //  Parse the subset parameters passed
+            subsetParams = SubsetParameters.parse(subset);
+
             logger.info("Running aggregation job. JobID [" + batchJobId + "]. Layer [" + layer + "], Subset [" + subset + "], Result MIME [" + resultMime + "], Callback email [" + contactEmail + "]");
+
 
             //  TODO: Qa the parameters/settings passed?
 
@@ -218,7 +285,7 @@ public class AggregationRunner implements CommandLineRunner {
             AggregationOverrides overrides = getAggregationOverrides(aggregatorTemplateFileURL, layer);
 
             // Create a directory for downloads in working directory
-            downloadDirectory = jobDir.resolve("downloads");
+            downloadDirectory = jobDir.resolve(DOWNLOADS_DIRECTORY_NAME);
             Files.createDirectory(downloadDirectory);
 
             //  Apply download configuration
@@ -227,11 +294,13 @@ public class AggregationRunner implements CommandLineRunner {
             //  Apply connect/read timeouts
             Downloader downloader = new Downloader(downloadConnectTimeout, downloadReadTimeout);
 
+            //  Create a temp file as the destination for the aggregation
             Path outputFile = Files.createTempFile(jobDir, "agg", ".nc");
             Path convertedFile = null;
 
             long chunkSize = Long.valueOf(WpsConfig.getProperty(CHUNK_SIZE_KEY));
 
+            //  Download and aggregate the files
             try (
                     ParallelDownloadManager downloadManager = new ParallelDownloadManager(downloadConfig, downloader);
                     NetcdfAggregator netcdfAggregator = new NetcdfAggregator(outputFile, overrides, chunkSize, bbox, depthRange, subsetTimeRange)
@@ -245,37 +314,128 @@ public class AggregationRunner implements CommandLineRunner {
 
                 logger.info("Raw aggregated file size [" + outputFile.toFile().length() + " bytes]");
 
+                //  This map holds the WPS outputs to be returned in the ExecuteResponse
                 HashMap<String, String> outputMap = new HashMap<>();
 
                 //  Perform the conversion
                 //  Instantiate the correct converter for the requested mimeType & do the conversion
-                Converter converter = Converter.newInstance(resultMime);
+                Converter converter = Converter.newInstance(aggregationOutputMime);
+                convertedFile = jobDir.resolve("converted" + "." + converter.getExtension());
 
-                convertedFile = jobDir.resolve("converted" + converter.getExtension());
+                logger.info("Converting aggregation output to Mime Type: " + aggregationOutputMime);
+
                 converter.convert(outputFile, convertedFile);
 
+                //  Create a file manager for uploading files to S3
                 S3JobFileManager outputFileManager = new S3JobFileManager(outputBucketName, jobFileS3KeyPrefix, batchJobId);
-                String fullOutputFilename = outputFilename + "." + converter.getExtension();
-                outputFileManager.upload(convertedFile.toFile(), fullOutputFilename, resultMime);
 
+                //  Rename the converted file.
+                convertedFile = Files.move(convertedFile, jobDir.resolve(requestedOutputFilename + "." + converter.getExtension()));
 
-                String resultUrl = WpsConfig.getS3ExternalURL(outputBucketName,
-                        outputFileManager.getJobFileKey(fullOutputFilename));
+                if(resultMime.equals("application/zip")) {
+                    //  Add the converted file to the zip file
+                    zipContent.add(convertedFile.toFile());
+                } else {
+                    //  Add as an output to the WPS response
+                    //  Upload to S3
+                    String outputFilename = convertedFile.toFile().getName();
+                    outputFileManager.upload(convertedFile.toFile(), outputFilename, aggregationOutputMime);
+
+                    logger.info("Uploaded " + convertedFile.toFile().getAbsolutePath() + " to S3");
+
+                    //  Put output URL in WPS response
+                    resultUrl = WpsConfig.getS3ExternalURL(outputBucketName, outputFileManager.getJobFileKey(outputFilename));
+                    if (requestHelper.hasRequestedOutput("result")) {
+                        outputMap.put("result", resultUrl);
+                    }
+                }
 
                 //  URL for the status page for this job
                 String statusUrl = WpsConfig.getStatusServiceHtmlEndpoint(batchJobId);
 
-                if (requestHelper.hasRequestedOutput("result")) {
-                    outputMap.put("result", resultUrl);
+
+                //  Search for the metadata record for the layer by layer name
+                String catalogueURL = WpsConfig.getProperty(GEONETWORK_CATALOGUE_URL_CONFIG_KEY);
+                String layerSearchField = WpsConfig.getProperty(GEONETWORK_CATALOGUE_LAYER_FIELD_CONFIG_KEY);
+                CatalogueReader catalogueReader = new CatalogueReader(catalogueURL, layerSearchField);
+                String metadataResponseXML = catalogueReader.getMetadataSummaryXML(layer);
+
+                if (metadataResponseXML != null && metadataResponseXML.length() > 0) {
+
+                    //  We only need the <metadata> tag and its contents
+                    String metadataSummary = catalogueReader.getMetadataNodeContent(metadataResponseXML);
+
+                    if (metadataSummary != null) {
+                        pointOfTruth = catalogueReader.getMetadataPointOfTruthUrl(metadataSummary);
+                        logger.info("Metadata Point Of Truth URL: " + pointOfTruth);
+
+                        collectionTitle = catalogueReader.getCollectionTitle(metadataSummary);
+                        logger.info("Metadata collection title: " + collectionTitle);
+
+                        metadataUuid = catalogueReader.getUuid(metadataSummary);
+                        logger.info("Metadata UUID: " + metadataUuid);
+
+                        //  If the output requested is a ZIP - get the full metadata record for the collection to include in the
+                        //  ZIP file.
+                        if(resultMime.equals("application/zip")) {
+                            if (metadataUuid != null) {
+
+                                //  Get the full metadata record
+                                String fullMetadataRecord = catalogueReader.getMetadataRecordXML(metadataUuid);
+
+                                //  Write the metadata to a file
+
+                                //  Form the metadata filename from the title of the collection
+                                String metadataFilename = getMetadataFilename(collectionTitle) + ".xml";
+                                File metadataFile = new File(jobDir.toFile(), metadataFilename);
+
+                                try (FileWriter metadataFileWriter = new FileWriter(metadataFile)) {
+
+                                    metadataFileWriter.write(fullMetadataRecord);
+                                    metadataFileWriter.flush();
+
+                                    logger.info("Metadata file size [" + metadataFile.length() + "] bytes");
+                                    //  Add to the zip file
+                                    zipContent.add(metadataFile);
+
+                                    logger.info("Wrote metadata file to: " + metadataFile.getAbsolutePath() + ", Size: " + metadataFile.length());
+                                } catch (IOException ioex) {
+                                    logger.error("Unable to write metadata XML file: " + metadataFile.getAbsolutePath(), ioex);
+                                }
+                            }
+                        }
+                    } else {
+                        logger.warn("Unable to retrieve metadata record for collection.  No metadata will be included in the zip file.");
+                    }
                 }
 
+
+                //  Form the ZIP file and upload if requested
+                if(resultMime.equals("application/zip")) {
+                    String outputFilename = requestedOutputFilename + DEFAULT_OUTPUT_FILE_EXTENSION;
+
+                    //  Form output ZIP file
+                    File zipFile = Zip.zipFiles(jobDir.toFile().getAbsolutePath() + File.separator + outputFilename, zipContent);
+                    logger.info("Formed output ZIP file: " + zipFile.getAbsolutePath() + ", Size: " + zipFile.length());
+
+                    //  Upload to S3
+                    outputFileManager.upload(zipFile, outputFilename, "application/zip");
+
+                    logger.info("Uploaded " + batchJobId + ".zip to S3");
+
+                    //  Put output URL in WPS response
+                    resultUrl = WpsConfig.getS3ExternalURL(outputBucketName, outputFileManager.getJobFileKey(outputFilename));
+                    if (requestHelper.hasRequestedOutput("result")) {
+                        outputMap.put("result", resultUrl);
+                    }
+                }
+
+
+
+                //  If the requester has requested provenance output - form the record + save it to file
+                //  We haven't included this output in the ZIP at this stage.  It is unlikely to be requested by a client.
                 if (requestHelper.hasRequestedOutput("provenance")) {
                     logger.info("Provenance output requested.");
-
-                    //  Lookup the metadata URL for the layer
-                    String catalogueURL = WpsConfig.getProperty(GEONETWORK_CATALOGUE_URL_CONFIG_KEY);
-                    String layerSearchField = WpsConfig.getProperty(GEONETWORK_CATALOGUE_LAYER_FIELD_CONFIG_KEY);
-                    CatalogueReader catalogueReader = new CatalogueReader(catalogueURL, layerSearchField);
 
                     // Create provenance document
                     Configuration config = new Configuration();
@@ -289,15 +449,22 @@ public class AggregationRunner implements CommandLineRunner {
                     params.put("endTime", new DateTime(DateTimeZone.UTC));
                     params.put("layer", layer);
                     params.put("parameters", subsetParams);
-                    params.put("sourceMetadataUrl", catalogueReader.getMetadataUrl(layer));
+                    params.put("sourceMetadataUrl", pointOfTruth);
                     String provenanceDocument = ProvenanceWriter.write(PROVENANCE_TEMPLATE_GRIDDED, params);
 
+                    File provenanceFile = new File(jobDir.toFile(), "provenance.xml");
+
+                    FileWriter provenanceFileWriter = new FileWriter(provenanceFile);
+                    provenanceFileWriter.write(provenanceDocument);
+                    provenanceFileWriter.close();
+
                     //  Upload provenance document to S3
-                    outputFileManager.write(provenanceDocument, "provenance.xml", PROVENANCE_FILE_MIME_TYPE);
+                    outputFileManager.upload(provenanceFile, "provenance.xml", PROVENANCE_FILE_MIME_TYPE);
 
                     String provenanceUrl = WpsConfig.getS3ExternalURL(outputBucketName,
                             outputFileManager.getJobFileKey("provenance.xml"));
 
+                    //  Add provenance output to WPS response
                     outputMap.put("provenance", provenanceUrl);
                 }
 
@@ -307,15 +474,23 @@ public class AggregationRunner implements CommandLineRunner {
                 Period elapsedPeriod = new Period(startTime, stopTime);
                 String elapsedTimeString = formatPeriodString(elapsedPeriod);
 
+                //  Log all job details including statistics on how long it took.
                 logger.info("Aggregation completed successfully. JobID [" + batchJobId + "], Callback email [" + contactEmail + "], Size bytes [" + convertedFile.toFile().length() + "], Elapsed time (h:m:s) [" + elapsedTimeString + "]");
                 statusDocument = statusBuilder.createResponseDocument(EnumStatus.SUCCEEDED, GOGODUCK_PROCESS_IDENTIFIER, null, null, outputMap);
                 statusFileManager.write(statusDocument, statusFilename, STATUS_FILE_MIME_TYPE);
+
 
                 //  Send email - if email address was provided
                 if (contactEmail != null) {
                     try {
                         //  Send completed job email to user
-                        emailService.sendCompletedJobEmail(contactEmail, batchJobId, statusUrl, S3Utils.getExpirationinDays(outputBucketName));
+                        emailService.sendCompletedJobEmail(
+                                contactEmail,
+                                batchJobId,
+                                statusUrl,
+                                S3Utils.getExpirationinDays(outputBucketName),
+                                subsetParams,
+                                collectionTitle);
                     } catch (EmailException ex) {
                         logger.error(ex.getMessage(), ex);
                     }
@@ -360,7 +535,11 @@ public class AggregationRunner implements CommandLineRunner {
             //  Send failed job email to user
             if (contactEmail != null) {
                 try {
-                    emailService.sendFailedJobEmail(contactEmail, administratorEmail, batchJobId);
+                    emailService.sendFailedJobEmail(contactEmail,
+                            administratorEmail,
+                            batchJobId,
+                            subsetParams,
+                            collectionTitle);
                 } catch (EmailException ex) {
                     logger.error(ex.getMessage(), ex);
                 }
@@ -407,5 +586,18 @@ public class AggregationRunner implements CommandLineRunner {
                 .toFormatter();
 
         return formatter.print(period);
+    }
+
+
+    private String getMetadataFilename(String collectionTitle) {
+        if(collectionTitle == null || collectionTitle.trim().length() == 0) {
+            //  Use a default filename
+            return DEFAULT_METADATA_FILENAME;
+        }
+
+        //  Replace illegal characters with underscores
+        collectionTitle = collectionTitle.replaceAll("[^\\w.-]", "_");
+
+        return collectionTitle;
     }
 }

@@ -4,14 +4,15 @@
             html {background-color: white; margin-top: 0 ! important;}
             body, html, td, p, button { font-family: 'Arimo', sans-serif; }
             body, html, td { color: #4D5B63; }
-            h2 {margin-bottom: 14px;}
+            h2 {margin-left: 50px;}
+            h3 {margin-left: 50px;}
             h1, h2, h3, h4,.x-panel-header,.x-window-header-text,.search-filter-panel,.filter-selection-panel-header-selected {color: #4D5B63;cursor: default;}
-            p {margin-bottom: 10px;}
             .portalheader, .jumbotronFooter {padding: 10px 0;background-color: #1a5173;}
+            p.message { margin-left: 70px; }
             .jumbotronFooter {padding: 48px 0;}
             .jumbotronFooter * {color: #ffffff;}
             .jumbotronFooter a {color: #ccc;}
-            table { border: 0; width: 95%; font-size: 14px; }
+            table { border: 0; width: 95%; font-size: 14px; margin-left: 50px }
             th {border: 1px solid black; color: #ffffff; background:#1a5273; }
             tr:hover td { background:#dfe4e6; }
             table td {border: 1px solid black; padding: 0px 10px 0px 10px; text-align: left; }
@@ -49,13 +50,13 @@
                 </a>
             </div>
         </div>
-        <div class="container">
+        <!--<div class="container">-->
             <H2>WPS QUEUE CONTENTS: ${queueName}</H2>
 
             <H3>Queued Jobs</H3>
 
             <#if queuedJobsList??>
-                <TABLE BORDER>
+                <TABLE BORDER="1" WIDTH="90%">
                     <TR><TH>Position</TH><TH>Job ID</TH><TH>Submitted</TH><TH>Status</TH></TR>
                     <#list queuedJobsList as job>
                         <TR><TD>${job_index}</TD>
@@ -71,13 +72,13 @@
                     </#list>
                 </TABLE>
             <#else>
-                No jobs are currently queued.
+                <p class="message">No jobs are currently queued.</p>
             </#if>
 
             <H3>Running Jobs</H3>
 
             <#if runningJobsList??>
-                <TABLE BORDER="1">
+                <TABLE BORDER="1"  WIDTH="90%">
                 <TR><TH>Job ID</TH><TH>Submitted</TH><TH>Started</TH><TH>Status</TH><TH>Log File</TH></TR>
                 <#list runningJobsList as job>
                     <TR><TD><A HREF="javascript:openJobStatusLink('${job.awsBatchJobDetail.jobId}');">${job.awsBatchJobDetail.jobId}</A></TD>
@@ -103,13 +104,13 @@
                 </#list>
                 </TABLE>
             <#else>
-                No jobs are currently running.
+                <p class="message">No jobs are currently running.</p>
             </#if>
 
             <H3>Completed Jobs</H3>
 
             <#if completedJobsList??>
-                <TABLE BORDER="1">
+                <TABLE BORDER="1" WIDTH="90%">
                 <TR><TH>Job ID</TH><TH>Submitted</TH><TH>Started</TH><TH>Completed</TH><TH>Job Status</TH><TH>Aggregation Result</TH><TH>Log File</TH></TR>
                 <#list completedJobsList as job>
                 <TR><TD><A HREF="javascript:openJobStatusLink('${job.awsBatchJobDetail.jobId}');">${job.awsBatchJobDetail.jobId}</A></TD>
@@ -146,10 +147,10 @@
                 </#list>
             </TABLE>
             <#else>
-                No completed jobs found.
+                <p class="message">No completed jobs found.</p>
             </#if>
 
-        </div>
+        <!--</div>-->
         <BR/>
         <BR/>
         <div class="jumbotronFooter voffset5">

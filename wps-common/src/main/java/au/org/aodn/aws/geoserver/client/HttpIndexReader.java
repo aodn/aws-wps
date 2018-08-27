@@ -1,4 +1,4 @@
-package au.org.emii.geoserver.client;
+package au.org.aodn.aws.geoserver.client;
 
 
 import java.io.BufferedInputStream;
@@ -317,12 +317,15 @@ public class HttpIndexReader {
         logger.info("GETting list of files from [" + geoserverWfsEndpoint + "?" + new String(getParamsBytes));
 
         URL url = new URL(geoserverWfsEndpoint);
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setRequestMethod("GET");
-        conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-        conn.setRequestProperty("Content-Length", String.valueOf(getParamsBytes.length));
-        conn.setDoOutput(true);
-        conn.getOutputStream().write(getParamsBytes);
-        return conn.getInputStream();
+
+        HttpURLConnection httpConnection = (HttpURLConnection) url.openConnection();
+        httpConnection.setRequestMethod("GET");
+        httpConnection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+        httpConnection.setRequestProperty("Content-Length", String.valueOf(getParamsBytes.length));
+        httpConnection.setDoOutput(true);
+        httpConnection.getOutputStream().write(getParamsBytes);
+        int responseCode = httpConnection.getResponseCode();
+        logger.info("HTTP ResponseCode: " + responseCode);
+        return httpConnection.getInputStream();
     }
 }
