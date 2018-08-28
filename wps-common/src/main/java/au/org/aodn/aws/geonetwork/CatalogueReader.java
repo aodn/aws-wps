@@ -62,12 +62,6 @@ public class CatalogueReader {
 
             logger.info("Layer name: " + layer);
 
-            //  Strip the imos: off the front of the layer name if it is present
-            if (layer.startsWith("imos:")) {
-                layer = StringUtils.removeStart(layer, "imos:");
-                logger.info("Adjusted layer name: " + layer);
-            }
-
             String searchUrl = String.format(CATALOGUE_SUMMARY_SEARCH_TEMPLATE, this.catalogueUrl,
                     this.layerSearchField, layer);
 

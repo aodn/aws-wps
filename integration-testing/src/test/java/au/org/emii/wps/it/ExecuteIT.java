@@ -59,18 +59,18 @@ public class ExecuteIT {
     @BeforeClass
     public static void initSpec() {
         spec = new RequestSpecBuilder()
-            .setBaseUri(SERVICE_ENDPOINT)
-            .setContentType(ContentType.XML)
-            .addFilter(new ResponseLoggingFilter())
-            .addFilter(new RequestLoggingFilter())
-            .build();
+                .setBaseUri(SERVICE_ENDPOINT)
+                .setContentType(ContentType.XML)
+                .addFilter(new ResponseLoggingFilter())
+                .addFilter(new RequestLoggingFilter())
+                .build();
     }
 
     @Test
     public void testAcornSubset() throws IOException {
         Execute request = new ExecuteRequestBuilder()
                 .identifer("gs:GoGoDuck")
-                .input("layer", "imos:acorn_hourly_avg_rot_qc_timeseries_url")
+                .input("layer", "acorn_hourly_avg_rot_qc_timeseries_url")
                 .input("subset", "TIME,2017-01-01T00:00:00.000Z,2017-01-07T23:04:00.000Z;LATITUDE,-33.18,-31.45;LONGITUDE,114.82,115.39")
                 .input("callbackParams", "imos-wps-testing@mailinator.com")
                 .output("result", "application/x-netcdf")
@@ -111,7 +111,7 @@ public class ExecuteIT {
     public void testTimeseries() {
         Execute request = new ExecuteRequestBuilder()
                 .identifer("gs:GoGoDuck")
-                .input("layer", "imos:acorn_hourly_avg_rot_qc_timeseries_url")
+                .input("layer", "acorn_hourly_avg_rot_qc_timeseries_url")
                 .input("subset", "TIME,2017-01-04T10:30:00.000Z,2017-01-04T11:30:00.000Z;LATITUDE,-31.8009,-31.8009;LONGITUDE,115.0227,115.0227")
                 .input("callbackParams", "imos-wps-testing@mailinator.com")
                 .output("result", "text/csv")
@@ -150,7 +150,7 @@ public class ExecuteIT {
     public void testTestModeTimeseries() {
         Execute request = new ExecuteRequestBuilder()
                 .identifer("gs:GoGoDuck")
-                .input("layer", "imos:acorn_hourly_avg_rot_qc_timeseries_url")
+                .input("layer", "acorn_hourly_avg_rot_qc_timeseries_url")
                 .input("TestMode", "true")
                 .input("subset", "TIME,2017-01-04T10:30:00.000Z,2017-01-04T11:30:00.000Z;LATITUDE,-31.8009,-31.8009;LONGITUDE,115.0227,115.0227")
                 .input("callbackParams", "imos-wps-testing@mailinator.com")
@@ -206,7 +206,7 @@ public class ExecuteIT {
     public void testTimeseriesInTimestampOrder() {
         Execute request = new ExecuteRequestBuilder()
                 .identifer("gs:GoGoDuck")
-                .input("layer", "imos:acorn_hourly_avg_rot_qc_timeseries_url")
+                .input("layer", "acorn_hourly_avg_rot_qc_timeseries_url")
                 .input("subset", "TIME,2017-01-04T11:30:00.000Z,2017-01-06T11:30:00.000Z;LATITUDE,-31.8009,-31.8009;LONGITUDE,115.0227,115.0227")
                 .input("callbackParams", "imos-wps-testing@mailinator.com")
                 .output("result", "text/csv")
@@ -360,26 +360,26 @@ public class ExecuteIT {
     @Test
     public void testTimeseriesZip() {
         Execute request = new ExecuteRequestBuilder()
-            .identifer("gs:GoGoDuck")
-            .input("layer", "imos:acorn_hourly_avg_rot_qc_timeseries_url")
-            .input("subset", "TIME,2017-01-04T10:30:00.000Z,2017-01-04T11:30:00.000Z;LATITUDE,-31.8009,-31.8009;LONGITUDE,115.0227,115.0227")
-            .input("callbackParams", "imos-wps-testing@mailinator.com")
+                .identifer("gs:GoGoDuck")
+                .input("layer", "acorn_hourly_avg_rot_qc_timeseries_url")
+                .input("subset", "TIME,2017-01-04T10:30:00.000Z,2017-01-04T11:30:00.000Z;LATITUDE,-31.8009,-31.8009;LONGITUDE,115.0227,115.0227")
+                .input("callbackParams", "imos-wps-testing@mailinator.com")
                 .input("aggregationOutputMime", "text/csv")
                 .output("result", "application/zip")
-            .build();
+                .build();
 
         String statusUrl = submitAndWaitToComplete(request, TWENTY_MINUTES);
 
         String outputLocation = given()
-            .spec(spec)
-          .when()
-            .get(statusUrl)
-          .then()
-            .statusCode(200)
-            .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
-            .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"))
-          .extract()
-            .path("ExecuteResponse.ProcessOutputs.Output.Reference.@href");
+                .spec(spec)
+                .when()
+                .get(statusUrl)
+                .then()
+                .statusCode(200)
+                .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
+                .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"))
+                .extract()
+                .path("ExecuteResponse.ProcessOutputs.Output.Reference.@href");
 
         //  Output will be in ZIP file format.  We need to unzip the file and then verify the
         //  output.
@@ -423,7 +423,7 @@ public class ExecuteIT {
     public void testTestModeTimeseriesZip() {
         Execute request = new ExecuteRequestBuilder()
                 .identifer("gs:GoGoDuck")
-                .input("layer", "imos:acorn_hourly_avg_rot_qc_timeseries_url")
+                .input("layer", "acorn_hourly_avg_rot_qc_timeseries_url")
                 .input("TestMode", "true")
                 .input("subset", "TIME,2017-01-04T10:30:00.000Z,2017-01-04T11:30:00.000Z;LATITUDE,-31.8009,-31.8009;LONGITUDE,115.0227,115.0227")
                 .input("callbackParams", "imos-wps-testing@mailinator.com")
@@ -480,7 +480,7 @@ public class ExecuteIT {
     public void testTimeseriesInTimestampOrderZip() {
         Execute request = new ExecuteRequestBuilder()
                 .identifer("gs:GoGoDuck")
-                .input("layer", "imos:acorn_hourly_avg_rot_qc_timeseries_url")
+                .input("layer", "acorn_hourly_avg_rot_qc_timeseries_url")
                 .input("subset", "TIME,2017-01-04T11:30:00.000Z,2017-01-06T11:30:00.000Z;LATITUDE,-31.8009,-31.8009;LONGITUDE,115.0227,115.0227")
                 .input("callbackParams", "imos-wps-testing@mailinator.com")
                 .input("aggregationOutputMime", "text/csv")
@@ -606,94 +606,121 @@ public class ExecuteIT {
     @Test
     public void testProvenanceRequested() {
         Execute request = new ExecuteRequestBuilder()
-            .identifer("gs:GoGoDuck")
-            .input("layer", "imos:acorn_hourly_avg_rot_qc_timeseries_url")
-            .input("subset", "TIME,2017-01-01T00:00:00.000Z,2017-01-07T23:04:00.000Z;LATITUDE,-33.18,-31.45;LONGITUDE,114.82,115.39")
-            .input("callbackParams", "imos-wps-testing@mailinator.com")
-            .output("provenance", "text/xml")
-            .build();
+                .identifer("gs:GoGoDuck")
+                .input("layer", "acorn_hourly_avg_rot_qc_timeseries_url")
+                .input("subset", "TIME,2017-01-01T00:00:00.000Z,2017-01-07T23:04:00.000Z;LATITUDE,-33.18,-31.45;LONGITUDE,114.82,115.39")
+                .input("callbackParams", "imos-wps-testing@mailinator.com")
+                .output("provenance", "text/xml")
+                .build();
 
         String statusUrl = submitAndWaitToComplete(request, TWENTY_MINUTES);
 
         String outputLocation = given()
-            .spec(spec)
-            .when()
-            .get(statusUrl)
-            .then()
-            .statusCode(200)
-            .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
-            .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"))
-            .body("ExecuteResponse.ProcessOutputs.Output.Identifier", equalTo("provenance"))
-        .extract()
-            .path("ExecuteResponse.ProcessOutputs.Output.Reference.@href");
+                .spec(spec)
+                .when()
+                .get(statusUrl)
+                .then()
+                .statusCode(200)
+                .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
+                .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"))
+                .body("ExecuteResponse.ProcessOutputs.Output.Identifier", equalTo("provenance"))
+                .extract()
+                .path("ExecuteResponse.ProcessOutputs.Output.Reference.@href");
 
         given()
-            .spec(spec)
-        .when()
-            .get(outputLocation)
-        .then()
-            .statusCode(200)
-            .contentType("application/xml")
-            .body(
-                hasXPath("//TimePeriod/beginPosition", equalTo("2017-01-01T00:00:00Z")),
-                hasXPath("//TimePeriod/endPosition", equalTo("2017-01-07T23:04:00Z")),
-                hasXPath("//EX_GeographicBoundingBox/westBoundLongitude/Decimal", equalTo("114.82")),
-                hasXPath("//EX_GeographicBoundingBox/eastBoundLongitude/Decimal", equalTo("115.39")),
-                hasXPath("//EX_GeographicBoundingBox/southBoundLatitude/Decimal", equalTo("-33.18")),
-                hasXPath("//EX_GeographicBoundingBox/northBoundLatitude/Decimal", equalTo("-31.45")),
-                hasXPath("//entity[@id='layerName']/location", equalTo("imos:acorn_hourly_avg_rot_qc_timeseries_url")),
-                hasXPath("//entity[@id='outputAggregationSettings']/location", not(isEmptyOrNullString())),
-                hasXPath("//entity[@id='sourceData']/location", endsWith("geonetwork/srv/en/metadata.show?uuid=028b9801-279f-427c-964b-0ffcdf310b59")),
-                hasXPath("//softwareAgent[@id='JavaCode']/location", not(isEmptyOrNullString())),
-                hasXPath("//other/identifier", equalTo(getJobId(statusUrl)))
-            );
+                .spec(spec)
+                .when()
+                .get(outputLocation)
+                .then()
+                .statusCode(200)
+                .contentType("application/xml")
+                .body(
+                        hasXPath("//TimePeriod/beginPosition", equalTo("2017-01-01T00:00:00Z")),
+                        hasXPath("//TimePeriod/endPosition", equalTo("2017-01-07T23:04:00Z")),
+                        hasXPath("//EX_GeographicBoundingBox/westBoundLongitude/Decimal", equalTo("114.82")),
+                        hasXPath("//EX_GeographicBoundingBox/eastBoundLongitude/Decimal", equalTo("115.39")),
+                        hasXPath("//EX_GeographicBoundingBox/southBoundLatitude/Decimal", equalTo("-33.18")),
+                        hasXPath("//EX_GeographicBoundingBox/northBoundLatitude/Decimal", equalTo("-31.45")),
+                        hasXPath("//entity[@id='layerName']/location", equalTo("acorn_hourly_avg_rot_qc_timeseries_url")),
+                        hasXPath("//entity[@id='outputAggregationSettings']/location", not(isEmptyOrNullString())),
+                        hasXPath("//entity[@id='sourceData']/location", endsWith("geonetwork/srv/en/metadata.show?uuid=028b9801-279f-427c-964b-0ffcdf310b59")),
+                        hasXPath("//softwareAgent[@id='JavaCode']/location", not(isEmptyOrNullString())),
+                        hasXPath("//other/identifier", equalTo(getJobId(statusUrl)))
+                );
 
     }
 
     @Test
     public void testNoProvenanceRequested() {
         Execute request = new ExecuteRequestBuilder()
-            .identifer("gs:GoGoDuck")
-            .input("layer", "imos:acorn_hourly_avg_rot_qc_timeseries_url")
-            .input("subset", "TIME,2017-01-01T00:00:00.000Z,2017-01-07T23:04:00.000Z;LATITUDE,-33.18,-31.45;LONGITUDE,114.82,115.39")
-            .input("callbackParams", "imos-wps-testing@mailinator.com")
-            .output("result", "application/x-netcdf")
-            .build();
+                .identifer("gs:GoGoDuck")
+                .input("layer", "acorn_hourly_avg_rot_qc_timeseries_url")
+                .input("subset", "TIME,2017-01-01T00:00:00.000Z,2017-01-07T23:04:00.000Z;LATITUDE,-33.18,-31.45;LONGITUDE,114.82,115.39")
+                .input("callbackParams", "imos-wps-testing@mailinator.com")
+                .output("result", "application/x-netcdf")
+                .build();
 
         String statusUrl = submitAndWaitToComplete(request, TWENTY_MINUTES);
 
         given()
-            .spec(spec)
-            .when()
-            .get(statusUrl)
-            .then()
-            .statusCode(200)
-            .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
-            .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"))
-            .body(hasXPath("/ExecuteResponse/ProcessOutputs/Output/Identifier[text()='result']"))
-            .body(not(hasXPath("/ExecuteResponse/ProcessOutputs/Output/Identifier[text()='provenance']")));
+                .spec(spec)
+                .when()
+                .get(statusUrl)
+                .then()
+                .statusCode(200)
+                .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
+                .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"))
+                .body(hasXPath("/ExecuteResponse/ProcessOutputs/Output/Identifier[text()='result']"))
+                .body(not(hasXPath("/ExecuteResponse/ProcessOutputs/Output/Identifier[text()='provenance']")));
     }
+
+
+    @Test
+    public void testBathy() {
+        Execute request = new ExecuteRequestBuilder()
+                .identifer("gs:GoGoDuck")
+                .input("layer", "imos:bathy_ppb_deakin_url")
+                .input("subset", "TIME,2017-01-01T00:00:00.000Z,2017-01-07T23:04:00.000Z;LATITUDE,-33.18,-31.45;LONGITUDE,114.82,115.39")
+                .input("callbackParams", "imos-wps-testing@mailinator.com")
+                .output("result", "application/x-netcdf")
+                .build();
+
+        String statusUrl = submitAndWaitToComplete(request, TWENTY_MINUTES);
+
+        given()
+                .spec(spec)
+                .when()
+                .get(statusUrl)
+                .then()
+                .statusCode(200)
+                .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
+                .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"))
+                .body(hasXPath("/ExecuteResponse/ProcessOutputs/Output/Identifier[text()='result']"))
+                .body(not(hasXPath("/ExecuteResponse/ProcessOutputs/Output/Identifier[text()='provenance']")));
+    }
+
 
     @Test
     public void testNoEmail() {
         Execute request = new ExecuteRequestBuilder()
-            .identifer("gs:GoGoDuck")
-            .input("layer", "imos:acorn_hourly_avg_rot_qc_timeseries_url")
-            .input("subset", "TIME,2017-01-01T00:00:00.000Z,2017-01-07T23:04:00.000Z;LATITUDE,-33.18,-31.45;LONGITUDE,114.82,115.39")
-            .output("result", "application/x-netcdf")
-            .build();
+                .identifer("gs:GoGoDuck")
+                .input("layer", "acorn_hourly_avg_rot_qc_timeseries_url")
+                .input("subset", "TIME,2017-01-01T00:00:00.000Z,2017-01-07T23:04:00.000Z;LATITUDE,-33.18,-31.45;LONGITUDE,114.82,115.39")
+                .output("result", "application/x-netcdf")
+                .build();
 
         String statusUrl = submitAndWaitToComplete(request, TWENTY_MINUTES);
 
         given()
-            .spec(spec)
-        .when()
-            .get(statusUrl)
-        .then()
-            .statusCode(200)
-            .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
-            .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"));
+                .spec(spec)
+                .when()
+                .get(statusUrl)
+                .then()
+                .statusCode(200)
+                .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
+                .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"));
     }
+
 
     @Test
     public void testHtmlStatusPagesUpdated() throws IOException {
@@ -726,6 +753,7 @@ public class ExecuteIT {
         hasPageContainingJobId(htmlQueueUrl, jobId);
     }
 
+
     private void hasPageContainingJobId(String pageUrl, String jobId) {
         given()
                 .spec(spec)
@@ -736,28 +764,30 @@ public class ExecuteIT {
                 .body(containsString(jobId));
     }
 
+
     private String submitAndWaitToComplete(Execute request, Duration maxWait) {
         String statusUrl = submit(request);
 
         System.out.println("Waiting for process to complete...");
 
         await().atMost(maxWait).until(() ->
-            given()
-                .log().method()
-                .log().path()
-            .get(statusUrl)
-            .then()
-                .log().status()
-                .statusCode(200)
-                .body(anyOf(
-                    hasXPath("/ExecuteResponse/Status/ProcessSucceeded"),
-                    hasXPath("/ExecuteResponse/Status/ProcessFailed")))
+                given()
+                        .log().method()
+                        .log().path()
+                        .get(statusUrl)
+                        .then()
+                        .log().status()
+                        .statusCode(200)
+                        .body(anyOf(
+                                hasXPath("/ExecuteResponse/Status/ProcessSucceeded"),
+                                hasXPath("/ExecuteResponse/Status/ProcessFailed")))
         );
 
         System.out.println("Process completed");
 
         return statusUrl;
     }
+
 
     private String submit(Execute request) {
         return given()
