@@ -53,6 +53,8 @@ Mappings:
       HostedZoneId: Z3JIUIKOQNPOWH
       HostedZoneName: dev.aodn.org.au.
       CustomAmiId: ami-65c23707
+      UseVpcGateway: false
+      GatewaySubnetIds: []
     '104044260116':  # production
       AllowEphemeralBuckets: false
       CertificateArn: arn:aws:acm:us-east-1:104044260116:certificate/58773098-aaa7-42b5-bc58-8ba2a938f951
@@ -60,6 +62,11 @@ Mappings:
       HostedZoneId: ZYU7JVFK6NXWM
       HostedZoneName: aodn.org.au.
       CustomAmiId: ami-bd06f3df
+      UseVpcGateway: true
+      GatewaySubnetIds:
+        - !ImportValue "lambda-subnets-subnetA"
+        - !ImportValue "lambda-subnets-subnetB"
+        - !ImportValue "lambda-subnets-subnetC"
   '615645230945': # non-production region constants
     ap-southeast-2:
       vpc: vpc-5e0e3a3a
@@ -85,6 +92,7 @@ Conditions:
   ConfigureSumoLogic: !Not [!Equals ['', !Ref sumoEndpoint]]
   CreateWpsApiGatewayDomainName: !Not [!Equals ['', !Ref wpsDomainName]]
   UseCustomAmi: !Not [!Equals ['', !FindInMap [AccountConstants, !Ref 'AWS::AccountId', CustomAmiId]]]
+  UseVpcGateway: !Equals [true, !FindInMap [AccountConstants, !Ref 'AWS::AccountId', UseVpcGateway]]
 Resources:
 
   #
@@ -621,6 +629,12 @@ Resources:
             - CreateWpsApiGatewayDomainName
             - !Sub ['https://${WpsRoute53RecordSet}/${requestHandlerApiPath}/${jobStatusApiPath}',{requestHandlerApiPath: !FindInMap [Constants, ConstantMap, requestHandlerApiPath], jobStatusApiPath: !FindInMap [Constants, ConstantMap, jobStatusApiPath]}]
             - !Sub ['https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}/${jobStatusApiPath}',{wpsApiStage: !FindInMap [Constants, ConstantMap, wpsApiStage], requestHandlerApiPath: !FindInMap [Constants, ConstantMap, requestHandlerApiPath], jobStatusApiPath: !FindInMap [Constants, ConstantMap, jobStatusApiPath]}]
+      VpcConfig: !If
+        - UseVpcGateway
+        -
+          SecurityGroupIds: !Ref LambdaSecurityGroup
+          SubnetIds: !FindInMap [AccountConstants, !Ref 'AWS::AccountId', GatewaySubnetIds]
+        - !Ref "AWS::NoValue"
   RequestHandlerLambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -731,6 +745,12 @@ Resources:
             - CreateWpsApiGatewayDomainName
             - !Sub ['https://${WpsRoute53RecordSet}/${requestHandlerApiPath}/${jobStatusApiPath}',{requestHandlerApiPath: !FindInMap [Constants, ConstantMap, requestHandlerApiPath], jobStatusApiPath: !FindInMap [Constants, ConstantMap, jobStatusApiPath]}]
             - !Sub ['https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}/${jobStatusApiPath}',{wpsApiStage: !FindInMap [Constants, ConstantMap, wpsApiStage], requestHandlerApiPath: !FindInMap [Constants, ConstantMap, requestHandlerApiPath], jobStatusApiPath: !FindInMap [Constants, ConstantMap, jobStatusApiPath]}]
+      VpcConfig: !If
+        - UseVpcGateway
+        -
+          SecurityGroupIds: !Ref LambdaSecurityGroup
+          SubnetIds: !FindInMap [AccountConstants, !Ref 'AWS::AccountId', GatewaySubnetIds]
+        - !Ref "AWS::NoValue"
   JobStatusLambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -770,6 +790,23 @@ Resources:
                   - !Sub
                     - 'arn:aws:s3:::${BucketName}/*'
                     - { BucketName: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !Ref bucketName] }
+
+  LambdaSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Condition: UseVpcGateway
+    Properties:
+      GroupDescription: Allow http to client host
+      VpcId: !ImportValue "lambda-subnets-vpc"
+      SecurityGroupIngress:
+      - IpProtocol: '-1'
+        FromPort: '-1'
+        ToPort: '-1'
+        CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+      - IpProtocol: '-1'
+        FromPort: '-1'
+        ToPort: '-1'
+        CidrIp: 0.0.0.0/0
 
   #
   # SumoLogic integration
