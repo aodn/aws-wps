@@ -21,6 +21,7 @@ import java.util.TimeZone;
 
 public class EmailService {
 
+    public static final String DEFAULT_DEPTH_UNITS_LABEL = "m";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(EmailService.class);
     private AmazonSimpleEmailService client;
@@ -158,7 +159,7 @@ public class EmailService {
             if (minLon.equals(maxLon) && minLat.equals(maxLat)) {
                 spatial = spatial.concat("Timeseries at Lat/Lon: " + minLat + ',' + minLon);
             } else {
-                spatial = spatial.concat("Spatial: " + minLon + ',' + minLat + ',' + maxLon + ',' + maxLat);
+                spatial = spatial.concat("Spatial: From Lat/Lon " + minLat + ',' + minLon + " to Lat/Lon " + maxLat + ',' + maxLon);
             }
 
             return spatial;
@@ -189,7 +190,7 @@ public class EmailService {
 
     public static String portalFormatDepth(NumberRange verticalRange) {
         if (verticalRange != null) {
-            return "Depth: " + verticalRange.getMin() + "," + verticalRange.getMax();
+            return "Depth: " + verticalRange.getMin() + DEFAULT_DEPTH_UNITS_LABEL + " to " + verticalRange.getMax() + DEFAULT_DEPTH_UNITS_LABEL;
         }
         return null;
     }
