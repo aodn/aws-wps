@@ -632,7 +632,8 @@ Resources:
       VpcConfig: !If
         - UseVpcGateway
         -
-          SecurityGroupIds: [!Ref LambdaSecurityGroup]
+          SecurityGroupIds:
+            - !Ref LambdaSecurityGroup
           SubnetIds: !FindInMap [AccountConstants, !Ref 'AWS::AccountId', GatewaySubnetIds]
         - !Ref "AWS::NoValue"
   RequestHandlerLambdaExecutionRole:
@@ -748,7 +749,8 @@ Resources:
       VpcConfig: !If
         - UseVpcGateway
         -
-          SecurityGroupIds: [!Ref LambdaSecurityGroup]
+          SecurityGroupIds:
+            - !Ref LambdaSecurityGroup
           SubnetIds: !FindInMap [AccountConstants, !Ref 'AWS::AccountId', GatewaySubnetIds]
         - !Ref "AWS::NoValue"
   JobStatusLambdaExecutionRole:
