@@ -54,7 +54,6 @@ Mappings:
       HostedZoneName: dev.aodn.org.au.
       CustomAmiId: ami-65c23707
       UseVpcGateway: false
-      GatewaySubnetIds: []
     '104044260116':  # production
       AllowEphemeralBuckets: false
       CertificateArn: arn:aws:acm:us-east-1:104044260116:certificate/58773098-aaa7-42b5-bc58-8ba2a938f951
@@ -63,10 +62,6 @@ Mappings:
       HostedZoneName: aodn.org.au.
       CustomAmiId: ami-bd06f3df
       UseVpcGateway: true
-      GatewaySubnetIds:
-        - !ImportValue "lambda-subnets-subnetA"
-        - !ImportValue "lambda-subnets-subnetB"
-        - !ImportValue "lambda-subnets-subnetC"
   '615645230945': # non-production region constants
     ap-southeast-2:
       vpc: vpc-5e0e3a3a
@@ -631,9 +626,12 @@ Resources:
             - !Sub ['https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}/${jobStatusApiPath}',{wpsApiStage: !FindInMap [Constants, ConstantMap, wpsApiStage], requestHandlerApiPath: !FindInMap [Constants, ConstantMap, requestHandlerApiPath], jobStatusApiPath: !FindInMap [Constants, ConstantMap, jobStatusApiPath]}]
       VpcConfig: !If
         - UseVpcGateway
-        -
-          SecurityGroupIds: [!Ref LambdaSecurityGroup]
-          SubnetIds: !FindInMap [AccountConstants, !Ref 'AWS::AccountId', GatewaySubnetIds]
+        - SecurityGroupIds:
+            - !Ref LambdaSecurityGroup
+          SubnetIds:
+            - !ImportValue "lambda-subnets-subnetA"
+            - !ImportValue "lambda-subnets-subnetB"
+            - !ImportValue "lambda-subnets-subnetC"
         - !Ref "AWS::NoValue"
   RequestHandlerLambdaExecutionRole:
     Type: AWS::IAM::Role
@@ -747,9 +745,12 @@ Resources:
             - !Sub ['https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}/${jobStatusApiPath}',{wpsApiStage: !FindInMap [Constants, ConstantMap, wpsApiStage], requestHandlerApiPath: !FindInMap [Constants, ConstantMap, requestHandlerApiPath], jobStatusApiPath: !FindInMap [Constants, ConstantMap, jobStatusApiPath]}]
       VpcConfig: !If
         - UseVpcGateway
-        -
-          SecurityGroupIds: [!Ref LambdaSecurityGroup]
-          SubnetIds: !FindInMap [AccountConstants, !Ref 'AWS::AccountId', GatewaySubnetIds]
+        - SecurityGroupIds:
+            - !Ref LambdaSecurityGroup
+          SubnetIds:
+            - !ImportValue "lambda-subnets-subnetA"
+            - !ImportValue "lambda-subnets-subnetB"
+            - !ImportValue "lambda-subnets-subnetC"
         - !Ref "AWS::NoValue"
   JobStatusLambdaExecutionRole:
     Type: AWS::IAM::Role
