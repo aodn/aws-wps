@@ -6,13 +6,13 @@
 
     <groupId>au.org.emii</groupId>
     <artifactId>wps-common</artifactId>
-    <version>ver-list-not-string</version>
+    <version>ver-list-not-string-2</version>
 
     <parent>
         <groupId>au.org.emii</groupId>
         <artifactId>aws-wps</artifactId>
         <relativePath>../pom.xml</relativePath>
-        <version>ver-list-not-string</version>
+        <version>ver-list-not-string-2</version>
     </parent>
 
     <dependencies>
