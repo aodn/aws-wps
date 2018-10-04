@@ -6,7 +6,7 @@
 
     <groupId>au.org.emii</groupId>
     <artifactId>aws-wps</artifactId>
-    <version>4.38.24</version>
+    <version>4.38.25</version>
     <packaging>pom</packaging>
 
     <properties>
