@@ -1,0 +1,155 @@
+netcdf {
+  dimensions:
+    DAY_OF_YEAR = UNLIMITED;   // (1 currently)
+    LATITUDE = 1;
+    LONGITUDE = 1;
+  variables:
+    short DAY_OF_YEAR(DAY_OF_YEAR=1);
+      :axis = "T";
+      :calendar = "none";
+      :long_name = "day_of_year";
+      :units = "days since 2016-12-31";
+      :valid_max = 365S; // short
+      :valid_min = 1S; // short
+      :_ChunkSizes = 4096; // int
+
+    float LATITUDE(LATITUDE=1);
+      :axis = "Y";
+      :long_name = "latitude";
+      :reference_datum = "geographical coordinates, WGS84 projection";
+      :standard_name = "latitude";
+      :units = "degrees_north";
+      :valid_max = 90.0f; // float
+      :valid_min = -90.0f; // float
+
+    float LONGITUDE(LONGITUDE=1);
+      :axis = "X";
+      :long_name = "longitude";
+      :reference_datum = "geographical coordinates, WGS84 projection";
+      :standard_name = "longitude";
+      :units = "degrees_east";
+      :valid_max = 360.0f; // float
+      :valid_min = 0.0f; // float
+
+    float DEPTH;
+      :axis = "Z";
+      :_FillValue = 1.17549435E-38f; // float
+      :long_name = "depth";
+      :positive = "down";
+      :reference_datum = "sea surface";
+      :standard_name = "depth";
+      :units = "m";
+      :valid_max = 12000.0f; // float
+      :valid_min = -5.0f; // float
+
+    float TEMP(DAY_OF_YEAR=1, LATITUDE=1, LONGITUDE=1);
+      :_FillValue = 9.96921E36f; // float
+      :standard_name = "sea_water_temperature";
+      :long_name = "sea water temperature";
+      :units = "Celsius";
+      :coordinates = "DAY_OF_YEAR LATITUDE LONGITUDE DEPTH";
+      :_ChunkSizes = 2048, 1, 1; // int
+
+    float TEMP_std_err(DAY_OF_YEAR=1, LATITUDE=1, LONGITUDE=1);
+      :_FillValue = 9.96921E36f; // float
+      :standard_name = "sea_water_temperature standard_error";
+      :long_name = "sea water temperature standard error";
+      :units = "Celsius";
+      :coordinates = "DAY_OF_YEAR LATITUDE LONGITUDE DEPTH";
+      :_ChunkSizes = 2048, 1, 1; // int
+
+    float TEMP_mean(LATITUDE=1, LONGITUDE=1);
+      :_FillValue = 9.96921E36f; // float
+      :long_name = "sea water temperature intra and inter seasonal mean";
+      :units = "Celsius";
+      :coordinates = "LATITUDE LONGITUDE DEPTH";
+
+    float TEMP_mean_std_err(LATITUDE=1, LONGITUDE=1);
+      :_FillValue = 9.96921E36f; // float
+      :long_name = "sea water temperature intra and inter seasonal mean standard error";
+      :units = "Celsius";
+      :coordinates = "LATITUDE LONGITUDE DEPTH";
+
+    float TEMP_trend(LATITUDE=1, LONGITUDE=1);
+      :_FillValue = 9.96921E36f; // float
+      :long_name = "sea water temperature decadal trend";
+      :units = "Celsius";
+      :coordinates = "LATITUDE LONGITUDE DEPTH";
+
+    float TEMP_trend_std_err(LATITUDE=1, LONGITUDE=1);
+      :_FillValue = 9.96921E36f; // float
+      :long_name = "sea water temperature decadal trend standard error";
+      :units = "Celsius";
+      :coordinates = "LATITUDE LONGITUDE DEPTH";
+
+  // global attributes:
+  :abstract = "25 years of Advanced Very High-Resolution Radiometer (AVHRR) data from NOAA Polar Orbiting Environmental Satellites received by six Australian and two Antarctic reception stations have been used to construct a detailed climatology of sea surface temperature (SST) at 20 cm depth around Australasia. The resulting atlas, known as the SST Atlas of Australian Regional Seas (SSTAARS), has a spatial resolution of ~2km and thus reveals unprecedented detail of regional oceanographic phenomena, including tidally-driven entrainment cooling over shelves and reef flats, wind-driven upwelling, shelf winter water fronts, cold river plumes, the footprint of the seasonal boundary current flows and standing mesoscale features in the major offshore currents.  The atlas (and associated statistics) will provide a benchmark for high-resolution ocean modelers and be a resource for ecosystem studies where temperatures, and their extremes, impact on ocean chemistry, species ranges and distribution. The SST data used to construct the atlas were one-day composites of night-only AVHRR SST (L3S-1day night) provided through the Integrated Marine Observing System (IMOS: http://www.imos.org.au).";
+  :acknowledgement = "The User agrees that whenever the Product or imagery/data derived from the Product are published by the User, the CSIRO Marine Laboratories shall be acknowledged as the source of the Product.";
+  :author = "Galibert, Guillaume";
+  :author_email = "guillaume.galibert@utas.edu.au";
+  :citation = "The citation in a list of references is: \"CSIRO [year-of-data-download], [Title], [data-access-url], accessed [date-of-access]\"";
+  :Conventions = "CF-1.6,IMOS-1.4";
+  :data_centre = "Australian Ocean Data Network (AODN)";
+  :data_centre_email = "info@aodn.org.au";
+  :date_created = "2018-02-14T04:15:44Z";
+  :disclaimer = "The User acknowledges that the Product was developed by CSIRO for its own research purposes. The CSIRO will not therefore be liable for interpretation of or inconsistencies, discrepancies, errors or omissions in any or all of the Product as supplied. Any use of or reliance by the User on the Product or any part thereof is at the User\'s own risk and CSIRO shall not be liable for any loss or damage howsoever arising as a result of such use. The User agrees to indemnify and hold harmless CSIRO in respect of any loss or damage (including any rights arising from negligence or infringement of third party intellectual property rights) suffered by CSIRO as a result of User\'s use of or reliance on the Data.";
+  :geospatial_lat_max = -24.950000762939453; // double
+  :geospatial_lat_min = -24.989999771118164; // double
+  :geospatial_lon_max = 109.66999816894531; // double
+  :geospatial_lon_min = 109.61000061035156; // double
+  :geospatial_vertical_max = "0.2";
+  :geospatial_vertical_min = "0.2";
+  :institution = "AODN";
+  :institution_references = "http://www.imos.org.au/aodn.html";
+  :keywords = "SSTAARS, Climatology, sea surface temperature, seasonal cycle, boundary currents, tidal mixing, warming trends, satellite observations, TEMP, TEMP_std_err, TEMP_mean, TEMP_mean_std_err, TEMP_trend, TEMP_trend_std_err";
+  :license = "http://creativecommons.org/licenses/by/4.0/";
+  :lineage = "The data have been processed following international GHRSST protocols to help reduce instrument bias using in situ data, with only night-time nearly cloud-free data used to reduce diurnal bias and cloud contamination. A pixel-wise climatology (with four annual sinusoids) and linear trend are fit to the data using a robust technique and monthly non-seasonal percentiles derived. The daily fit can be reconstructed from the intra and inter seasonal mean of sea surface temperature (tm) and the four annual complex coefficients (ta, t2a, t3a, t4a) following the formula: tm + real(ta*exp(1i*doyf*af)\') + real(t2a*exp(1i*doyf*2*af)\') + real(t3a*exp(1i*doyf*3*af)\') + real(t4a*exp(1i*doyf*4*af)\') with doyf = DAY_OF_YEAR/365.25) and af = 2*pi/1. The mean and the complex coefficients can be found in http://thredds.aodn.org.au/thredds/catalog/CSIRO/Climatology/SSTAARS/2017/catalog.html?dataset=CSIRO/Climatology/SSTAARS/2017/SSTAARS.nc .";
+  :naming_authority = "CSIRO";
+  :principal_investigator = "Wijffels, Susan";
+  :principal_investigator_email = "Susan.Wijffels@csiro.au";
+  :project = "Integrated Marine Observing System (IMOS)";
+  :project_acknowledgement = "CSIRO Marine Laboratories";
+  :references = "Susan E. Wijffels et al. 2017: A fine spatial-scale sea surface temperature atlas of the Australian regional seas (SSTAARS): seasonal variability and trends around Australasia and New Zealand revisited.";
+  :source = "One-day composites of night-only sea surface temperature (L3S-1day night) for the period 21 March 1992 to 31 December 2016, provided through the Integrated Marine Observing System (IMOS: http://www.imos.org.au), and derived from High Resolution Picture Transmission (HRPT) data from Advanced Very High Resolution Radiometers (AVHRR) aboard NOAA Polar Orbiting Environmental Satellites.";
+  :standard_name_vocabulary = "NetCDF Climate and Forecast (CF) Metadata Convention Standard Name Table 27";
+  :time_coverage_step = 1.0; // double
+  :title = "SST Atlas of Australian Regional Seas (SSTAARS). Daily climatology., 2017-01-11T00:00:00Z, 2017-01-11T00:00:00Z";
+  :time_coverage_end = "2017-01-11T00:00:00Z";
+  :time_coverage_start = "2017-01-11T00:00:00Z";
+ data:
+DAY_OF_YEAR =
+  {11}
+LATITUDE =
+  {-24.95}
+LONGITUDE =
+  {109.67}
+DEPTH =0.2
+TEMP =
+  {
+    {
+      {23.757536}
+    }
+  }
+TEMP_std_err =
+  {
+    {
+      {0.06981392}
+    }
+  }
+TEMP_mean =
+  {
+    {22.914087}
+  }
+TEMP_mean_std_err =
+  {
+    {0.01871425}
+  }
+TEMP_trend =
+  {
+    {0.36706}
+  }
+TEMP_trend_std_err =
+  {
+    {0.055580653}
+  }
+}

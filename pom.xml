@@ -17,6 +17,7 @@
     <modules>
         <module>wps-common</module>
         <module>request-handler</module>
+        <module>aggregator</module>
         <module>aggregation-worker</module>
         <module>job-status-service</module>
     </modules>
@@ -25,6 +26,11 @@
         <repository>
             <id>aodn</id>
             <url>http://content.aodn.org.au/repo/maven/</url>
+        </repository>
+        <repository>
+            <id>unidata-releases</id>
+            <name>UNIDATA Releases</name>
+            <url>https://artifacts.unidata.ucar.edu/content/repositories/unidata-releases/</url>
         </repository>
     </repositories>
 

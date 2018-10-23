@@ -1,0 +1,102 @@
+netcdf {
+  dimensions:
+    I = 1;
+    J = 2;
+  variables:
+    int I(I=1);
+      :long_name = "row index (top most value is 1)";
+      :units = "1";
+
+    int J(J=2);
+      :long_name = "column index (left most value is 1)";
+      :units = "1";
+
+    double LATITUDE(I=1, J=2);
+      :long_name = "latitude";
+      :standard_name = "latitude";
+      :units = "degrees_north";
+      :axis = "Y";
+      :valid_min = -90.0; // double
+      :valid_max = 90.0; // double
+      :reference_datum = "WGS84 coordinate reference system";
+
+    double LONGITUDE(I=1, J=2);
+      :long_name = "longitude";
+      :standard_name = "longitude";
+      :units = "degrees_east";
+      :axis = "X";
+      :valid_min = -180.0; // double
+      :valid_max = 180.0; // double
+      :reference_datum = "WGS84 coordinate reference system";
+
+    double CRS;
+      :long_name = "WGS84 lat/lon coordinate reference system";
+      :grid_mapping_name = "latitude_longitude";
+      :epsg_code = "EPSG:4326";
+      :longitude_of_prime_meridian = 0.0; // double
+      :semi_major_axis = 6378137.0; // double
+      :inverse_flattening = 298.257223563; // double
+
+    float DEPTH(I=1, J=2);
+      :_FillValue = 99999.0f; // float
+      :long_name = "depth";
+      :standard_name = "depth";
+      :units = "m";
+      :positive = "up";
+      :grid_mapping = "CRS";
+      :coordinates = "LATITUDE LONGITUDE";
+      :valid_min = -12000.0f; // float
+      :valid_max = 9000.0f; // float
+      :reference_datum = "Mean Sea Level (MSL)";
+
+  // global attributes:
+  :project = "Integrated Marine Observing System (IMOS)";
+  :Conventions = "CF-1.6,IMOS-1.4";
+  :standard_name_vocabulary = "NetCDF Climate and Forecast (CF) Metadata Convention Standard Name Table Version 29";
+  :title = "10m resolution bathymetry";
+  :institution = "Deakin University";
+  :institution_references = "http://www.deakin.edu.au/";
+  :date_created = "2017-03-16T03:12:46Z";
+  :abstract = "Deakin University high resolution bathymetry";
+  :naming_authority = "IMOS";
+  :geospatial_lat_min = -47.411874875869515; // double
+  :geospatial_lat_max = -46.934084095385245; // double
+  :geospatial_lat_units = "degrees_north";
+  :geospatial_lon_min = -126.22561916148175; // double
+  :geospatial_lon_max = -125.56096631110519; // double
+  :geospatial_lon_units = "degrees_east";
+  :geospatial_vertical_min = -101.0f; // float
+  :geospatial_vertical_max = 1.70141E38f; // float
+  :geospatial_vertical_positive = "up";
+  :geospatial_vertical_units = "metres";
+  :data_centre = "Australian Ocean Data Network (AODN)";
+  :data_centre_email = "info@aodn.org.au";
+  :author = "Galibert, Guillaume";
+  :author_email = "guillaume.galibert@utas.edu.au";
+  :principal_investigator = "Rattray, Alex";
+  :citation = "The citation to be used in publications using the dataset should follow the format: \"IMOS. [year-of-data-download], [Title], [Data access URL], accessed [date-of-access]\"";
+  :acknowledgement = "Any users (including re-packagers) of IMOS data are required to clearly acknowledge the source of the material in this format: \"Data was sourced from the Integrated Marine Observing System (IMOS) - IMOS is supported by the Australian Government through the National Collaborative Research Infrastructure Strategy and the Super Science Initiative.\"";
+  :disclaimer = "Data, products and services from IMOS are provided \"as is\" without any warranty as to fitness for a particular purpose.";
+  :license = "http://creativecommons.org/licenses/by/4.0/";
+  :cdm_data_type = "Grid";
+  :history = "Tue Jun 27 13:23:57 2017: ncks -a -4 -O -d I,3000,3002 -d J,2000,2002 /home/craigj/Downloads/PPB_Bathy_10m_Clipped.nc /tmp/out.nc";
+  :NCO = "\"4.5.4\"";
+ data:
+I =
+  {3001}
+J =
+  {2002, 2003}
+LATITUDE =
+  {
+    {-47.0818802632072, -47.081946168520005}
+  }
+LONGITUDE =
+  {
+    {-125.8622927105172, -125.86229928012338}
+  }
+CRS =9.969209968386869E36
+DEPTH =
+  {
+    {-9.81, -9.833}
+  }
+}
