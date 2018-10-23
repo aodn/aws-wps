@@ -6,7 +6,7 @@ import java.util.HashMap;
 
 import static au.org.aodn.aws.wps.status.WpsConfig.WPS_ENDPOINT_TEMPLATE_KEY;
 import static org.junit.Assert.*;
-import static org.junit.internal.matchers.StringContains.containsString;
+import static org.hamcrest.CoreMatchers.containsString;
 
 public class GetCapabilitiesReaderTest {
     @Test
