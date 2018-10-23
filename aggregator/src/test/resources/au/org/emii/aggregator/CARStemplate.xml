@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template>
+    <attributes>
+
+        <!-- replace existing value - substituting values -->
+        <attribute name="geospatial_vertical_min" type="Short" value="${Z_MIN}"/>
+        <attribute name="geospatial_vertical_max" type="Short" value="${Z_MAX}"/>
+
+    </attributes>
+</template>

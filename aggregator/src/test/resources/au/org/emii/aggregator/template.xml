@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template>
+    <attributes>
+        <!-- remove existing attributes -->
+
+        <remove name="start_time"/>
+        <remove name="stop_time"/>
+
+        <!-- remove non-existent attributes -->
+
+        <remove name="shoe_size"/>
+
+        <!-- replace existing value - no substitutions applicable -->
+
+        <attribute name="creator_name" type="String" value="IMOS gridded data aggregator"/>
+
+        <!-- replace existing value - substituting values -->
+
+        <attribute name="time_coverage_start" type="String" value="${TIME_START}"/>
+        <attribute name="time_coverage_end" type="String" value="${TIME_END}"/>
+
+        <!-- replace existing value using capturing groups -->
+
+        <attribute name="title" match=".*" type="String" value="${0}, ${TIME_START}, ${TIME_END}"/>
+        <attribute name="date_created" match="([0-9]{4})([0-9]{2})([0-9]{2})T([0-9]{2})([0-9]{2})([0-9]{2})Z"
+                   type="String" value="${1}-${2}-${3}T${4}:${5}:${6}Z"/>
+
+        <!-- replace existing value changing type -->
+
+        <attribute name="southernmost_latitude" type="Float" value="${LAT_MIN}"/>
+        <attribute name="northernmost_latitude" type="Float" value="${LAT_MAX}"/>
+        <attribute name="westernmost_longitude" type="Float" value="${LON_MIN}"/>
+        <attribute name="easternmost_longitude" type="Float" value="${LON_MAX}"/>
+
+        <!-- adding new attribute - no substitutions applicable -->
+
+        <attribute name="newAttribute2" type="String" value="newValue"/>
+
+        <!-- adding new attribute - substituting value -->
+
+        <attribute name="newAttribute1" type="String" value="${TIME_END}"/>
+
+        <!-- adding new attribute - non-matching capturing groups -->
+
+        <attribute name="newAttribute3" match="(.*):(.*)" value="${2}:${1}"/>
+    </attributes>
+    <variables>
+        <variable name="lat"/>
+        <variable name="lon"/>
+        <variable name="time"/>
+
+        <variable name="sea_surface_temperature" type="Float">
+            <attribute name="_FillValue" type="Float" value="9.9692099683868690e+36"/>
+            <attribute name="valid_min" type="Float" value="0.0"/>
+            <attribute name="valid_max" type="Float" value="350.0"/>
+        </variable>
+
+        <variable name="sses_bias" type="Float">
+            <attribute name="valid_min" type="Float" value="-10.0"/>
+            <attribute name="valid_max" type="Float" value="10.0"/>
+        </variable>
+    </variables>
+</template>

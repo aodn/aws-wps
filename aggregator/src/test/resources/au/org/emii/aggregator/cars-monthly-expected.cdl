@@ -1,0 +1,145 @@
+netcdf {
+  dimensions:
+    DAY_OF_YEAR = UNLIMITED;   // (3 currently)
+    LONGITUDE = 3;
+    LATITUDE = 2;
+    DEPTH = 1;
+  variables:
+    double DAY_OF_YEAR(DAY_OF_YEAR=3);
+      :name = "DAY_OF_YEAR";
+      :long_name = "day_of_year";
+      :climatology = "climatology_bounds";
+      :units = "days since 2009-1-1";
+      :axis = "T";
+      :valid_min = 0.0; // double
+      :valid_max = 366.0; // double
+      :_FillValue = 2.2250738585072014E-308; // double
+      :_ChunkSizes = 1024; // int
+
+    double LONGITUDE(LONGITUDE=3);
+      :name = "LONGITUDE";
+      :standard_name = "longitude";
+      :long_name = "longitude";
+      :units = "degrees_east";
+      :axis = "X";
+      :valid_min = 0.0; // double
+      :valid_max = 360.0; // double
+      :_FillValue = 2.2250738585072014E-308; // double
+      :reference_datum = "geographical coordinates, WGS84 projection";
+
+    double LATITUDE(LATITUDE=2);
+      :name = "LATITUDE";
+      :standard_name = "latitude";
+      :long_name = "latitude";
+      :units = "degrees_north";
+      :axis = "Y";
+      :valid_min = -90.0; // double
+      :valid_max = 90.0; // double
+      :_FillValue = 2.2250738585072014E-308; // double
+      :reference_datum = "geographical coordinates, WGS84 projection";
+
+    float DEPTH(DEPTH=1);
+      :name = "DEPTH";
+      :standard_name = "depth";
+      :long_name = "depth";
+      :units = "m";
+      :axis = "Z";
+      :positive = "down";
+      :valid_min = 0.0f; // float
+      :valid_max = 12000.0f; // float
+      :_FillValue = 1.17549435E-38f; // float
+      :reference_datum = "sea surface";
+
+    float TEMP(DAY_OF_YEAR=3, LONGITUDE=3, LATITUDE=2, DEPTH=1);
+      :name = "TEMP";
+      :long_name = "sea_water_temperature";
+      :_FillValue = 1.17549435E-38f; // float
+      :units = "Celsius";
+      :_ChunkSizes = 341, 3, 2, 1; // int
+
+  // global attributes:
+  :date_created = "2016-11-30T23:33:49Z";
+  :project = "Integrated Marine Observing System (IMOS)";
+  :Conventions = "CF-1.5";
+  :institution = "eMII";
+  :abstract = "CARS (CSIRO Atlas of Regional Seas) is a digital climatology, or atlas of seasonal ocean water properties. It comprises gridded fields of mean ocean properties over the period of modern ocean measurement, and average seasonal cycles for that period. It is derived from a quality-controlled archive of all available historical subsurface ocean property measurements - primarily research vessel instrument profiles and autonomous profiling buoys. As data availability has enormously increased in recent years, the CARS mean values are inevitably biased towards the recent ocean state. See http://www.marine.csiro.au/~dunn/cars2009/ .";
+  :references = "http://www.imos.org.au";
+  :keywords = "CARS extraction, Climatology, TEMP, TEMP_anomaly, PSAL, PSAL_anomaly, DOX2, DOX2_anomaly, DENS, DENS_anomaly, NTR2, NTR2_anomaly, SLC2, SLC2_anomaly, PHOS, PHOS_anomaly";
+  :netcdf_version = "4.1.3";
+  :geospatial_lat_min = -75.0; // double
+  :geospatial_lat_max = 90.0; // double
+  :geospatial_lon_min = 0.0; // double
+  :geospatial_lon_max = 360.0; // double
+  :geospatial_vertical_min = 0.0; // double
+  :geospatial_vertical_max = 5000.0; // double
+  :local_time_zone = 0.0; // double
+  :time_coverage_start = "2009-01-01T00:00:00Z";
+  :time_coverage_end = "2009-01-01T00:00:00Z";
+  :time_coverage_step = 30.5; // double
+  :lineage = "http://www.marine.csiro.au/~dunn/cars2009/#about http://www.marine.csiro.au/~dunn/cars2009/#use";
+  :data_centre = "eMarine Information Infrastructure (eMII)";
+  :data_centre_email = "info@emii.org.au";
+  :author = "Guillaume Galibert";
+  :author_email = "guillaume.galibert@utas.edu.au";
+  :institution_references = "http://www.imos.org.au/emii.html";
+  :citation = "The citation in a list of references is: \"CARS2009 [year-of-data-download], [Title], [data-access-url], accessed [date-of-access]\"";
+  :acknowledgement = "The User agrees that whenever the Product or imagery/data derived from the Product are published by the User, the CSIRO Marine Laboratories shall be acknowledged as the source of the Product.";
+  :distribution_statement = "The User acknowledges that the Product was developed by CSIRO for its own research purposes. The CSIRO will not therefore be liable for interpretation of or inconsistencies, discrepancies, errors or omissions in any or all of the Product as supplied. Any use of or reliance by the User on the Product or any part thereof is at the User\'s own risk and CSIRO shall not be liable for any loss or damage howsoever arising as a result of such use. The User agrees to indemnify and hold harmless CSIRO in respect of any loss or damage (including any rights arising from negligence or infringement of third party intellectual property rights) suffered by CSIRO as a result of User\'s use of or reliance on the Data.";
+  :project_acknowledgement = "CSIRO Marine Laboratories";
+  :history = "Tue Jun 13 15:17:06 2017: ncks -a -4 -O -d LONGITUDE,179.,181. -v DAY_OF_YEAR,LONGITUDE,LATITUDE,DEPTH,TEMP -d LATITUDE,24.,24.5 -d DEPTH,0. -d DAY_OF_YEAR,91.5,152.5 /home/craigj/Downloads/CARS2009_World_monthly.nc /tmp/cars-monthly.nc";
+  :NCO = "\"4.5.4\"";
+ data:
+DAY_OF_YEAR =
+  {91.5, 122.0, 152.5}
+LONGITUDE =
+  {179.5, 180.0, 180.5}
+LATITUDE =
+  {24.0, 24.5}
+DEPTH =
+  {0.0}
+TEMP =
+  {
+    {
+      {
+        {23.897165},
+        {23.589046}
+      },
+      {
+        {23.7685},
+        {23.428732}
+      },
+      {
+        {23.628172},
+        {23.27104}
+      }
+    },
+    {
+      {
+        {24.9744},
+        {24.690783}
+      },
+      {
+        {24.871933},
+        {24.554125}
+      },
+      {
+        {24.764421},
+        {24.433044}
+      }
+    },
+    {
+      {
+        {26.304228},
+        {26.056004}
+      },
+      {
+        {26.247156},
+        {25.970816}
+      },
+      {
+        {26.188559},
+        {25.910835}
+      }
+    }
+  }
+}

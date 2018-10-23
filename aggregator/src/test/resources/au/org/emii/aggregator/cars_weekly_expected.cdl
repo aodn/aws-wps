@@ -1,0 +1,776 @@
+netcdf {
+  dimensions:
+    DAY_OF_YEAR = UNLIMITED;   // (1 currently)
+    DEPTH = 2;
+    LATITUDE = 1;
+    LONGITUDE = 1;
+  variables:
+    short DAY_OF_YEAR(DAY_OF_YEAR=1);
+      :axis = "T";
+      :calendar = "none";
+      :long_name = "day_of_year";
+      :units = "days since 2008-12-31";
+      :valid_max = 365S; // short
+      :valid_min = 1S; // short
+      :_ChunkSizes = 4096; // int
+
+    float DENS(DAY_OF_YEAR=1, DEPTH=2, LATITUDE=1, LONGITUDE=1);
+      :coordinates = "DAY_OF_YEAR LATITUDE LONGITUDE DEPTH";
+      :_FillValue = 1.17549435E-38f; // float
+      :long_name = "sea_water_density";
+      :units = "kg m-3";
+      :_ChunkSizes = 1024, 2, 1, 1; // int
+
+    float DENS_anomaly(DAY_OF_YEAR=1, DEPTH=2, LATITUDE=1, LONGITUDE=1);
+      :coordinates = "DAY_OF_YEAR LATITUDE LONGITUDE DEPTH";
+      :_FillValue = 1.17549435E-38f; // float
+      :long_name = "sea_water_density_anomaly";
+      :units = "kg m-3";
+      :_ChunkSizes = 1024, 2, 1, 1; // int
+
+    float DENS_mean(DEPTH=2, LATITUDE=1, LONGITUDE=1);
+      :coordinates = "LATITUDE LONGITUDE DEPTH";
+      :_FillValue = 1.17549435E-38f; // float
+      :long_name = "intra_and_inter-seasonal_mean_of_sea_water_density";
+      :units = "kg m-3";
+
+    short DEPTH(DEPTH=2);
+      :axis = "Z";
+      :long_name = "depth";
+      :positive = "down";
+      :reference_datum = "sea surface";
+      :standard_name = "depth";
+      :units = "m";
+      :valid_max = 12000S; // short
+      :valid_min = 0S; // short
+
+    float DOX2(DAY_OF_YEAR=1, DEPTH=2, LATITUDE=1, LONGITUDE=1);
+      :coordinates = "DAY_OF_YEAR LATITUDE LONGITUDE DEPTH";
+      :_FillValue = 1.17549435E-38f; // float
+      :long_name = "moles_of_oxygen_per_unit_mass_in_sea_water";
+      :units = "umole kg-1";
+      :_ChunkSizes = 1024, 2, 1, 1; // int
+
+    float DOX2_RMSresid(DEPTH=2, LATITUDE=1, LONGITUDE=1);
+      :coordinates = "LATITUDE LONGITUDE DEPTH";
+      :_FillValue = 1.17549435E-38f; // float
+      :long_name = "intra_and_inter-seasonal_RMS_of_residuals_wrt_full_temporal_mapping_of_moles_of_oxygen_per_unit_mass_in_sea_water";
+      :units = "umole kg-1";
+
+    float DOX2_RMSspatialresid(DEPTH=2, LATITUDE=1, LONGITUDE=1);
+      :coordinates = "LATITUDE LONGITUDE DEPTH";
+      :_FillValue = 1.17549435E-38f; // float
+      :long_name = "inter-seasonal_RMS_of_residuals_wrt_spatial_mean_of_moles_of_oxygen_per_unit_mass_in_sea_water";
+      :units = "umole kg-1";
+
+    float DOX2_anomaly(DAY_OF_YEAR=1, DEPTH=2, LATITUDE=1, LONGITUDE=1);
+      :coordinates = "DAY_OF_YEAR LATITUDE LONGITUDE DEPTH";
+      :_FillValue = 1.17549435E-38f; // float
+      :long_name = "moles_of_oxygen_per_unit_mass_in_sea_water_anomaly";
+      :units = "umole kg-1";
+      :_ChunkSizes = 1024, 2, 1, 1; // int
+
+    float DOX2_mean(DEPTH=2, LATITUDE=1, LONGITUDE=1);
+      :coordinates = "LATITUDE LONGITUDE DEPTH";
+      :_FillValue = 1.17549435E-38f; // float
+      :long_name = "intra_and_inter-seasonal_mean_of_moles_of_oxygen_per_unit_mass_in_sea_water";
+      :units = "umole kg-1";
+
+    short DOX2_sumofwgts(DEPTH=2, LATITUDE=1, LONGITUDE=1);
+      :coordinates = "LATITUDE LONGITUDE DEPTH";
+      :_FillValue = -32768S; // short
+      :long_name = "sum_of_weights_for_moles_of_oxygen_per_unit_mass_in_sea_water";
+      :units = 1.0; // double
+
+    float LATITUDE(LATITUDE=1);
+      :axis = "Y";
+      :long_name = "latitude";
+      :reference_datum = "geographical coordinates, WGS84 projection";
+      :standard_name = "latitude";
+      :units = "degrees_north";
+      :valid_max = 90.0f; // float
+      :valid_min = -90.0f; // float
+
+    float LONGITUDE(LONGITUDE=1);
+      :axis = "X";
+      :long_name = "longitude";
+      :reference_datum = "geographical coordinates, WGS84 projection";
+      :standard_name = "longitude";
+      :units = "degrees_east";
+      :valid_max = 360.0f; // float
+      :valid_min = 0.0f; // float
+
+    float NTR2(DAY_OF_YEAR=1, DEPTH=2, LATITUDE=1, LONGITUDE=1);
+      :coordinates = "DAY_OF_YEAR LATITUDE LONGITUDE DEPTH";
+      :_FillValue = 1.17549435E-38f; // float
+      :long_name = "moles_of_nitrate_per_unit_mass_in_sea_water";
+      :units = "umole kg-1";
+      :_ChunkSizes = 1024, 2, 1, 1; // int
+
+    float NTR2_RMSresid(DEPTH=2, LATITUDE=1, LONGITUDE=1);
+      :coordinates = "LATITUDE LONGITUDE DEPTH";
+      :_FillValue = 1.17549435E-38f; // float
+      :long_name = "intra_and_inter-seasonal_RMS_of_residuals_wrt_full_temporal_mapping_of_moles_of_nitrate_per_unit_mass_in_sea_water";
+      :units = "umole kg-1";
+
+    float NTR2_RMSspatialresid(DEPTH=2, LATITUDE=1, LONGITUDE=1);
+      :coordinates = "LATITUDE LONGITUDE DEPTH";
+      :_FillValue = 1.17549435E-38f; // float
+      :long_name = "inter-seasonal_RMS_of_residuals_wrt_spatial_mean_of_moles_of_nitrate_per_unit_mass_in_sea_water";
+      :units = "umole kg-1";
+
+    float NTR2_anomaly(DAY_OF_YEAR=1, DEPTH=2, LATITUDE=1, LONGITUDE=1);
+      :coordinates = "DAY_OF_YEAR LATITUDE LONGITUDE DEPTH";
+      :_FillValue = 1.17549435E-38f; // float
+      :long_name = "moles_of_nitrate_per_unit_mass_in_sea_water_anomaly";
+      :units = "umole kg-1";
+      :_ChunkSizes = 1024, 2, 1, 1; // int
+
+    float NTR2_mean(DEPTH=2, LATITUDE=1, LONGITUDE=1);
+      :coordinates = "LATITUDE LONGITUDE DEPTH";
+      :_FillValue = 1.17549435E-38f; // float
+      :long_name = "intra_and_inter-seasonal_mean_of_moles_of_nitrate_per_unit_mass_in_sea_water";
+      :units = "umole kg-1";
+
+    short NTR2_sumofwgts(DEPTH=2, LATITUDE=1, LONGITUDE=1);
+      :coordinates = "LATITUDE LONGITUDE DEPTH";
+      :_FillValue = -32768S; // short
+      :long_name = "sum_of_weights_for_moles_of_nitrate_per_unit_mass_in_sea_water";
+      :units = 1.0; // double
+
+    float PHOS(DAY_OF_YEAR=1, DEPTH=2, LATITUDE=1, LONGITUDE=1);
+      :coordinates = "DAY_OF_YEAR LATITUDE LONGITUDE DEPTH";
+      :_FillValue = 1.17549435E-38f; // float
+      :long_name = "moles_of_phosphate_per_unit_mass_in_sea_water";
+      :units = "umole kg-1";
+      :_ChunkSizes = 1024, 2, 1, 1; // int
+
+    float PHOS_RMSresid(DEPTH=2, LATITUDE=1, LONGITUDE=1);
+      :coordinates = "LATITUDE LONGITUDE DEPTH";
+      :_FillValue = 1.17549435E-38f; // float
+      :long_name = "intra_and_inter-seasonal_RMS_of_residuals_wrt_full_temporal_mapping_of_moles_of_phosphate_per_unit_mass_in_sea_water";
+      :units = "umole kg-1";
+
+    float PHOS_RMSspatialresid(DEPTH=2, LATITUDE=1, LONGITUDE=1);
+      :coordinates = "LATITUDE LONGITUDE DEPTH";
+      :_FillValue = 1.17549435E-38f; // float
+      :long_name = "inter-seasonal_RMS_of_residuals_wrt_spatial_mean_of_moles_of_phosphate_per_unit_mass_in_sea_water";
+      :units = "umole kg-1";
+
+    float PHOS_anomaly(DAY_OF_YEAR=1, DEPTH=2, LATITUDE=1, LONGITUDE=1);
+      :coordinates = "DAY_OF_YEAR LATITUDE LONGITUDE DEPTH";
+      :_FillValue = 1.17549435E-38f; // float
+      :long_name = "moles_of_phosphate_per_unit_mass_in_sea_water_anomaly";
+      :units = "umole kg-1";
+      :_ChunkSizes = 1024, 2, 1, 1; // int
+
+    float PHOS_mean(DEPTH=2, LATITUDE=1, LONGITUDE=1);
+      :coordinates = "LATITUDE LONGITUDE DEPTH";
+      :_FillValue = 1.17549435E-38f; // float
+      :long_name = "intra_and_inter-seasonal_mean_of_moles_of_phosphate_per_unit_mass_in_sea_water";
+      :units = "umole kg-1";
+
+    short PHOS_sumofwgts(DEPTH=2, LATITUDE=1, LONGITUDE=1);
+      :coordinates = "LATITUDE LONGITUDE DEPTH";
+      :_FillValue = -32768S; // short
+      :long_name = "sum_of_weights_for_moles_of_phosphate_per_unit_mass_in_sea_water";
+      :units = 1.0; // double
+
+    float PSAL(DAY_OF_YEAR=1, DEPTH=2, LATITUDE=1, LONGITUDE=1);
+      :coordinates = "DAY_OF_YEAR LATITUDE LONGITUDE DEPTH";
+      :_FillValue = 1.17549435E-38f; // float
+      :long_name = "sea_water_salinity";
+      :units = "1e-3";
+      :_ChunkSizes = 1024, 2, 1, 1; // int
+
+    float PSAL_RMSresid(DEPTH=2, LATITUDE=1, LONGITUDE=1);
+      :coordinates = "LATITUDE LONGITUDE DEPTH";
+      :_FillValue = 1.17549435E-38f; // float
+      :long_name = "intra_and_inter-seasonal_RMS_of_residuals_wrt_full_temporal_mapping_of_sea_water_salinity";
+      :units = "1e-3";
+
+    float PSAL_RMSspatialresid(DEPTH=2, LATITUDE=1, LONGITUDE=1);
+      :coordinates = "LATITUDE LONGITUDE DEPTH";
+      :_FillValue = 1.17549435E-38f; // float
+      :long_name = "inter-seasonal_RMS_of_residuals_wrt_spatial_mean_of_sea_water_salinity";
+      :units = "1e-3";
+
+    float PSAL_anomaly(DAY_OF_YEAR=1, DEPTH=2, LATITUDE=1, LONGITUDE=1);
+      :coordinates = "DAY_OF_YEAR LATITUDE LONGITUDE DEPTH";
+      :_FillValue = 1.17549435E-38f; // float
+      :long_name = "sea_water_salinity_anomaly";
+      :units = "1e-3";
+      :_ChunkSizes = 1024, 2, 1, 1; // int
+
+    float PSAL_map_error(DEPTH=2, LATITUDE=1, LONGITUDE=1);
+      :coordinates = "LATITUDE LONGITUDE DEPTH";
+      :_FillValue = 1.17549435E-38f; // float
+      :long_name = "intra_and_inter-seasonal_Standard_Error_of_mapping_for_sea_water_salinity";
+      :units = "1e-3";
+
+    float PSAL_mean(DEPTH=2, LATITUDE=1, LONGITUDE=1);
+      :coordinates = "LATITUDE LONGITUDE DEPTH";
+      :_FillValue = 1.17549435E-38f; // float
+      :long_name = "intra_and_inter-seasonal_mean_of_sea_water_salinity";
+      :units = "1e-3";
+
+    float PSAL_std_dev(DEPTH=2, LATITUDE=1, LONGITUDE=1);
+      :coordinates = "LATITUDE LONGITUDE DEPTH";
+      :_FillValue = 1.17549435E-38f; // float
+      :long_name = "intra_and_inter-seasonal_weighted_standard_deviation_of_sea_water_salinity";
+      :units = "1e-3";
+
+    short PSAL_sumofwgts(DEPTH=2, LATITUDE=1, LONGITUDE=1);
+      :coordinates = "LATITUDE LONGITUDE DEPTH";
+      :_FillValue = -32768S; // short
+      :long_name = "sum_of_weights_for_sea_water_salinity";
+      :units = 1.0; // double
+
+    float SLC2(DAY_OF_YEAR=1, DEPTH=2, LATITUDE=1, LONGITUDE=1);
+      :coordinates = "DAY_OF_YEAR LATITUDE LONGITUDE DEPTH";
+      :_FillValue = 1.17549435E-38f; // float
+      :long_name = "moles_of_silicate_per_unit_mass_in_sea_water";
+      :units = "umole kg-1";
+      :_ChunkSizes = 1024, 2, 1, 1; // int
+
+    float SLC2_RMSresid(DEPTH=2, LATITUDE=1, LONGITUDE=1);
+      :coordinates = "LATITUDE LONGITUDE DEPTH";
+      :_FillValue = 1.17549435E-38f; // float
+      :long_name = "intra_and_inter-seasonal_RMS_of_residuals_wrt_full_temporal_mapping_of_moles_of_silicate_per_unit_mass_in_sea_water";
+      :units = "umole kg-1";
+
+    float SLC2_RMSspatialresid(DEPTH=2, LATITUDE=1, LONGITUDE=1);
+      :coordinates = "LATITUDE LONGITUDE DEPTH";
+      :_FillValue = 1.17549435E-38f; // float
+      :long_name = "inter-seasonal_RMS_of_residuals_wrt_spatial_mean_of_moles_of_silicate_per_unit_mass_in_sea_water";
+      :units = "umole kg-1";
+
+    float SLC2_anomaly(DAY_OF_YEAR=1, DEPTH=2, LATITUDE=1, LONGITUDE=1);
+      :coordinates = "DAY_OF_YEAR LATITUDE LONGITUDE DEPTH";
+      :_FillValue = 1.17549435E-38f; // float
+      :long_name = "moles_of_silicate_per_unit_mass_in_sea_water_anomaly";
+      :units = "umole kg-1";
+      :_ChunkSizes = 1024, 2, 1, 1; // int
+
+    float SLC2_mean(DEPTH=2, LATITUDE=1, LONGITUDE=1);
+      :coordinates = "LATITUDE LONGITUDE DEPTH";
+      :_FillValue = 1.17549435E-38f; // float
+      :long_name = "intra_and_inter-seasonal_mean_of_moles_of_silicate_per_unit_mass_in_sea_water";
+      :units = "umole kg-1";
+
+    short SLC2_sumofwgts(DEPTH=2, LATITUDE=1, LONGITUDE=1);
+      :coordinates = "LATITUDE LONGITUDE DEPTH";
+      :_FillValue = -32768S; // short
+      :long_name = "sum_of_weights_for_moles_of_silicate_per_unit_mass_in_sea_water";
+      :units = 1.0; // double
+
+    float TEMP(DAY_OF_YEAR=1, DEPTH=2, LATITUDE=1, LONGITUDE=1);
+      :coordinates = "DAY_OF_YEAR LATITUDE LONGITUDE DEPTH";
+      :_FillValue = 1.17549435E-38f; // float
+      :long_name = "sea_water_temperature";
+      :units = "Celsius";
+      :_ChunkSizes = 1024, 2, 1, 1; // int
+
+    float TEMP_RMSresid(DEPTH=2, LATITUDE=1, LONGITUDE=1);
+      :coordinates = "LATITUDE LONGITUDE DEPTH";
+      :_FillValue = 1.17549435E-38f; // float
+      :long_name = "intra_and_inter-seasonal_RMS_of_residuals_wrt_full_temporal_mapping_of_sea_water_temperature";
+      :units = "Celsius";
+
+    float TEMP_RMSspatialresid(DEPTH=2, LATITUDE=1, LONGITUDE=1);
+      :coordinates = "LATITUDE LONGITUDE DEPTH";
+      :_FillValue = 1.17549435E-38f; // float
+      :long_name = "inter-seasonal_RMS_of_residuals_wrt_spatial_mean_of_sea_water_temperature";
+      :units = "Celsius";
+
+    float TEMP_anomaly(DAY_OF_YEAR=1, DEPTH=2, LATITUDE=1, LONGITUDE=1);
+      :coordinates = "DAY_OF_YEAR LATITUDE LONGITUDE DEPTH";
+      :_FillValue = 1.17549435E-38f; // float
+      :long_name = "sea_water_temperature_anomaly";
+      :units = "Celsius";
+      :_ChunkSizes = 1024, 2, 1, 1; // int
+
+    float TEMP_map_error(DEPTH=2, LATITUDE=1, LONGITUDE=1);
+      :coordinates = "LATITUDE LONGITUDE DEPTH";
+      :_FillValue = 1.17549435E-38f; // float
+      :long_name = "intra_and_inter-seasonal_Standard_Error_of_mapping_for_sea_water_temperature";
+      :units = "Celsius";
+
+    float TEMP_mean(DEPTH=2, LATITUDE=1, LONGITUDE=1);
+      :coordinates = "LATITUDE LONGITUDE DEPTH";
+      :_FillValue = 1.17549435E-38f; // float
+      :long_name = "intra_and_inter-seasonal_mean_of_sea_water_temperature";
+      :units = "Celsius";
+
+    float TEMP_std_dev(DEPTH=2, LATITUDE=1, LONGITUDE=1);
+      :coordinates = "LATITUDE LONGITUDE DEPTH";
+      :_FillValue = 1.17549435E-38f; // float
+      :long_name = "intra_and_inter-seasonal_weighted_standard_deviation_of_sea_water_temperature";
+      :units = "Celsius";
+
+    short TEMP_sumofwgts(DEPTH=2, LATITUDE=1, LONGITUDE=1);
+      :coordinates = "LATITUDE LONGITUDE DEPTH";
+      :_FillValue = -32768S; // short
+      :long_name = "sum_of_weights_for_sea_water_temperature";
+      :units = 1.0; // double
+
+  // global attributes:
+  :abstract = "CARS (CSIRO Atlas of Regional Seas) is a digital climatology, or atlas of seasonal ocean water properties. It comprises gridded fields of mean ocean properties over the period of modern ocean measurement, and average seasonal cycles for that period. It is derived from a quality-controlled archive of all available historical subsurface ocean property measurements - primarily research vessel instrument profiles and autonomous profiling buoys. As data availability has enormously increased in recent years, the CARS mean values are inevitably biased towards the recent ocean state. See http://www.marine.csiro.au/~dunn/cars2009/ .";
+  :acknowledgement = "The User agrees that whenever the Product or imagery/data derived from the Product are published by the User, the CSIRO Marine Laboratories shall be acknowledged as the source of the Product.";
+  :author = "Galibert, Guillaume";
+  :author_email = "guillaume.galibert@utas.edu.au";
+  :citation = "The citation in a list of references is: \"CSIRO [year-of-data-download], [Title], [data-access-url], accessed [date-of-access]\"";
+  :Conventions = "CF-1.6,IMOS-1.4";
+  :data_centre = "Australian Ocean Data Network (AODN)";
+  :data_centre_email = "info@aodn.org.au";
+  :date_created = "2018-01-16T23:35:02Z";
+  :disclaimer = "The User acknowledges that the Product was developed by CSIRO for its own research purposes. The CSIRO will not therefore be liable for interpretation of or inconsistencies, discrepancies, errors or omissions in any or all of the Product as supplied. Any use of or reliance by the User on the Product or any part thereof is at the User\'s own risk and CSIRO shall not be liable for any loss or damage howsoever arising as a result of such use. The User agrees to indemnify and hold harmless CSIRO in respect of any loss or damage (including any rights arising from negligence or infringement of third party intellectual property rights) suffered by CSIRO as a result of User\'s use of or reliance on the Data.";
+  :geospatial_lat_max = -4.0; // double
+  :geospatial_lat_min = -50.0; // double
+  :geospatial_lon_max = 161.0; // double
+  :geospatial_lon_min = 104.0; // double
+  :geospatial_vertical_max = 100S; // short
+  :geospatial_vertical_min = 50S; // short
+  :institution = "AODN";
+  :institution_references = "http://www.imos.org.au/aodn.html";
+  :keywords = "CARS extraction, Climatology, TEMP, TEMP_anomaly, PSAL, PSAL_anomaly, DOX2, DOX2_anomaly, DENS, DENS_anomaly, NTR2, NTR2_anomaly, SLC2, SLC2_anomaly, PHOS, PHOS_anomaly";
+  :license = "http://creativecommons.org/licenses/by/4.0/";
+  :lineage = "http://www.marine.csiro.au/~dunn/cars2009/#about http://www.marine.csiro.au/~dunn/cars2009/#use";
+  :local_time_zone = 0.0; // double
+  :naming_authority = "CSIRO";
+  :principal_investigator = "Dunn, Jeff";
+  :project = "Integrated Marine Observing System (IMOS)";
+  :project_acknowledgement = "CSIRO Marine Laboratories";
+  :references = "http://www.imos.org.au";
+  :standard_name_vocabulary = "NetCDF Climate and Forecast (CF) Metadata Convention Standard Name Table 27";
+  :time_coverage_end = "2009-12-25T23:04:36Z";
+  :time_coverage_start = "2009-01-01T00:00:00Z";
+  :time_coverage_step = 7.038461538461538; // double
+  :title = "CARS2009 extracted climatology.";
+  :history = "Tue Jul 10 11:00:49 2018: ncks -d DAY_OF_YEAR,8,8 -d LATITUDE,11,12 -d LONGITUDE,20,21 -o /tmp/out.nc /home/craigj/Downloads/CARS2009_Australia_weekly.nc";
+  :NCO = "\"4.5.4\"";
+ data:
+DAY_OF_YEAR =
+  {57}
+DENS =
+  {
+    {
+      {
+        {1026.6444}
+      },
+      {
+        {1027.0496}
+      }
+    }
+  }
+DENS_anomaly =
+  {
+    {
+      {
+        {-0.1842041}
+      },
+      {
+        {-0.068481445}
+      }
+    }
+  }
+DENS_mean =
+  {
+    {
+      {1026.8286}
+    },
+    {
+      {1027.118}
+    }
+  }
+DEPTH =
+  {50, 100}
+DOX2 =
+  {
+    {
+      {
+        {267.59488}
+      },
+      {
+        {262.84174}
+      }
+    }
+  }
+DOX2_RMSresid =
+  {
+    {
+      {3.9086287}
+    },
+    {
+      {3.9808764}
+    }
+  }
+DOX2_RMSspatialresid =
+  {
+    {
+      {5.102561}
+    },
+    {
+      {6.2213697}
+    }
+  }
+DOX2_anomaly =
+  {
+    {
+      {
+        {-7.7465515}
+      },
+      {
+        {-7.2276}
+      }
+    }
+  }
+DOX2_mean =
+  {
+    {
+      {275.34143}
+    },
+    {
+      {270.06934}
+    }
+  }
+DOX2_sumofwgts =
+  {
+    {
+      {5863}
+    },
+    {
+      {5866}
+    }
+  }
+LATITUDE =
+  {-44.5}
+LONGITUDE =
+  {114.0}
+NTR2 =
+  {
+    {
+      {
+        {8.693008}
+      },
+      {
+        {9.86619}
+      }
+    }
+  }
+NTR2_RMSresid =
+  {
+    {
+      {1.3294466}
+    },
+    {
+      {1.4084061}
+    }
+  }
+NTR2_RMSspatialresid =
+  {
+    {
+      {1.7315797}
+    },
+    {
+      {2.0136642}
+    }
+  }
+NTR2_anomaly =
+  {
+    {
+      {
+        {-1.3264952}
+      },
+      {
+        {-0.80120945}
+      }
+    }
+  }
+NTR2_mean =
+  {
+    {
+      {10.019504}
+    },
+    {
+      {10.667399}
+    }
+  }
+NTR2_sumofwgts =
+  {
+    {
+      {78}
+    },
+    {
+      {75}
+    }
+  }
+PHOS =
+  {
+    {
+      {
+        {0.758646}
+      },
+      {
+        {0.822812}
+      }
+    }
+  }
+PHOS_RMSresid =
+  {
+    {
+      {0.07957955}
+    },
+    {
+      {0.07924513}
+    }
+  }
+PHOS_RMSspatialresid =
+  {
+    {
+      {0.105637945}
+    },
+    {
+      {0.09609252}
+    }
+  }
+PHOS_anomaly =
+  {
+    {
+      {
+        {-0.12397516}
+      },
+      {
+        {-0.10448676}
+      }
+    }
+  }
+PHOS_mean =
+  {
+    {
+      {0.88262117}
+    },
+    {
+      {0.9272988}
+    }
+  }
+PHOS_sumofwgts =
+  {
+    {
+      {122}
+    },
+    {
+      {120}
+    }
+  }
+PSAL =
+  {
+    {
+      {
+        {34.649036}
+      },
+      {
+        {34.68589}
+      }
+    }
+  }
+PSAL_RMSresid =
+  {
+    {
+      {0.049936675}
+    },
+    {
+      {0.057070483}
+    }
+  }
+PSAL_RMSspatialresid =
+  {
+    {
+      {0.0713381}
+    },
+    {
+      {0.07652633}
+    }
+  }
+PSAL_anomaly =
+  {
+    {
+      {
+        {0.023788452}
+      },
+      {
+        {0.05221176}
+      }
+    }
+  }
+PSAL_map_error =
+  {
+    {
+      {1.17549435E-38}
+    },
+    {
+      {1.17549435E-38}
+    }
+  }
+PSAL_mean =
+  {
+    {
+      {34.625248}
+    },
+    {
+      {34.63368}
+    }
+  }
+PSAL_std_dev =
+  {
+    {
+      {0.06550135}
+    },
+    {
+      {0.06939252}
+    }
+  }
+PSAL_sumofwgts =
+  {
+    {
+      {140}
+    },
+    {
+      {141}
+    }
+  }
+SLC2 =
+  {
+    {
+      {
+        {3.2309036}
+      },
+      {
+        {4.2641783}
+      }
+    }
+  }
+SLC2_RMSresid =
+  {
+    {
+      {1.2269071}
+    },
+    {
+      {0.98410153}
+    }
+  }
+SLC2_RMSspatialresid =
+  {
+    {
+      {1.7190965}
+    },
+    {
+      {1.2943075}
+    }
+  }
+SLC2_anomaly =
+  {
+    {
+      {
+        {-1.3957815}
+      },
+      {
+        {-0.32198143}
+      }
+    }
+  }
+SLC2_mean =
+  {
+    {
+      {4.626685}
+    },
+    {
+      {4.5861597}
+    }
+  }
+SLC2_sumofwgts =
+  {
+    {
+      {131}
+    },
+    {
+      {129}
+    }
+  }
+TEMP =
+  {
+    {
+      {
+        {11.462893}
+      },
+      {
+        {10.64422}
+      }
+    }
+  }
+TEMP_RMSresid =
+  {
+    {
+      {0.33979827}
+    },
+    {
+      {0.29630873}
+    }
+  }
+TEMP_RMSspatialresid =
+  {
+    {
+      {0.8489158}
+    },
+    {
+      {0.5775411}
+    }
+  }
+TEMP_anomaly =
+  {
+    {
+      {
+        {1.1227131}
+      },
+      {
+        {0.62064457}
+      }
+    }
+  }
+TEMP_map_error =
+  {
+    {
+      {0.027253445}
+    },
+    {
+      {0.023774281}
+    }
+  }
+TEMP_mean =
+  {
+    {
+      {10.340179}
+    },
+    {
+      {10.023576}
+    }
+  }
+TEMP_std_dev =
+  {
+    {
+      {0.8019471}
+    },
+    {
+      {0.5671036}
+    }
+  }
+TEMP_sumofwgts =
+  {
+    {
+      {156}
+    },
+    {
+      {157}
+    }
+  }
+}

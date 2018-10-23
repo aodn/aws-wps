@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template>
+    <attributes>
+        <attribute name="geospatial_vertical_min" type="String" value="${Z_MIN}"/>
+        <attribute name="geospatial_vertical_max" type="String" value="${Z_MAX}"/>
+    </attributes>
+</template>

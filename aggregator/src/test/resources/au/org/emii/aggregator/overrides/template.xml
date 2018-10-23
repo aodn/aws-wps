@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template>
+    <attributes>
+        <attribute name="start_time" type="String" value="${TIME_START}"/>
+        <attribute name="title" match=".*" type="String" value="${0}, ${TIME_START}, ${TIME_END}"/>
+    </attributes>
+    <variables>
+        <variable name="time"/>
+
+        <variable name="sea_surface_temperature" type="Float">
+            <attribute name="_FillValue" type="Float" value="9.96920996838687e+36"/>
+            <attribute name="valid_min" type="Float" value="0.0"/>
+            <attribute name="valid_max" type="Float" value="350.0"/>
+        </variable>
+
+        <variable name="sses_bias" type="Float">
+            <attribute name="valid_range" type="Float">
+                <value>0.0</value>
+                <value>350.0</value>
+            </attribute>
+        </variable>
+    </variables>
+</template>
