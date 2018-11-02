@@ -6,13 +6,13 @@
 
     <groupId>au.org.emii</groupId>
     <artifactId>request-handler</artifactId>
-    <version>4.38.28</version>
+    <version>4.38.29</version>
 
     <parent>
         <groupId>au.org.emii</groupId>
         <artifactId>aws-wps</artifactId>
         <relativePath>../pom.xml</relativePath>
-        <version>4.38.28</version>
+        <version>4.38.29</version>
     </parent>
 
     <dependencies>
@@ -104,7 +104,7 @@
         <dependency>
             <groupId>au.org.emii</groupId>
             <artifactId>wps-common</artifactId>
-            <version>4.38.28</version>
+            <version>4.38.29</version>
         </dependency>
         <dependency>
             <groupId>org.jvnet.ogc</groupId>
