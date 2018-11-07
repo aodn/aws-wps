@@ -53,6 +53,7 @@ Mappings:
       HostedZoneId: Z3JIUIKOQNPOWH
       HostedZoneName: dev.aodn.org.au.
       CustomAmiId: ami-65c23707
+      TestCustomAmiId: ami-0c7f195015aedf700
       UseVpcGateway: false
     '104044260116':  # production
       AllowEphemeralBuckets: false
@@ -61,6 +62,7 @@ Mappings:
       HostedZoneId: ZYU7JVFK6NXWM
       HostedZoneName: aodn.org.au.
       CustomAmiId: ami-bd06f3df
+      TestCustomAmiId: ami-0c7f195015aedf700
       UseVpcGateway: true
   '615645230945': # non-production region constants
     ap-southeast-2:
@@ -87,6 +89,7 @@ Conditions:
   ConfigureSumoLogic: !Not [!Equals ['', !Ref sumoEndpoint]]
   CreateWpsApiGatewayDomainName: !Not [!Equals ['', !Ref wpsDomainName]]
   UseCustomAmi: !Not [!Equals ['', !FindInMap [AccountConstants, !Ref 'AWS::AccountId', CustomAmiId]]]
+  UseTestCustomAmi: !Not [!Equals ['', !FindInMap [AccountConstants, !Ref 'AWS::AccountId', TestCustomAmiId]]]
   UseVpcGateway: !Equals [true, !FindInMap [AccountConstants, !Ref 'AWS::AccountId', UseVpcGateway]]
 Resources:
 
@@ -446,7 +449,7 @@ Resources:
             - m4.large
             - r4.large
             - r3.large
-          ImageId: !If [UseCustomAmi, !FindInMap [AccountConstants, !Ref 'AWS::AccountId', CustomAmiId], !Ref 'AWS::NoValue']
+          ImageId: !If [UseTestCustomAmi, !FindInMap [AccountConstants, !Ref 'AWS::AccountId', TestCustomAmiId], !Ref 'AWS::NoValue']
           Subnets: !FindInMap [!Ref 'AWS::AccountId', !Ref 'AWS::Region', subnets]
           SecurityGroupIds:
             - !Ref ComputeEnvironmentInstanceSecurityGroup
