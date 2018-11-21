@@ -25,7 +25,7 @@ function get_cache_bucket_for_account() {
 }
 
 function usage() {
-    echo "Usage: $0 [-p AWS_PROFILE] -s STACK_NAME -c CONFIG_FILE [-t TAGS]"
+    echo "Usage: $0 [-p AWS_PROFILE] -s STACK_NAME -c CONFIG_FILE [-t \"TAGS\"]"
     exit 1
 }
 
@@ -50,11 +50,6 @@ function main() {
       esac
     done
 
-    echo "AWS Profile     : $aws_profile"
-    echo "Stack name      : $stack_name"
-    echo "Config file     : $config_file"
-    echo "Tags            : $tags"
-
     # Check that we have all the mandatory parameters
     if [ -z "$stack_name" ] || [ -z "$config_file" ]; then
         usage
@@ -64,6 +59,11 @@ function main() {
     if [ -z "$aws_profile" ] ; then
         aws_profile="default"
     fi
+
+    echo "AWS Profile     : $aws_profile"
+    echo "Stack name      : $stack_name"
+    echo "Config file     : $config_file"
+    echo "Tags            : $tags"
 
     # Check that the config file exists
     if [ ! -e ${config_file} ]; then
