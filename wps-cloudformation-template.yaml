@@ -604,7 +604,7 @@ Resources:
       Role: !GetAtt RequestHandlerLambdaExecutionRole.Arn
       Runtime: java8
       Timeout: 60
-      Code: ./request-handler/target/request-handler-lambda-package.zip
+      Code: lambda/request-handler-lambda-package.zip
       Environment:
         Variables:
           GEONETWORK_CATALOGUE_URL: !Ref geonetworkCatalogueURL
@@ -734,7 +734,7 @@ Resources:
       Role: !GetAtt JobStatusLambdaExecutionRole.Arn
       Runtime: java8
       Timeout: 60
-      Code: ./job-status-service/target/job-status-service-lambda-package.zip
+      Code: lambda/job-status-service-lambda-package.zip
       Environment:
         Variables:
           OUTPUT_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !Ref bucketName]
@@ -822,7 +822,7 @@ Resources:
     Type: AWS::Lambda::Function
     Condition: ConfigureSumoLogic
     Properties:
-      Code: ./sumologic-lambda.zip
+      Code: lambda/sumologic
       Description: Push batch logs to SumoLogic
       FunctionName: !Sub 'SumoLogic-WPS-${AWS::StackName}'
       Handler: index.handler
