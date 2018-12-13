@@ -34,9 +34,6 @@ Lambda function that handles job status requests.
 location specified by the WPS_ENDPOINT environment variable    
 - ```requests``` contains a demo request that can be submitted to a deployed AWS/WPS instance
 - ```wps-cloudformation-template.yaml``` a cloud formation template for creating AWS components of the AWS/WPS instance
-- ```deploy.sh``` an bash script to deploy an AWS/WPS instance using the coud formation template above and a specified
-properties override file  
-- ```dev.properties``` an example parameter overrides file creating a dev AWS/WPS instance   
 
 ### Supported aggregation processes
 
@@ -63,39 +60,6 @@ Requirements:
 ```
 $ mvn clean package
 ```
-
-### To deploy
- 
-Requirements:
- 
-  * aws cli
-  * access to deploy cloud formation template
-
-1) Copy request-handler and job-status-service lambda deployment packages  
-to an S3 bucket accessible for deployment.   For example for version 0.3.1 of the project
-
-```
-$ aws s3 cp --acl public-read request-handler/target/request-handler-0.3.1-lambda-package.zip s3://wps-lambda/request-handler-testing-lambda-package.zip
-$ aws s3 cp --acl public-read job-status-service/target/job-status-service-0.3.1-lambda-package.zip s3://wps-lambda/job-status-service-testing-lambda-package.zip
-```
-
-2) Deploy aggregation worker image to ECS registry in development account with tag 'my-tag'
-
-```
-$ aggregation-worker/scripts/docker-deploy.sh my-tag
-```
- 
-3) Create a deployment parameter overrides file similar to dev.properties.  Set the location of the request
-handler and job status lambda packages to the s3 locations used above and the aggregation image tag to docker tag
-deployed above
-
-4) Deploy an instance of the AWS/WPS stack 
-
-```
-$ ./deploy.sh my-overrides
-```
-
-This will create a stack with id my-instance
 
 ### To run integration tests
 
