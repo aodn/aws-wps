@@ -909,3 +909,5 @@ Outputs:
     Value: !Ref TestQueue
   JobDefinitionArn:
     Value: !Ref JobDefinition
+  Endpoint:
+    Value: ''
