@@ -827,7 +827,7 @@ Resources:
       FunctionName: !Sub 'SumoLogic-WPS-${AWS::StackName}'
       Handler: index.handler
       Role: !GetAtt SumoLogicLambdaFunctionRole.Arn
-      Runtime: nodejs4.3
+      Runtime: nodejs8.10
       Timeout: 3
       Environment:
         Variables:
