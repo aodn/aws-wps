@@ -1,22 +1,39 @@
 package au.org.aodn.aws.util;
 
+import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.model.AbortMultipartUploadRequest;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
+import com.amazonaws.services.s3.model.CompleteMultipartUploadRequest;
+import com.amazonaws.services.s3.model.CompleteMultipartUploadResult;
+import com.amazonaws.services.s3.model.InitiateMultipartUploadRequest;
+import com.amazonaws.services.s3.model.InitiateMultipartUploadResult;
 import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.PartETag;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
+import com.amazonaws.services.s3.model.UploadPartRequest;
 import com.amazonaws.services.s3.transfer.TransferManager;
 import com.amazonaws.services.s3.transfer.TransferManagerBuilder;
 import com.amazonaws.services.s3.transfer.Upload;
 import com.amazonaws.util.StringInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 public class S3Utils {
 
@@ -119,6 +136,77 @@ public class S3Utils {
     public static int getExpirationinDays(String bucket) {
         AmazonS3 s3Client = AmazonS3ClientBuilder.defaultClient();
         return s3Client.getBucketLifecycleConfiguration(bucket).getRules().get(0).getExpirationInDays();
+    }
+
+    public static void uploadFilesToS3AsZip(List<File> srcFiles, String bucket, String key) throws IOException {
+        AmazonS3 s3Client = AmazonS3ClientBuilder.defaultClient();
+
+        List<PartETag> partETags = new ArrayList<PartETag>();
+
+        InitiateMultipartUploadRequest initRequest = new InitiateMultipartUploadRequest(
+                bucket, key);
+        InitiateMultipartUploadResult initResponse =
+                s3Client.initiateMultipartUpload(initRequest);
+
+        int partSize = 1024 * 1024 * 50; //50 megabytes
+        ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream(partSize);
+
+        try (ZipOutputStream zipOutputStream = new ZipOutputStream(byteOutputStream)) {
+            zipOutputStream.setLevel(0);
+            Iterator<File> iterator = srcFiles.iterator();
+            int partId = 1;
+
+            File srcFile = iterator.next();
+            zipOutputStream.putNextEntry(new ZipEntry(srcFile.getName()));
+            FileInputStream inStream = new FileInputStream(srcFile);
+
+            try {
+                byte[] bytes = new byte[partSize];
+                int length;
+                while ((length = inStream.read(bytes, 0, partSize)) > 0) {
+                    zipOutputStream.write(bytes, 0, length);
+                    if (inStream.available() == 0 && iterator.hasNext()) {
+                        srcFile = iterator.next();
+                        zipOutputStream.putNextEntry(new ZipEntry(srcFile.getName()));
+                        inStream.close();
+                        inStream = new FileInputStream(srcFile);
+                        continue;
+                    }
+
+                    boolean lastEntryCompleted = inStream.available() == 0 && !iterator.hasNext();
+
+                    if (lastEntryCompleted) {
+                        zipOutputStream.closeEntry();
+                        zipOutputStream.close();
+                    }
+
+                    UploadPartRequest uploadRequest = new UploadPartRequest()
+                            .withBucketName(bucket).withKey(key)
+                            .withUploadId(initResponse.getUploadId()).withPartNumber(partId)
+                            .withInputStream(new ByteArrayInputStream(byteOutputStream.toByteArray()))
+                            .withPartSize(byteOutputStream.size());
+
+                    partETags.add(s3Client.uploadPart(uploadRequest).getPartETag());
+
+                    byteOutputStream.reset();
+                    partId++;
+                }
+            } finally {
+                inStream.close();
+            }
+
+            CompleteMultipartUploadRequest compRequest = new
+                    CompleteMultipartUploadRequest(bucket,
+                    key,
+                    initResponse.getUploadId(),
+                    partETags);
+
+            s3Client.completeMultipartUpload(compRequest);
+        } catch (Exception e) {
+            s3Client.abortMultipartUpload(new AbortMultipartUploadRequest(
+                    bucket, key, initResponse.getUploadId()));
+            throw e;
+        }
     }
 
 }

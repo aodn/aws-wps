@@ -19,7 +19,6 @@ import au.org.emii.download.*;
 import au.org.aodn.aws.geoserver.client.HttpIndexReader;
 import au.org.aodn.aws.geoserver.client.SubsetParameters;
 import au.org.aodn.aws.geoserver.client.TimeNotSupportedException;
-import au.org.aodn.aws.util.Zip;
 import au.org.emii.util.IntegerHelper;
 import au.org.emii.util.NumberRange;
 import au.org.emii.util.ProvenanceWriter;
@@ -414,13 +413,9 @@ public class AggregationRunner implements CommandLineRunner {
                 if(resultMime.equals("application/zip")) {
                     String outputFilename = requestedOutputFilename + DEFAULT_OUTPUT_FILE_EXTENSION;
 
-                    //  Form output ZIP file
-                    File zipFile = Zip.zipFiles(jobDir.toFile().getAbsolutePath() + File.separator + outputFilename, zipContent);
-                    logger.info("Formed output ZIP file: " + zipFile.getAbsolutePath() + ", Size: " + zipFile.length());
-
-                    //  Upload to S3
-                    outputFileManager.upload(zipFile, outputFilename, "application/zip");
-
+                    logger.info("Beginning zip and upload of output files to S3");
+                    //  Form output ZIP file and upload it on the fly
+                    S3Utils.uploadFilesToS3AsZip(zipContent, outputBucketName, outputFileManager.getJobFileKey(outputFilename));
                     logger.info("Uploaded " + batchJobId + ".zip to S3");
 
                     //  Put output URL in WPS response
