@@ -7,7 +7,6 @@ pipeline {
         AWS_REGION = "ap-southeast-2"
         AWS_ACCOUNT_ID = sh(returnStdout: true, script: "aws sts get-caller-identity --query Account --output text").trim()
         ECR_REGISTRY_URL = "https://${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com/javaduck"
-        WORKER_IMAGE_NAME = "javaduck:${env.BUILD_ID}"
     }
 
     stages {
@@ -31,7 +30,7 @@ pipeline {
                 script {
                     docker.build("javaduck:${env.BUILD_ID}", "aggregation-worker/")
                     docker.withRegistry(env.ECR_REGISTRY_URL) {
-                        docker.image(env.WORKER_IMAGE_NAME).push('latest')
+                        docker.image("javaduck:${env.BUILD_ID}").push('latest')
                     }
                 }
             }
