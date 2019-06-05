@@ -255,7 +255,7 @@ public class NetcdfAggregator implements AutoCloseable {
                 }
             }
         } catch (InvalidRangeException|IOException e) {
-            throw new AggregationException(e);
+            throw new AggregationException("The source NetCDF data files are invalid", e);
         }
     }
 
