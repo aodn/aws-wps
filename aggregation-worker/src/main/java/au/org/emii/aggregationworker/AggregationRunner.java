@@ -496,22 +496,28 @@ public class AggregationRunner implements CommandLineRunner {
                     FileUtils.deleteDirectory(jobDir.toFile());
                 }
             }
-        } catch(AmazonServiceException se) {
-            String errorMessage = "An amazon service exception occurred processing job [" + batchJobId + "] : " +
-                                  "Message [" + se.getMessage() + "]" +
-                                  ", ErrorCode [" + se.getErrorCode() + "]" +
-                                  ", ErrorMessage [" + se.getErrorMessage() + "]" +
-                                  ", ErrorType [" + se.getErrorType().name() + "]";
+        } catch(Throwable e) {
+            if(e instanceof AmazonServiceException ){
+                AmazonServiceException se = (AmazonServiceException)e;
 
-            logger.error(errorMessage, se);
+                if (!se.getErrorType().equals(AmazonServiceException.ErrorType.Client)) {
+                    // the exception was Amazon's fault, not ours, so the batch job should retry
+                    String errorMessage = "An amazon service exception occurred processing job [" + batchJobId + "] : " +
+                            "Message [" + se.getMessage() + "]" +
+                            ", ErrorCode [" + se.getErrorCode() + "]" +
+                            ", ErrorMessage [" + se.getErrorMessage() + "]" +
+                            ", ErrorType [" + se.getErrorType().name() + "]";
 
-            //  Flush messages etc...
-            LogManager.shutdown();
+                    logger.error(errorMessage, se);
 
-            //  Exit with a failed return code - means batch job will retry (unless max retries reached)
-            System.exit(1);
+                    //  Flush messages etc...
+                    LogManager.shutdown();
 
-        } catch (Throwable e) {
+                    //  Exit with a failed return code - means batch job will retry (unless max retries reached)
+                    System.exit(1);
+                }
+            }
+
             e.printStackTrace();
             logger.error("Failed aggregation. JobID [" + batchJobId + "], Callback email [" + contactEmail + "] : " + e.getMessage(), e);
             if (statusFileManager != null) {
