@@ -298,7 +298,7 @@ Resources:
       ContainerProperties:
         Image: !Ref dockerImage
         Vcpus: 2
-        Memory: 2000
+        Memory: 4000
         JobRoleArn: !Ref JobInstanceRole
         Volumes:
           -
@@ -306,7 +306,7 @@ Resources:
         Environment:
           -
             Name: JAVA_TOOL_OPTIONS
-            Value: -Xmx512m
+            Value: -Xmx2g
           -
             Name: OUTPUT_S3_FILENAME
             Value: output
@@ -416,8 +416,6 @@ Resources:
         DesiredvCpus: 0
         MaxvCpus: !Ref maxVCPUs
         InstanceTypes:
-          - c3.large
-          - c4.large
           - m3.large
           - m4.large
           - r4.large
