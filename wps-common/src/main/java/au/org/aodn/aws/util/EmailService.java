@@ -172,7 +172,7 @@ public class EmailService {
         Calendar cal = Calendar.getInstance();
         cal.setTime(date);
 
-        SimpleDateFormat sdf = new SimpleDateFormat("YYYY-MMM-dd-HH:mm-'UTC'");
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MMM-dd-HH:mm-'UTC'");
         sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
         return sdf.format(cal.getTime());
     }
