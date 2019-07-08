@@ -148,7 +148,7 @@ public class S3Utils {
         InitiateMultipartUploadResult initResponse =
                 s3Client.initiateMultipartUpload(initRequest);
 
-        int partSize = 1024 * 1024 * 50; //50 megabytes
+        int partSize = 1024 * 1024 * 200; //200 megabytes
         ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream(partSize);
 
         try (ZipOutputStream zipOutputStream = new ZipOutputStream(byteOutputStream)) {
