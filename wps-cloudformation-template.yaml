@@ -298,7 +298,7 @@ Resources:
       ContainerProperties:
         Image: !Ref dockerImage
         Vcpus: 2
-        Memory: 4000
+        Memory: 2000
         JobRoleArn: !Ref JobInstanceRole
         Volumes:
           -
