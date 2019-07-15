@@ -52,7 +52,7 @@ Mappings:
       DomainSuffix: dev.aodn.org.au
       HostedZoneId: Z3JIUIKOQNPOWH
       HostedZoneName: dev.aodn.org.au.
-      CustomAmiId: ami-65c23707
+      CustomAmiId: ami-bd06f3df
       TestCustomAmiId: ami-0c7f195015aedf700
       UseVpcGateway: false
     '104044260116':  # production
