@@ -483,7 +483,6 @@ Resources:
       FailOnWarnings: true
   WpsApiGatewayStage:
     DependsOn:
-      - WpsApiGatewayAccount
       - WPSRestApi
     Type: AWS::ApiGateway::Stage
     Properties:
@@ -522,38 +521,6 @@ Resources:
       HostedZoneName: !FindInMap [AccountConstants, !Ref 'AWS::AccountId', HostedZoneName]
       Name: !Join ['.', [!Ref wpsDomainName, !FindInMap [AccountConstants, !Ref 'AWS::AccountId', DomainSuffix]]]
       Type: 'A'
-  WpsApiGatewayCloudWatchLogsRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - apigateway.amazonaws.com
-            Action:
-              - sts:AssumeRole
-      Policies:
-        -
-          PolicyName: ApiGatewayLogsPolicy
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              Effect: Allow
-              Action:
-                - logs:CreateLogGroup
-                - logs:CreateLogStream
-                - logs:DescribeLogGroups
-                - logs:DescribeLogStreams
-                - logs:PutLogEvents
-                - logs:GetLogEvents
-                - logs:FilterLogEvents
-              Resource: '*'
-  WpsApiGatewayAccount:
-    Type: AWS::ApiGateway::Account
-    Properties:
-      CloudWatchRoleArn: !GetAtt WpsApiGatewayCloudWatchLogsRole.Arn
   WpsApiGatewayDeployment:
     Type: AWS::ApiGateway::Deployment
     DependsOn:
