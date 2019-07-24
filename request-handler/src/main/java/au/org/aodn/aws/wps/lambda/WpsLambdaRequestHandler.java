@@ -7,6 +7,7 @@ import au.org.aodn.aws.wps.AwsApiResponse.ResponseBuilder;
 import au.org.aodn.aws.wps.RequestParser;
 import au.org.aodn.aws.wps.RequestParserFactory;
 import au.org.aodn.aws.util.JobFileUtil;
+import au.org.aodn.aws.wps.exception.InvalidRequestException;
 import au.org.aodn.aws.wps.operation.Operation;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
@@ -53,20 +54,25 @@ public class WpsLambdaRequestHandler implements RequestHandler<AwsApiRequest, Aw
             RequestParser requestParser = requestParserFactory.getRequestParser(request);
 
             if(requestParser != null) {
-                Operation operation = requestParser.getOperation();
-                if(operation != null) {
+                try {
+                    Operation operation = requestParser.getOperation();
+                    if (operation != null) {
 
-                    //  Log the entire request plus associated metadata (operation name, ipaddress) for consumption by SumoLogic
-                    LOGGER.info("Operation [" + operation.getClass().getName() + "] requested. " + getRequestDetails(request));
-                    String result = operation.execute();
-                    LOGGER.info("Executed");
-                    responseBuilder.body(result);
-                }
-                else
-                {
-                    LOGGER.error("Operation : NULL. " + getRequestDetails(request));
-                    responseBuilder.statusCode(500);
-                    String exceptionReportString = JobFileUtil.getExceptionReportString("No operation found.", "ExecutionError");
+                        //  Log the entire request plus associated metadata (operation name, ipaddress) for consumption by SumoLogic
+                        LOGGER.info("Operation [" + operation.getClass().getName() + "] requested. " + getRequestDetails(request));
+                        String result = operation.execute();
+                        LOGGER.info("Executed");
+                        responseBuilder.body(result);
+                    } else {
+                        LOGGER.error("Operation : NULL. " + getRequestDetails(request));
+                        responseBuilder.statusCode(400); // No Operation Provided
+                        String exceptionReportString = JobFileUtil.getExceptionReportString("No operation found.", "ExecutionError");
+                        responseBuilder.body(exceptionReportString);
+                    }
+                } catch (IllegalArgumentException e) {
+                    LOGGER.error("Exception : " + e.getMessage(), e);
+                    responseBuilder.statusCode(501); // Operation Not Implemented
+                    String exceptionReportString = JobFileUtil.getExceptionReportString(e.getMessage(), "ExecutionError");
                     responseBuilder.body(exceptionReportString);
                 }
             }
@@ -79,13 +85,18 @@ public class WpsLambdaRequestHandler implements RequestHandler<AwsApiRequest, Aw
             }
         } catch (OGCException oe) {
             LOGGER.error("Could not handle request. " + getRequestDetails(request), oe);
-            responseBuilder.statusCode(500);
+            responseBuilder.statusCode(400); // Invalid OGC Standard
             String exceptionReportString = JobFileUtil.getExceptionReportString(oe.getExceptionText(),
                 oe.getExceptionCode(), oe.getLocator());
             responseBuilder.body(exceptionReportString);
+        } catch (InvalidRequestException e) {
+            LOGGER.error("Exception : " + e.getMessage(), e);
+            responseBuilder.statusCode(400); // Invalid Request Provided
+            String exceptionReportString = JobFileUtil.getExceptionReportString(e.getMessage(), "ExecutionError");
+            responseBuilder.body(exceptionReportString);
         } catch (Exception e) {
             LOGGER.error("Exception : " + e.getMessage(), e);
-            responseBuilder.statusCode(500);
+            responseBuilder.statusCode(500); // General Exception
             String exceptionReportString = JobFileUtil.getExceptionReportString(e.getMessage(), "ExecutionError");
             responseBuilder.body(exceptionReportString);
         }
