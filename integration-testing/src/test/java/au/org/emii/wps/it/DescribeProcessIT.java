@@ -38,7 +38,7 @@ public class DescribeProcessIT {
         .when()
             .get()
         .then()
-            .statusCode(500)
+            .statusCode(400)
             .contentType(ContentType.XML)
             .body(validateWith("/ows/1.1.0/owsAll.xsd"))
             .root("ExceptionReport.Exception")
