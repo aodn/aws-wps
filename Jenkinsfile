@@ -1,21 +1,31 @@
 #!groovy​
 
 pipeline {
-    agent none
+    agent { label 'master' }
 
     stages {
         stage('clean') {
-            agent { label 'master' }
             steps {
                 sh 'git clean -fdx'
             }
         }
-
+        stage('set_version') {
+            steps {
+                sh 'bumpversion patch'
+            }
+        }
+        stage('release') {
+            when { branch 'master' }
+            steps {
+                sh 'bumpversion --tag --commit --allow-dirty release'
+            }
+        }
         stage('package') {
             agent {
                 dockerfile {
                     args '-v ${HOME}/.m2:/home/builder/.m2'
                     additionalBuildArgs '--build-arg BUILDER_UID=${JENKINS_UID:-9999}'
+                    reuseNode true
                 }
             }
             steps {
@@ -29,7 +39,6 @@ pipeline {
         }
 
         stage('build_worker') {
-            agent { label 'master' }
             environment {
                 AWS_REGION = "ap-southeast-2"
                 AWS_ACCOUNT_ID = sh(returnStdout: true, script: "aws sts get-caller-identity --query Account --output text").trim()
