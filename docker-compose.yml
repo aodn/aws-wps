@@ -12,3 +12,4 @@ services:
     working_dir: /app
     volumes:
       - './:/app'
+      - '${HOME}/.m2:/home/builder/.m2'
