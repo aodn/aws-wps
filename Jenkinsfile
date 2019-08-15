@@ -4,22 +4,31 @@ pipeline {
     agent none
 
     stages {
-        stage('clean') {
-            agent { label 'master' }
-            steps {
-                sh 'git clean -fdx'
-            }
-        }
-
-        stage('package') {
+        stage('container') {
             agent {
                 dockerfile {
                     args '-v ${HOME}/.m2:/home/builder/.m2'
                     additionalBuildArgs '--build-arg BUILDER_UID=${JENKINS_UID:-9999}'
                 }
             }
-            steps {
-                sh 'mvn -B clean package'
+            stages {
+                stage('set_version_build') {
+                    when { not { branch "master" } }
+                    steps {
+                        sh './bumpversion.sh build'
+                    }
+                }
+                stage('set_version_release') {
+                    when { branch "master" }
+                    steps {
+                        sh './bumpversion.sh release'
+                    }
+                }
+                stage('package') {
+                    steps {
+                        sh 'mvn -B clean package'
+                    }
+                }
             }
             post {
                 success {
@@ -27,7 +36,6 @@ pipeline {
                 }
             }
         }
-
         stage('build_worker') {
             agent { label 'master' }
             environment {
