@@ -9,10 +9,10 @@ import java.util.Map;
 /**
  * Created by craigj on 8/08/17.
  */
-public class RequestParserFactory {
+public class RequestParserFactory  {
     Logger logger = LoggerFactory.getLogger(RequestParserFactory.class);
 
-    public RequestParser getRequestParser(AwsApiRequest request) {
+    public RequestParser getRequestParser(AwsApiRequest request) throws InvalidRequestException {
         if (request.getHttpMethod().equals("POST")) {
             return new XmlBodyParser(request.getBody());
         }
@@ -20,17 +20,17 @@ public class RequestParserFactory {
             return new QueryStringParameterParser(request);
         }
         else {
-            // TODO: handle as required by spec
-            Map<String, String> parameters = request.getQueryStringParameters();
             Map<String, String> headers = request.getHeaders();
 
-            if (!parameters.isEmpty()) {
+            try  {
+                // TODO: handle as required by spec
+                Map<String, String> parameters = request.getQueryStringParameters();
                 for (String key : parameters.keySet()) {
                     logger.error("  - Query parameter: Key [" + key + "], Value [" + parameters.get(key) + "]");
                 }
             }
-            else {
-                throw new InvalidRequestException("Request parameters are empty");
+            catch (Exception e){
+                throw new InvalidRequestException(e);
             }
 
             //  Log some debugging information
