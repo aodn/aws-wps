@@ -48,7 +48,6 @@ public class WpsLambdaRequestHandler implements RequestHandler<AwsApiRequest, Aw
             }
         }
 
-
         try {
             RequestParserFactory requestParserFactory = new RequestParserFactory();
             RequestParser requestParser = requestParserFactory.getRequestParser(request);
@@ -90,7 +89,7 @@ public class WpsLambdaRequestHandler implements RequestHandler<AwsApiRequest, Aw
                 oe.getExceptionCode(), oe.getLocator());
             responseBuilder.body(exceptionReportString);
         } catch (InvalidRequestException e) {
-            LOGGER.error("Exception : " + e.getMessage(), e);
+            LOGGER.error("Exception : " + getRequestDetails(request), e);
             responseBuilder.statusCode(400); // Invalid Request Provided
             String exceptionReportString = JobFileUtil.getExceptionReportString(e.getMessage(), "ExecutionError");
             responseBuilder.body(exceptionReportString);
