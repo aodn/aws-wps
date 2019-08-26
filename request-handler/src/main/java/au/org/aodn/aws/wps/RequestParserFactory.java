@@ -30,7 +30,7 @@ public class RequestParserFactory  {
                     }
                 }
                 else {
-                    logger.error("  - Query parameters are null")
+                    logger.error("  - Query parameters are null");
                 }
             }
             catch (Exception e){
@@ -44,7 +44,7 @@ public class RequestParserFactory  {
                 }
             }
             else {
-                logger.error("  - Query headers are null")
+                logger.error("  - Query headers are null");
             }
 
             //  Log some debugging information
