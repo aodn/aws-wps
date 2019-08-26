@@ -36,7 +36,7 @@ public class ExecuteOperation implements Operation {
 
 
     @Override
-    public String execute() throws OGCException {
+    public String execute() throws OGCException, ValidationException {
 
         //  Config items:
         //      queue names

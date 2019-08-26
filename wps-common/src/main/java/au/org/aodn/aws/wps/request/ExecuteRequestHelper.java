@@ -12,7 +12,9 @@ import java.util.regex.Pattern;
 import au.org.aodn.aws.wps.exception.ValidationException;
 
 public class ExecuteRequestHelper {
+
     private final Execute request;
+    public static String TEST_TRANSACTION_INPUT_IDENTIFIER = "TestMode";
 
     public ExecuteRequestHelper(Execute request) {
         this.request = request;
