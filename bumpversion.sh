@@ -22,6 +22,7 @@ set_maven_version() {
 
 update_git() {
   local version=$1; shift
+  git fetch --prune origin "+refs/tags/*:refs/tags/*"
   git add pom.xml '*/pom.xml'
   git commit -m "Jenkins version bump (${version})"
   git tag -a -f -m 'Jenkins: create tag ${version}' ${version}
