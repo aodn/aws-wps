@@ -26,8 +26,7 @@ update_git() {
   git add pom.xml '*/pom.xml'
   git commit -m "Jenkins version bump (${version})"
   git tag -a -f -m 'Jenkins: create tag ${version}' ${version}
-  git push origin tag ${version}
-  git push origin "HEAD:${RELEASE_BRANCH}"
+  git push --atomic origin "HEAD:${RELEASE_BRANCH}" tag "${version}"
 }
 
 main() {
