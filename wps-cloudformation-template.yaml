@@ -233,7 +233,7 @@ Resources:
               Service: spotfleet.amazonaws.com
             Action: sts:AssumeRole
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AmazonEC2SpotFleetRole
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2SpotFleetTaggingRole
   IamInstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
