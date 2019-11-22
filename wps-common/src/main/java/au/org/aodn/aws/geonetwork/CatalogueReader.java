@@ -35,7 +35,7 @@ public class CatalogueReader {
     private static final Logger logger = LoggerFactory.getLogger(CatalogueReader.class);
 
     private static final String METADATA_PROTOCOL = "WWW:LINK-1.0-http--metadata-URL";
-    private static final String CATALOGUE_SUMMARY_SEARCH_TEMPLATE = "%s/srv/eng/xml.search.summary?%s=%s&hitsPerPage=1&fast=index";
+    private static final String CATALOGUE_SUMMARY_SEARCH_TEMPLATE = "%s/srv/eng/q?%s=%s&hitsPerPage=1&fast=index&buildSummary=false";
     private static final String CATALOGUE_METADATA_GET_TEMPLATE = "%s/srv/eng/xml.metadata.get?uuid=%s";
 
     public static final String METADATA_SUMMARY_UUID_XPATH = "//info/uuid";
