@@ -102,7 +102,6 @@ Resources:
     Condition: CreateEphemeralBucket
     DeletionPolicy: Delete
     Properties:
-      BucketName: !Join ['-', [!Ref bucketName, !Ref 'AWS::StackName']]
       LifecycleConfiguration:
         Rules:
           - Id: JobExpirationInDays
