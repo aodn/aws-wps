@@ -1,4 +1,4 @@
-AWS/WPS HIIIIIIIHIIIIIHELLLOOOHIIIIHELLOOO
+AWS/WPS HIIIIIIIHIIIIIHELLLOOOHIIII
 =======
 
 Project to build components for an [OGC Web Processing Service](http://www.opengeospatial.org/standards/wps) providing NetCDF aggregation services on AWS   
