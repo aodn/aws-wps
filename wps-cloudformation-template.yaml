@@ -35,6 +35,29 @@ Parameters:
       - us-east-1
       - us-west-2
       - eu-west-1
+  CustomAmiId:
+    Type: String
+    Default: ami-bd06f3df
+  TestCustomAmiId:
+    Type: String
+    Default: ami-0c7f195015aedf700
+  AllowEphemeralBuckets:
+    Type: String
+    AllowedValues: [ true, false ]
+    Default: false
+  ParentVPCStack:
+    Description: 'Stack name of parent VPC stack based on vpc/vpc-*azs.yaml template.'
+    Type: String
+    Default: ci-network-vpc
+  ParentConstantsStack:
+    Description: 'Stack name of parent constants stack based on infrastructure/accountconstants-template.yaml template.'
+    Type: String
+    Default: ci-network-constants
+  ParentZoneStack:
+    Description: 'Stack name of parent Route 53 zone stack based on vpc/zone-*.yaml template.'
+    Type: String
+    Default: ci-network-zone
+
 Mappings:
   Constants:
     ConstantMap:
@@ -45,39 +68,6 @@ Mappings:
       jobStatusApiPath: jobStatus
       wpsApiStage: LATEST
       dataDownloadUrlPrefix: "http://data.aodn.org.au/"
-  AccountConstants:
-    '615645230945':  # non-production
-      AllowEphemeralBuckets: true
-      CertificateArn: arn:aws:acm:us-east-1:615645230945:certificate/06e50848-29a7-47c3-8a3f-c3212b608a8d
-      DomainSuffix: dev.aodn.org.au
-      HostedZoneId: Z3JIUIKOQNPOWH
-      HostedZoneName: dev.aodn.org.au.
-      CustomAmiId: ami-bd06f3df
-      TestCustomAmiId: ami-0c7f195015aedf700
-      UseVpcGateway: false
-    '104044260116':  # production
-      AllowEphemeralBuckets: false
-      CertificateArn: arn:aws:acm:us-east-1:104044260116:certificate/58773098-aaa7-42b5-bc58-8ba2a938f951
-      DomainSuffix: aodn.org.au
-      HostedZoneId: ZYU7JVFK6NXWM
-      HostedZoneName: aodn.org.au.
-      CustomAmiId: ami-bd06f3df
-      TestCustomAmiId: ami-0c7f195015aedf700
-      UseVpcGateway: true
-  '615645230945': # non-production region constants
-    ap-southeast-2:
-      vpc: vpc-5e0e3a3a
-      subnets:
-        - subnet-4d471e14
-        - subnet-eab65ea3
-        - subnet-19956d7e
-  '104044260116': # production region constants
-    ap-southeast-2:
-      vpc: vpc-7302ee16
-      subnets:
-        - subnet-7976213f
-        - subnet-54b3aa20
-        - subnet-d722d0b2
   ConfigurationFileMap:
     Filename:
       status: status.xml
@@ -85,12 +75,11 @@ Mappings:
 Conditions:
   CreateEphemeralBucket: !And
     - !Equals [!Ref bucketName, aws-wps-dev]
-    - !Equals [true, !FindInMap [AccountConstants, !Ref 'AWS::AccountId', AllowEphemeralBuckets]]
+    - !Equals [true, !Ref AllowEphemeralBuckets]
   ConfigureSumoLogic: !Not [!Equals ['', !Ref sumoEndpoint]]
   CreateWpsApiGatewayDomainName: !Not [!Equals ['', !Ref wpsDomainName]]
-  UseCustomAmi: !Not [!Equals ['', !FindInMap [AccountConstants, !Ref 'AWS::AccountId', CustomAmiId]]]
-  UseTestCustomAmi: !Not [!Equals ['', !FindInMap [AccountConstants, !Ref 'AWS::AccountId', TestCustomAmiId]]]
-  UseVpcGateway: !Equals [true, !FindInMap [AccountConstants, !Ref 'AWS::AccountId', UseVpcGateway]]
+  UseCustomAmi: !Not [!Equals ['', !Ref CustomAmiId]]
+  UseTestCustomAmi: !Not [!Equals ['', !Ref TestCustomAmiId]]
 Resources:
 
   #
@@ -423,8 +412,8 @@ Resources:
           - m4.large
           - r4.large
           - r3.large
-        ImageId: !If [UseCustomAmi, !FindInMap [AccountConstants, !Ref 'AWS::AccountId', CustomAmiId], !Ref 'AWS::NoValue']
-        Subnets: !FindInMap [!Ref 'AWS::AccountId', !Ref 'AWS::Region', subnets]
+        ImageId: !If [UseCustomAmi, !Ref CustomAmiId, !Ref 'AWS::NoValue']
+        Subnets: !Split [ ',', {'Fn::ImportValue': !Sub '${ParentVPCStack}-SubnetsPublic'} ]
         SecurityGroupIds:
           - !Ref ComputeEnvironmentInstanceSecurityGroup
         InstanceRole: !Ref IamInstanceProfile
@@ -450,8 +439,8 @@ Resources:
             - m4.large
             - r4.large
             - r3.large
-          ImageId: !If [UseTestCustomAmi, !FindInMap [AccountConstants, !Ref 'AWS::AccountId', TestCustomAmiId], !Ref 'AWS::NoValue']
-          Subnets: !FindInMap [!Ref 'AWS::AccountId', !Ref 'AWS::Region', subnets]
+          ImageId: !If [UseTestCustomAmi, !Ref TestCustomAmiId, !Ref 'AWS::NoValue']
+          Subnets: !Split [ ',', {'Fn::ImportValue': !Sub '${ParentVPCStack}-SubnetsPublic'} ]
           SecurityGroupIds:
             - !Ref ComputeEnvironmentInstanceSecurityGroup
           InstanceRole: !Ref IamInstanceProfile
@@ -462,7 +451,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Allow http to client host
-      VpcId: !FindInMap [!Ref 'AWS::AccountId', !Ref 'AWS::Region', vpc]
+      VpcId: {'Fn::ImportValue': !Sub '${ParentVPCStack}-VPC'}
       SecurityGroupIngress:
       - IpProtocol: '-1'
         FromPort: '-1'
@@ -502,8 +491,8 @@ Resources:
     Type: AWS::ApiGateway::DomainName
     Condition: CreateWpsApiGatewayDomainName
     Properties:
-      CertificateArn: !FindInMap [AccountConstants, !Ref 'AWS::AccountId', CertificateArn]
-      DomainName: !Join ['.', [!Ref wpsDomainName, !FindInMap [AccountConstants, !Ref 'AWS::AccountId', DomainSuffix]]]
+      CertificateArn: {'Fn::ImportValue': !Sub '${ParentConstantsStack}-SSLCertificateId'}
+      DomainName: !Join ['.', [!Ref wpsDomainName, {'Fn::ImportValue': !Sub '${ParentConstantsStack}-ZoneNameNoTrailingDot'}]]
   WpsDomainToAPIMapping:
     Type: AWS::ApiGateway::BasePathMapping
     Condition: CreateWpsApiGatewayDomainName
@@ -521,8 +510,8 @@ Resources:
       AliasTarget:
         DNSName: !GetAtt WpsApiGatewayDomainName.DistributionDomainName
         HostedZoneId: !FindInMap [Constants, ConstantMap, CloudfrontHostedZoneId]
-      HostedZoneName: !FindInMap [AccountConstants, !Ref 'AWS::AccountId', HostedZoneName]
-      Name: !Join ['.', [!Ref wpsDomainName, !FindInMap [AccountConstants, !Ref 'AWS::AccountId', DomainSuffix]]]
+      HostedZoneName: {'Fn::ImportValue': !Sub '${ParentZoneStack}-HostedZoneName'}
+      Name: !Join ['.', [!Ref wpsDomainName, {'Fn::ImportValue': !Sub '${ParentConstantsStack}-ZoneNameNoTrailingDot'}]]
       Type: 'A'
   WpsApiGatewayDeployment:
     Type: AWS::ApiGateway::Deployment
@@ -595,15 +584,10 @@ Resources:
             - CreateWpsApiGatewayDomainName
             - !Sub ['https://${WpsRoute53RecordSet}/${requestHandlerApiPath}/${jobStatusApiPath}',{requestHandlerApiPath: !FindInMap [Constants, ConstantMap, requestHandlerApiPath], jobStatusApiPath: !FindInMap [Constants, ConstantMap, jobStatusApiPath]}]
             - !Sub ['https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}/${jobStatusApiPath}',{wpsApiStage: !FindInMap [Constants, ConstantMap, wpsApiStage], requestHandlerApiPath: !FindInMap [Constants, ConstantMap, requestHandlerApiPath], jobStatusApiPath: !FindInMap [Constants, ConstantMap, jobStatusApiPath]}]
-      VpcConfig: !If
-        - UseVpcGateway
-        - SecurityGroupIds:
-            - !Ref LambdaSecurityGroup
-          SubnetIds:
-            - !ImportValue "lambda-subnets-subnetA"
-            - !ImportValue "lambda-subnets-subnetB"
-            - !ImportValue "lambda-subnets-subnetC"
-        - !Ref "AWS::NoValue"
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroup
+        SubnetIds: !Split [ ',', {'Fn::ImportValue': !Sub '${ParentVPCStack}-SubnetsPublic'} ]
   RequestHandlerLambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -715,15 +699,11 @@ Resources:
             - CreateWpsApiGatewayDomainName
             - !Sub ['https://${WpsRoute53RecordSet}/${requestHandlerApiPath}/${jobStatusApiPath}',{requestHandlerApiPath: !FindInMap [Constants, ConstantMap, requestHandlerApiPath], jobStatusApiPath: !FindInMap [Constants, ConstantMap, jobStatusApiPath]}]
             - !Sub ['https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}/${jobStatusApiPath}',{wpsApiStage: !FindInMap [Constants, ConstantMap, wpsApiStage], requestHandlerApiPath: !FindInMap [Constants, ConstantMap, requestHandlerApiPath], jobStatusApiPath: !FindInMap [Constants, ConstantMap, jobStatusApiPath]}]
-      VpcConfig: !If
-        - UseVpcGateway
-        - SecurityGroupIds:
-            - !Ref LambdaSecurityGroup
-          SubnetIds:
-            - !ImportValue "lambda-subnets-subnetA"
-            - !ImportValue "lambda-subnets-subnetB"
-            - !ImportValue "lambda-subnets-subnetC"
-        - !Ref "AWS::NoValue"
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroup
+        SubnetIds: !Split [ ',', {'Fn::ImportValue': !Sub '${ParentVPCStack}-SubnetsPublic'} ]
+
   JobStatusLambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -767,10 +747,9 @@ Resources:
 
   LambdaSecurityGroup:
     Type: AWS::EC2::SecurityGroup
-    Condition: UseVpcGateway
     Properties:
       GroupDescription: Allow http to client host
-      VpcId: !ImportValue "lambda-subnets-vpc"
+      VpcId: {'Fn::ImportValue': !Sub '${ParentVPCStack}-VPC'}
       SecurityGroupIngress:
       - IpProtocol: '-1'
         FromPort: '-1'
