@@ -473,6 +473,9 @@ Resources:
       Name: !Sub 'WPS API-${AWS::StackName}'
       Description: API used for WPS requests
       FailOnWarnings: true
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
   WpsApiGatewayStage:
     DependsOn:
       - WPSRestApi
@@ -491,7 +494,10 @@ Resources:
     Type: AWS::ApiGateway::DomainName
     Condition: CreateWpsApiGatewayDomainName
     Properties:
-      CertificateArn: {'Fn::ImportValue': !Sub '${ParentConstantsStack}-SSLCertificateId'}
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+      RegionalCertificateArn: {'Fn::ImportValue': !Sub '${ParentConstantsStack}-SSLCertificateId'}
       DomainName: !Join ['.', [!Ref wpsDomainName, {'Fn::ImportValue': !Sub '${ParentConstantsStack}-ZoneNameNoTrailingDot'}]]
   WpsDomainToAPIMapping:
     Type: AWS::ApiGateway::BasePathMapping
@@ -508,7 +514,7 @@ Resources:
     Condition: CreateWpsApiGatewayDomainName
     Properties:
       AliasTarget:
-        DNSName: !GetAtt WpsApiGatewayDomainName.DistributionDomainName
+        DNSName: !GetAtt WpsApiGatewayDomainName.RegionalDomainName
         HostedZoneId: !FindInMap [Constants, ConstantMap, CloudfrontHostedZoneId]
       HostedZoneName: {'Fn::ImportValue': !Sub '${ParentZoneStack}-HostedZoneName'}
       Name: !Join ['.', [!Ref wpsDomainName, {'Fn::ImportValue': !Sub '${ParentConstantsStack}-ZoneNameNoTrailingDot'}]]
