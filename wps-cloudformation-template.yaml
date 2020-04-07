@@ -62,7 +62,6 @@ Mappings:
   Constants:
     ConstantMap:
       ContainerWorkingDir: /mnt/work
-      CloudfrontHostedZoneId: Z2FDTNDATAQYW2
       S3JobKeyPrefix: jobs/
       requestHandlerApiPath: wps
       jobStatusApiPath: jobStatus
@@ -515,7 +514,7 @@ Resources:
     Properties:
       AliasTarget:
         DNSName: !GetAtt WpsApiGatewayDomainName.RegionalDomainName
-        HostedZoneId: !FindInMap [Constants, ConstantMap, CloudfrontHostedZoneId]
+        HostedZoneId: !GetAtt WpsApiGatewayDomainName.RegionalHostedZoneId
       HostedZoneName: {'Fn::ImportValue': !Sub '${ParentZoneStack}-HostedZoneName'}
       Name: !Join ['.', [!Ref wpsDomainName, {'Fn::ImportValue': !Sub '${ParentConstantsStack}-ZoneNameNoTrailingDot'}]]
       Type: 'A'
