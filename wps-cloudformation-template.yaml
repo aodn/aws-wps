@@ -21,6 +21,10 @@ Parameters:
     Type: String
     Default: ''
     Description: The WPS API Gateway endpoint's domain name prefix (excluding the domain)
+  externalDomainName:
+    Type: String
+    Default: ''
+    Description: Add additional external domain name to support external alias (i.e. allow a CNAME aliasing WpsRoute53RecordSet to work correctly against the API)
   administratorEmail:
     Type: String
     Default: ''
@@ -77,6 +81,7 @@ Conditions:
     - !Equals [true, !Ref AllowEphemeralBuckets]
   ConfigureSumoLogic: !Not [!Equals ['', !Ref sumoEndpoint]]
   CreateWpsApiGatewayDomainName: !Not [!Equals ['', !Ref wpsDomainName]]
+  HasExternalDomainName: !Not [!Equals ['', !Ref externalDomainName]]
   UseCustomAmi: !Not [!Equals ['', !Ref CustomAmiId]]
   UseTestCustomAmi: !Not [!Equals ['', !Ref TestCustomAmiId]]
 Resources:
@@ -498,6 +503,15 @@ Resources:
           - REGIONAL
       RegionalCertificateArn: {'Fn::ImportValue': !Sub '${ParentConstantsStack}-SSLCertificateId'}
       DomainName: !Join ['.', [!Ref wpsDomainName, {'Fn::ImportValue': !Sub '${ParentConstantsStack}-ZoneNameNoTrailingDot'}]]
+  ExternalWpsApiGatewayDomainName:
+    Type: AWS::ApiGateway::DomainName
+    Condition: HasExternalDomainName
+    Properties:
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+      RegionalCertificateArn: {'Fn::ImportValue': !Sub '${ParentConstantsStack}-SSLCertificateId'}
+      DomainName: !Ref externalDomainName
   WpsDomainToAPIMapping:
     Type: AWS::ApiGateway::BasePathMapping
     Condition: CreateWpsApiGatewayDomainName
@@ -506,6 +520,16 @@ Resources:
       - WpsRoute53RecordSet
     Properties:
       DomainName: !Ref WpsApiGatewayDomainName
+      RestApiId: !Ref WPSRestApi
+      Stage: !FindInMap [Constants, ConstantMap, wpsApiStage]
+  ExternalWpsDomainToAPIMapping:
+    Type: AWS::ApiGateway::BasePathMapping
+    Condition: HasExternalDomainName
+    DependsOn:
+      - WpsApiGatewayStage
+      - WpsRoute53RecordSet
+    Properties:
+      DomainName: !Ref ExternalWpsApiGatewayDomainName
       RestApiId: !Ref WPSRestApi
       Stage: !FindInMap [Constants, ConstantMap, wpsApiStage]
   WpsRoute53RecordSet:
