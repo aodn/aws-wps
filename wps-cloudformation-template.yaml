@@ -592,7 +592,7 @@ Resources:
       VpcConfig:
         SecurityGroupIds:
           - !Ref LambdaSecurityGroup
-        SubnetIds: !Split [ ',', {'Fn::ImportValue': !Sub '${ParentVPCStack}-SubnetsPublic'} ]
+        SubnetIds: !Split [ ',', {'Fn::ImportValue': !Sub '${ParentVPCStack}-SubnetsPrivate'} ]
   RequestHandlerLambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -707,7 +707,7 @@ Resources:
       VpcConfig:
         SecurityGroupIds:
           - !Ref LambdaSecurityGroup
-        SubnetIds: !Split [ ',', {'Fn::ImportValue': !Sub '${ParentVPCStack}-SubnetsPublic'} ]
+        SubnetIds: !Split [ ',', {'Fn::ImportValue': !Sub '${ParentVPCStack}-SubnetsPrivate'} ]
 
   JobStatusLambdaExecutionRole:
     Type: AWS::IAM::Role
