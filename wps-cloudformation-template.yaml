@@ -21,6 +21,10 @@ Parameters:
     Type: String
     Default: ''
     Description: The WPS API Gateway endpoint's domain name prefix (excluding the domain)
+  externalDomainName:
+    Type: String
+    Default: ''
+    Description: Add additional external domain name to support external alias (i.e. allow a CNAME aliasing WpsRoute53RecordSet to work correctly against the API)
   administratorEmail:
     Type: String
     Default: ''
@@ -35,6 +39,7 @@ Parameters:
       - us-east-1
       - us-west-2
       - eu-west-1
+      - ap-southeast-2
   CustomAmiId:
     Type: String
     Default: ami-bd06f3df
@@ -77,6 +82,8 @@ Conditions:
     - !Equals [true, !Ref AllowEphemeralBuckets]
   ConfigureSumoLogic: !Not [!Equals ['', !Ref sumoEndpoint]]
   CreateWpsApiGatewayDomainName: !Not [!Equals ['', !Ref wpsDomainName]]
+  HasExternalDomainName: !Not [!Equals ['', !Ref externalDomainName]]
+  HasCustomDomain: !Or [!Condition CreateWpsApiGatewayDomainName, !Condition HasExternalDomainName]
   UseCustomAmi: !Not [!Equals ['', !Ref CustomAmiId]]
   UseTestCustomAmi: !Not [!Equals ['', !Ref TestCustomAmiId]]
 Resources:
@@ -361,14 +368,14 @@ Resources:
           -
             Name: STATUS_SERVICE_ENDPOINT_URL
             Value: !If
-              - CreateWpsApiGatewayDomainName
-              - !Sub ['https://${WpsRoute53RecordSet}/${requestHandlerApiPath}/${jobStatusApiPath}',{requestHandlerApiPath: !FindInMap [Constants, ConstantMap, requestHandlerApiPath], jobStatusApiPath: !FindInMap [Constants, ConstantMap, jobStatusApiPath]}]
+              - HasCustomDomain
+              - !Sub ['https://${customEndpoint}/${requestHandlerApiPath}/${jobStatusApiPath}',{customEndpoint: !If [HasExternalDomainName, !Ref externalDomainName, !Ref WpsRoute53RecordSet], requestHandlerApiPath: !FindInMap [Constants, ConstantMap, requestHandlerApiPath], jobStatusApiPath: !FindInMap [Constants, ConstantMap, jobStatusApiPath]}]
               - !Sub ['https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}/${jobStatusApiPath}',{wpsApiStage: !FindInMap [Constants, ConstantMap, wpsApiStage], requestHandlerApiPath: !FindInMap [Constants, ConstantMap, requestHandlerApiPath], jobStatusApiPath: !FindInMap [Constants, ConstantMap, jobStatusApiPath]}]
           -
             Name: AWS_WPS_ENDPOINT_URL
             Value: !If
-              - CreateWpsApiGatewayDomainName
-              - !Sub ['https://${WpsRoute53RecordSet}/${requestHandlerApiPath}',{requestHandlerApiPath: !FindInMap [Constants, ConstantMap, requestHandlerApiPath]}]
+              - HasCustomDomain
+              - !Sub ['https://${customEndpoint}/${requestHandlerApiPath}',{customEndpoint: !If [HasExternalDomainName, !Ref externalDomainName, !Ref WpsRoute53RecordSet], requestHandlerApiPath: !FindInMap [Constants, ConstantMap, requestHandlerApiPath]}]
               - !Sub ['https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}',{wpsApiStage: !FindInMap [Constants, ConstantMap, wpsApiStage], requestHandlerApiPath: !FindInMap [Constants, ConstantMap, requestHandlerApiPath]}]
         MountPoints:
           -
@@ -498,6 +505,15 @@ Resources:
           - REGIONAL
       RegionalCertificateArn: {'Fn::ImportValue': !Sub '${ParentConstantsStack}-SSLCertificateId'}
       DomainName: !Join ['.', [!Ref wpsDomainName, {'Fn::ImportValue': !Sub '${ParentConstantsStack}-ZoneNameNoTrailingDot'}]]
+  ExternalWpsApiGatewayDomainName:
+    Type: AWS::ApiGateway::DomainName
+    Condition: HasExternalDomainName
+    Properties:
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+      RegionalCertificateArn: {'Fn::ImportValue': !Sub '${ParentConstantsStack}-SSLCertificateId'}
+      DomainName: !Ref externalDomainName
   WpsDomainToAPIMapping:
     Type: AWS::ApiGateway::BasePathMapping
     Condition: CreateWpsApiGatewayDomainName
@@ -506,6 +522,16 @@ Resources:
       - WpsRoute53RecordSet
     Properties:
       DomainName: !Ref WpsApiGatewayDomainName
+      RestApiId: !Ref WPSRestApi
+      Stage: !FindInMap [Constants, ConstantMap, wpsApiStage]
+  ExternalWpsDomainToAPIMapping:
+    Type: AWS::ApiGateway::BasePathMapping
+    Condition: HasExternalDomainName
+    DependsOn:
+      - WpsApiGatewayStage
+      - WpsRoute53RecordSet
+    Properties:
+      DomainName: !Ref ExternalWpsApiGatewayDomainName
       RestApiId: !Ref WPSRestApi
       Stage: !FindInMap [Constants, ConstantMap, wpsApiStage]
   WpsRoute53RecordSet:
@@ -580,19 +606,19 @@ Resources:
           STATUS_S3_FILENAME: !FindInMap [ConfigurationFileMap, Filename, status]
           REQUEST_S3_FILENAME: !FindInMap [ConfigurationFileMap, Filename, request]
           AWS_WPS_ENDPOINT_URL: !If
-            - CreateWpsApiGatewayDomainName
-            - !Sub ['https://${WpsRoute53RecordSet}/${requestHandlerApiPath}',{requestHandlerApiPath: !FindInMap [Constants, ConstantMap, requestHandlerApiPath]}]
+            - HasCustomDomain
+            - !Sub ['https://${customEndpoint}/${requestHandlerApiPath}',{customEndpoint: !If [HasExternalDomainName, !Ref externalDomainName, !Ref WpsRoute53RecordSet], requestHandlerApiPath: !FindInMap [Constants, ConstantMap, requestHandlerApiPath]}]
             - !Sub ['https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}',{wpsApiStage: !FindInMap [Constants, ConstantMap, wpsApiStage], requestHandlerApiPath: !FindInMap [Constants, ConstantMap, requestHandlerApiPath]}]
           AWS_REGION_SES: !Ref awsRegionSes
           JOB_S3_KEY: !FindInMap [Constants, ConstantMap, S3JobKeyPrefix]
           STATUS_SERVICE_ENDPOINT_URL: !If
-            - CreateWpsApiGatewayDomainName
-            - !Sub ['https://${WpsRoute53RecordSet}/${requestHandlerApiPath}/${jobStatusApiPath}',{requestHandlerApiPath: !FindInMap [Constants, ConstantMap, requestHandlerApiPath], jobStatusApiPath: !FindInMap [Constants, ConstantMap, jobStatusApiPath]}]
+            - HasCustomDomain
+            - !Sub ['https://${customEndpoint}/${requestHandlerApiPath}/${jobStatusApiPath}',{customEndpoint: !If [HasExternalDomainName, !Ref externalDomainName, !Ref WpsRoute53RecordSet], requestHandlerApiPath: !FindInMap [Constants, ConstantMap, requestHandlerApiPath], jobStatusApiPath: !FindInMap [Constants, ConstantMap, jobStatusApiPath]}]
             - !Sub ['https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}/${jobStatusApiPath}',{wpsApiStage: !FindInMap [Constants, ConstantMap, wpsApiStage], requestHandlerApiPath: !FindInMap [Constants, ConstantMap, requestHandlerApiPath], jobStatusApiPath: !FindInMap [Constants, ConstantMap, jobStatusApiPath]}]
       VpcConfig:
         SecurityGroupIds:
           - !Ref LambdaSecurityGroup
-        SubnetIds: !Split [ ',', {'Fn::ImportValue': !Sub '${ParentVPCStack}-SubnetsPublic'} ]
+        SubnetIds: !Split [ ',', {'Fn::ImportValue': !Sub '${ParentVPCStack}-SubnetsPrivate'} ]
   RequestHandlerLambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -701,13 +727,13 @@ Resources:
           AWS_BATCH_JOB_QUEUE_NAME: !Ref JobQueue
           AWS_BATCH_LOG_GROUP_NAME: /aws/batch/job
           STATUS_SERVICE_ENDPOINT_URL: !If
-            - CreateWpsApiGatewayDomainName
-            - !Sub ['https://${WpsRoute53RecordSet}/${requestHandlerApiPath}/${jobStatusApiPath}',{requestHandlerApiPath: !FindInMap [Constants, ConstantMap, requestHandlerApiPath], jobStatusApiPath: !FindInMap [Constants, ConstantMap, jobStatusApiPath]}]
+            - HasCustomDomain
+            - !Sub ['https://${customEndpoint}/${requestHandlerApiPath}/${jobStatusApiPath}',{customEndpoint: !If [HasExternalDomainName, !Ref externalDomainName, !Ref WpsRoute53RecordSet], requestHandlerApiPath: !FindInMap [Constants, ConstantMap, requestHandlerApiPath], jobStatusApiPath: !FindInMap [Constants, ConstantMap, jobStatusApiPath]}]
             - !Sub ['https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}/${jobStatusApiPath}',{wpsApiStage: !FindInMap [Constants, ConstantMap, wpsApiStage], requestHandlerApiPath: !FindInMap [Constants, ConstantMap, requestHandlerApiPath], jobStatusApiPath: !FindInMap [Constants, ConstantMap, jobStatusApiPath]}]
       VpcConfig:
         SecurityGroupIds:
           - !Ref LambdaSecurityGroup
-        SubnetIds: !Split [ ',', {'Fn::ImportValue': !Sub '${ParentVPCStack}-SubnetsPublic'} ]
+        SubnetIds: !Split [ ',', {'Fn::ImportValue': !Sub '${ParentVPCStack}-SubnetsPrivate'} ]
 
   JobStatusLambdaExecutionRole:
     Type: AWS::IAM::Role
@@ -843,13 +869,13 @@ Resources:
 Outputs:
   RequestHandlerApiGatewayUrl:
     Value: !If
-      - CreateWpsApiGatewayDomainName
-      - !Sub ['https://${WpsRoute53RecordSet}/${requestHandlerApiPath}',{requestHandlerApiPath: !FindInMap [Constants, ConstantMap, requestHandlerApiPath]}]
+      - HasCustomDomain
+      - !Sub ['https://${customEndpoint}/${requestHandlerApiPath}',{customEndpoint: !If [HasExternalDomainName, !Ref externalDomainName, !Ref WpsRoute53RecordSet], requestHandlerApiPath: !FindInMap [Constants, ConstantMap, requestHandlerApiPath]}]
       - !Sub ['https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}',{wpsApiStage: !FindInMap [Constants, ConstantMap, wpsApiStage], requestHandlerApiPath: !FindInMap [Constants, ConstantMap, requestHandlerApiPath]}]
   JobStatusApiGatewayUrl:
     Value: !If
-      - CreateWpsApiGatewayDomainName
-      - !Sub ['https://${WpsRoute53RecordSet}/${requestHandlerApiPath}/${jobStatusApiPath}',{requestHandlerApiPath: !FindInMap [Constants, ConstantMap, requestHandlerApiPath], jobStatusApiPath: !FindInMap [Constants, ConstantMap, jobStatusApiPath]}]
+      - HasCustomDomain
+      - !Sub ['https://${customEndpoint}/${requestHandlerApiPath}/${jobStatusApiPath}',{customEndpoint: !If [HasExternalDomainName, !Ref externalDomainName, !Ref WpsRoute53RecordSet], requestHandlerApiPath: !FindInMap [Constants, ConstantMap, requestHandlerApiPath], jobStatusApiPath: !FindInMap [Constants, ConstantMap, jobStatusApiPath]}]
       - !Sub ['https://${WPSRestApi}.execute-api.${AWS::Region}.amazonaws.com/${wpsApiStage}/${requestHandlerApiPath}/${jobStatusApiPath}',{wpsApiStage: !FindInMap [Constants, ConstantMap, wpsApiStage], requestHandlerApiPath: !FindInMap [Constants, ConstantMap, requestHandlerApiPath], jobStatusApiPath: !FindInMap [Constants, ConstantMap, jobStatusApiPath]}]
   JobComputeEnvironmentArn:
     Value: !Ref JobComputeEnvironment
