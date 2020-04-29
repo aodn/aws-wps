@@ -53,7 +53,7 @@ pipeline {
             }
             steps {
                 script {
-                    if (env.BRANCH_NAME == 'master') {
+                    if (env.BRANCH_NAME == 'angus-testing') {
                         docker.build("javaduck:${env.BUILD_ID}", "aggregation-worker/")
                         withEnv(['PATH+EXTRA=/var/lib/jenkins/bin']) {
                             docker.withRegistry(env.ECR_REGISTRY_URL) {
