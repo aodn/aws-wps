@@ -57,7 +57,9 @@ pipeline {
                         docker.build("javaduck:${env.BUILD_ID}", "aggregation-worker/")
                         withEnv(['PATH+EXTRA=/var/lib/jenkins/bin']) {
                             docker.withRegistry(env.ECR_REGISTRY_URL) {
-                                docker.image("javaduck:${env.BUILD_ID}").push("latest")
+				dockerImage = docker.image("javaduck:${env.BUILD_ID}")
+                                dockerImage.push("latest")
+				dockerImage.push("${env.BUILD_NUMBER}")
                             }
                         }
                     } else {
