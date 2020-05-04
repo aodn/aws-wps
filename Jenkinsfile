@@ -53,15 +53,15 @@ pipeline {
             }
             steps {
                 script {
+                    docker.build("javaduck:${env.BUILD_TAG}", "aggregation-worker/")
                     if (env.BRANCH_NAME == 'master') {
-                        docker.build("javaduck:${env.BUILD_ID}", "aggregation-worker/")
                         withEnv(['PATH+EXTRA=/var/lib/jenkins/bin']) {
                             docker.withRegistry(env.ECR_REGISTRY_URL) {
-                                docker.image("javaduck:${env.BUILD_ID}").push("latest")
+                                dockerImage = docker.image("javaduck:${env.BUILD_TAG}")
+                                dockerImage.push("${env.BUILD_TAG}")
+                                dockerImage.push("latest")
                             }
                         }
-                    } else {
-                        docker.build("javaduck-${env.BRANCH_NAME}:${env.BUILD_ID}", "aggregation-worker/")
                     }
                 }
             }
