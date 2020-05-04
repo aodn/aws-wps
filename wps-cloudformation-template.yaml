@@ -108,6 +108,7 @@ Resources:
           Value: true
   S3BucketPolicy:
     Type: AWS::S3::BucketPolicy
+    Condition: CreateEphemeralBucket
     Properties:
       Bucket: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !Ref bucketName]
       PolicyDocument:
