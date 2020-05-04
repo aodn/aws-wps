@@ -110,7 +110,7 @@ Resources:
     Type: AWS::S3::BucketPolicy
     Condition: CreateEphemeralBucket
     Properties:
-      Bucket: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !Ref bucketName]
+      Bucket: !Ref EphemeralS3Bucket
       PolicyDocument:
         Statement:
           -
@@ -118,9 +118,8 @@ Resources:
               - s3:GetObject
             Effect: Allow
             Resource: !Sub
-              - 'arn:aws:s3:::${BucketName}/${S3Prefix}*'
-              - BucketName: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !Ref bucketName]
-                S3Prefix: !FindInMap [Constants, ConstantMap, S3JobKeyPrefix]
+              - 'arn:aws:s3:::${EphemeralS3Bucket}/${S3Prefix}*'
+              - S3Prefix: !FindInMap [Constants, ConstantMap, S3JobKeyPrefix]
             Principal: '*'
   EmptyBucketLambdaFunction:
     Type: AWS::Lambda::Function
