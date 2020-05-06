@@ -6,13 +6,13 @@
 
     <groupId>au.org.emii</groupId>
     <artifactId>wps-common</artifactId>
-    <version>4.42.22</version>
+    <version>4.42.23</version>
 
     <parent>
         <groupId>au.org.emii</groupId>
         <artifactId>aws-wps</artifactId>
         <relativePath>../pom.xml</relativePath>
-        <version>4.42.22</version>
+        <version>4.42.23</version>
     </parent>
 
     <dependencies>
@@ -98,7 +98,7 @@
         <dependency>
             <groupId>au.org.emii</groupId>
             <artifactId>aggregator</artifactId>
-            <version>4.42.22</version>
+            <version>4.42.23</version>
         </dependency>
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
