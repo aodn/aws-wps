@@ -11,7 +11,7 @@ Parameters:
     Type: String
   geonetworkCatalogueURL:
     Type: String
-  source_arn:
+  sourceArn:
     Type: String
   sumoEndpoint:
     Type: String
@@ -360,7 +360,7 @@ Resources:
             Value: !Ref geonetworkCatalogueURL
           -
             Name: SOURCE_ARN
-            Value: !Ref source_arn
+            Value: !Ref sourceArn
           -
             Name: ADMINISTRATOR_EMAIL
             Value: !Ref administratorEmail
