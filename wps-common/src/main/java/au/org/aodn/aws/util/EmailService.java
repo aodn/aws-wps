@@ -38,6 +38,7 @@ public class EmailService {
         try {
             LOGGER.info(String.format("Sending email to %s", to));
             Destination destination = new Destination().withToAddresses(to);
+            String source_arn = WpsConfig.SOURCE_ARN;
 
             if(bccAddress != null) {
                 ArrayList<String> bccAddresses = new ArrayList();
@@ -71,6 +72,7 @@ public class EmailService {
                     .withDestination(
                             destination)
                     .withMessage(message)
+                    .withSourceArn(source_arn)
                     .withSource(from);
             client.sendEmail(request);
             LOGGER.info(String.format("Email sent to %s.  Bcc: %s", to, bccAddress));
@@ -82,6 +84,7 @@ public class EmailService {
             LOGGER.error(String.format("Subject: %s", subject));
             LOGGER.error(String.format("Html Body: %s", htmlBody));
             LOGGER.error(String.format("Text Body: %s", textBody));
+            LOGGER.error(String.format("Source_arn: %s", source_arn));
         }
     }
 

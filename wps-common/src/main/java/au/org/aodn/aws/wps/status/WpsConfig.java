@@ -68,6 +68,7 @@ public class WpsConfig {
     public static final String FAILED_JOB_EMAIL_SUBJECT = "IMOS download error - ";
     public static final String JOB_EMAIL_CONTACT_ADDRESS = "info@aodn.org.au";
     public static final String JOB_EMAIL_FROM_ADDRESS = "administrator@aodn.org.au";
+    public static final String SOURCE_ARN = "SOURCE_ARN";
 
     public static final String DATA_DOWNLOAD_URL_PREFIX_CONFIG_KEY = "DATA_DOWNLOAD_URL_PREFIX";
 
