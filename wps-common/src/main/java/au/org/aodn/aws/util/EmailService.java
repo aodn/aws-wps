@@ -40,7 +40,6 @@ public class EmailService {
 
         try {
             LOGGER.info(String.format("Sending email to %s", to));
-            LOGGER.info(String.format("Using source_arn:  %s", sourceArn));
             Destination destination = new Destination().withToAddresses(to);
 
             if(bccAddress != null) {
@@ -72,11 +71,16 @@ public class EmailService {
                     .withSubject(subjectContent);
 
             SendEmailRequest request = new SendEmailRequest()
-                    .withDestination(
-                            destination)
+                    .withDestination(destination)
                     .withMessage(message)
-                    .withSourceArn(sourceArn)
                     .withSource(from);
+            if (sourceArn != "") {
+                LOGGER.info(String.format("Using source_arn:  %s", sourceArn));
+                request.setSourceArn(sourceArn);
+            }
+            else {
+                LOGGER.info("source_arn not supplied");
+            }
             client.sendEmail(request);
             LOGGER.info(String.format("Email sent to %s.  Bcc: %s", to, bccAddress));
         } catch (Exception e) {
@@ -87,7 +91,7 @@ public class EmailService {
             LOGGER.error(String.format("Subject: %s", subject));
             LOGGER.error(String.format("Html Body: %s", htmlBody));
             LOGGER.error(String.format("Text Body: %s", textBody));
-            LOGGER.error(String.format("Source_arn: %s", sourceArn));
+            LOGGER.error(String.format("Source_arn: '%s'", sourceArn));
         }
     }
 

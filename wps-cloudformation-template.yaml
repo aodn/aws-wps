@@ -13,7 +13,7 @@ Parameters:
     Type: String
   sourceArn:
     Type: String
-    Default: AWS::NoValue
+    Default: ''
   sumoEndpoint:
     Type: String
     Default: ''
