@@ -35,10 +35,13 @@ public class EmailService {
     }
 
     public void sendEmail(String to, String bccAddress,  String from, String subject, String htmlBody, String textBody) {
+
+        String sourceArn = WpsConfig.getProperty(WpsConfig.SOURCE_ARN);
+
         try {
             LOGGER.info(String.format("Sending email to %s", to));
+            LOGGER.info(String.format("Using source_arn:  %s", sourceArn));
             Destination destination = new Destination().withToAddresses(to);
-            String sourceArn = WpsConfig.SOURCE_ARN;
 
             if(bccAddress != null) {
                 ArrayList<String> bccAddresses = new ArrayList();
@@ -84,7 +87,7 @@ public class EmailService {
             LOGGER.error(String.format("Subject: %s", subject));
             LOGGER.error(String.format("Html Body: %s", htmlBody));
             LOGGER.error(String.format("Text Body: %s", textBody));
-            LOGGER.error(String.format("Source_arn: %s", WpsConfig.SOURCE_ARN));
+            LOGGER.error(String.format("Source_arn: %s", sourceArn));
         }
     }
 

@@ -13,6 +13,7 @@ Parameters:
     Type: String
   sourceArn:
     Type: String
+    Default: AWS::NoValue
   sumoEndpoint:
     Type: String
     Default: ''
@@ -607,6 +608,7 @@ Resources:
           AWS_BATCH_TEST_QUEUE_NAME: !Ref TestQueue
           AWS_BATCH_JOB_DEFINITION_NAME: !Select [1, !Split ['/', !Ref JobDefinition]]
           ADMINISTRATOR_EMAIL: !Ref administratorEmail
+          SOURCE_ARN: !Ref sourceArn
           OUTPUT_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !Ref bucketName]
           STATUS_S3_FILENAME: !FindInMap [ConfigurationFileMap, Filename, status]
           REQUEST_S3_FILENAME: !FindInMap [ConfigurationFileMap, Filename, request]
