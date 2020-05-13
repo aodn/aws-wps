@@ -74,7 +74,7 @@ public class EmailService {
                     .withDestination(destination)
                     .withMessage(message)
                     .withSource(from);
-            if (sourceArn != "") {
+            if (sourceArn != null && !sourceArn.isEmpty()) {
                 LOGGER.info(String.format("Using source_arn:  %s", sourceArn));
                 request.setSourceArn(sourceArn);
             }
