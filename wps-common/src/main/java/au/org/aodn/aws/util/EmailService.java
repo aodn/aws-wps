@@ -75,11 +75,11 @@ public class EmailService {
                     .withMessage(message)
                     .withSource(from);
             if (sourceArn != null && !sourceArn.isEmpty()) {
-                LOGGER.info(String.format("Sending Identity sourceArn:  %s", sourceArn));
+                LOGGER.info(String.format("SES Sending Identity sourceArn:  %s", sourceArn));
                 request.setSourceArn(sourceArn);
             }
             else {
-                LOGGER.info("No AWS SES delegated sending identity supplied (sourceArn)");
+                LOGGER.info("SES SourceArn not supplied, not using a sending identity");
             }
             client.sendEmail(request);
             LOGGER.info(String.format("Email sent to %s.  Bcc: %s", to, bccAddress));
