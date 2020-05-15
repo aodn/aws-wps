@@ -35,6 +35,9 @@ public class EmailService {
     }
 
     public void sendEmail(String to, String bccAddress,  String from, String subject, String htmlBody, String textBody) {
+
+        String sourceArn = WpsConfig.getProperty(WpsConfig.SOURCE_ARN);
+
         try {
             LOGGER.info(String.format("Sending email to %s", to));
             Destination destination = new Destination().withToAddresses(to);
@@ -68,10 +71,16 @@ public class EmailService {
                     .withSubject(subjectContent);
 
             SendEmailRequest request = new SendEmailRequest()
-                    .withDestination(
-                            destination)
+                    .withDestination(destination)
                     .withMessage(message)
                     .withSource(from);
+            if (sourceArn != null && !sourceArn.isEmpty()) {
+                LOGGER.info(String.format("SES Sending Identity sourceArn:  %s", sourceArn));
+                request.setSourceArn(sourceArn);
+            }
+            else {
+                LOGGER.info("SES SourceArn not supplied, not using a sending identity");
+            }
             client.sendEmail(request);
             LOGGER.info(String.format("Email sent to %s.  Bcc: %s", to, bccAddress));
         } catch (Exception e) {
@@ -82,6 +91,7 @@ public class EmailService {
             LOGGER.error(String.format("Subject: %s", subject));
             LOGGER.error(String.format("Html Body: %s", htmlBody));
             LOGGER.error(String.format("Text Body: %s", textBody));
+            LOGGER.error(String.format("Source_arn: '%s'", sourceArn));
         }
     }
 

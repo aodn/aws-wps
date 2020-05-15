@@ -11,6 +11,9 @@ Parameters:
     Type: String
   geonetworkCatalogueURL:
     Type: String
+  sourceArn:
+    Type: String
+    Default: ''
   sumoEndpoint:
     Type: String
     Default: ''
@@ -357,6 +360,9 @@ Resources:
             Name: GEONETWORK_CATALOGUE_URL
             Value: !Ref geonetworkCatalogueURL
           -
+            Name: SOURCE_ARN
+            Value: !Ref sourceArn
+          -
             Name: ADMINISTRATOR_EMAIL
             Value: !Ref administratorEmail
           -
@@ -602,6 +608,7 @@ Resources:
           AWS_BATCH_TEST_QUEUE_NAME: !Ref TestQueue
           AWS_BATCH_JOB_DEFINITION_NAME: !Select [1, !Split ['/', !Ref JobDefinition]]
           ADMINISTRATOR_EMAIL: !Ref administratorEmail
+          SOURCE_ARN: !Ref sourceArn
           OUTPUT_S3_BUCKET: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !Ref bucketName]
           STATUS_S3_FILENAME: !FindInMap [ConfigurationFileMap, Filename, status]
           REQUEST_S3_FILENAME: !FindInMap [ConfigurationFileMap, Filename, request]
