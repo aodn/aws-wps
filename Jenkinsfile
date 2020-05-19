@@ -19,13 +19,13 @@ pipeline {
                     }
                 }
                 stage('set_version_build') {
-                    when { not { branch "master" } }
+                    when { not { branch "test-release" } }
                     steps {
                         sh './bumpversion.sh build'
                     }
                 }
                 stage('set_version_release') {
-                    when { branch "master" }
+                    when { branch "test-release" }
                     steps {
                         withCredentials([usernamePassword(credentialsId: env.GIT_CREDENTIALS_ID, passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
                             sh './bumpversion.sh release'
@@ -54,7 +54,7 @@ pipeline {
             steps {
                 script {
                     docker.build("javaduck:${env.BUILD_TAG}", "aggregation-worker/")
-                    if (env.BRANCH_NAME == 'master') {
+                    if (env.BRANCH_NAME == 'test-release') {
                         withEnv(['PATH+EXTRA=/var/lib/jenkins/bin']) {
                             docker.withRegistry(env.ECR_REGISTRY_URL) {
                                 dockerImage = docker.image("javaduck:${env.BUILD_TAG}")
