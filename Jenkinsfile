@@ -41,17 +41,19 @@ pipeline {
             post {
                 success {
                     archiveArtifacts artifacts: '*/target/*.zip,wps-cloudformation-template.yaml,lambda/**', fingerprint: true, onlyIfSuccessful: true
+                    stash name: 'aggregation-worker', includes: 'aggregation-worker/target/*.jar,aggregation-worker/target/lib/**'
                 }
             }
         }
         stage('build_worker') {
-            agent { label 'master' }
+            agent any
             environment {
                 AWS_REGION = "ap-southeast-2"
                 AWS_ACCOUNT_ID = sh(returnStdout: true, script: "aws sts get-caller-identity --query Account --output text").trim()
                 ECR_REGISTRY_URL = "https://${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com/javaduck"
             }
             steps {
+                unstash name: 'aggregation-worker'
                 script {
                     docker.build("javaduck:${env.BUILD_TAG}", "aggregation-worker/")
                     if (env.BRANCH_NAME == 'test-release') {
