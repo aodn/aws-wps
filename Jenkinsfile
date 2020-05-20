@@ -40,7 +40,6 @@ pipeline {
             }
             post {
                 success {
-                    archiveArtifacts artifacts: '*/target/*.zip,wps-cloudformation-template.yaml,lambda/**', fingerprint: true, onlyIfSuccessful: true
                     stash name: 'aggregation-worker', includes: 'aggregation-worker/target/*.jar,aggregation-worker/target/lib/**'
                 }
             }
@@ -67,6 +66,11 @@ pipeline {
                     }
                 }
             }
+        }
+    }
+    post {
+        success {
+            archiveArtifacts artifacts: '*/target/*.zip,wps-cloudformation-template.yaml,lambda/**', fingerprint: true, onlyIfSuccessful: true
         }
     }
 }
