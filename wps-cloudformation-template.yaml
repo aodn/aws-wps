@@ -87,6 +87,7 @@ Conditions:
   CreateWpsApiGatewayDomainName: !Not [!Equals ['', !Ref wpsDomainName]]
   HasExternalDomainName: !Not [!Equals ['', !Ref externalDomainName]]
   HasCustomDomain: !Or [!Condition CreateWpsApiGatewayDomainName, !Condition HasExternalDomainName]
+  UseSourceArn: !Not [!Equals ['', !Ref sourceArn]]
   UseCustomAmi: !Not [!Equals ['', !Ref CustomAmiId]]
   UseTestCustomAmi: !Not [!Equals ['', !Ref TestCustomAmiId]]
 Resources:
@@ -240,6 +241,18 @@ Resources:
     Properties:
       Roles:
         - !Ref EcsInstanceRole
+  AssumeSesIdentityPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Condition: UseSourceArn
+    Properties:
+      Description: Policy for sending mail using the SES identity
+      Path: /
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Resource: !Ref sourceArn
   EcsInstanceRole:
     Type: AWS::IAM::Role
     Properties:
@@ -253,6 +266,7 @@ Resources:
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
+        - !If [ UseSourceArn, !Ref AssumeSesIdentityPolicy, !Ref 'AWS::NoValue' ]
   JobInstanceRole:
     Type: AWS::IAM::Role
     Properties:
@@ -643,6 +657,7 @@ Resources:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
         - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
         - arn:aws:iam::aws:policy/AWSBatchFullAccess
+        - !If [ UseSourceArn, !Ref AssumeSesIdentityPolicy, !Ref 'AWS::NoValue' ]
       Policies:
         - PolicyName: PublishVersion
           PolicyDocument:
