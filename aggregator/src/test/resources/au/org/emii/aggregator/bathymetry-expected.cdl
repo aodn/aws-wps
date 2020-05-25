@@ -75,7 +75,7 @@ netcdf {
   :author_email = "guillaume.galibert@utas.edu.au";
   :principal_investigator = "Rattray, Alex";
   :citation = "The citation to be used in publications using the dataset should follow the format: \"IMOS. [year-of-data-download], [Title], [Data access URL], accessed [date-of-access]\"";
-  :acknowledgement = "Any users (including re-packagers) of IMOS data are required to clearly acknowledge the source of the material in this format: \"Data was sourced from the Integrated Marine Observing System (IMOS) - IMOS is supported by the Australian Government through the National Collaborative Research Infrastructure Strategy and the Super Science Initiative.\"";
+  :acknowledgement = "Any users (including re-packagers) of IMOS data are required to clearly acknowledge the source of the material in this format: \"Data was sourced from the Integrated Marine Observing System (IMOS) - IMOS is enabled by the National Collaborative Research Infrastructure strategy (NCRIS).\"";
   :disclaimer = "Data, products and services from IMOS are provided \"as is\" without any warranty as to fitness for a particular purpose.";
   :license = "http://creativecommons.org/licenses/by/4.0/";
   :cdm_data_type = "Grid";
