@@ -164,7 +164,7 @@ netcdf {
   :institution_references = "http://www.imos.org.au/acorn.html";
   :principal_investigator = "Wyatt, Lucy";
   :citation = " The citation in a list of references is: IMOS, [year-of-data-download], [Title], [data-access-URL], accessed [date-of-access]";
-  :acknowledgement = "Data was sourced from the Integrated Marine Observing System (IMOS) - IMOS is supported by the Australian Government through the National Collaborative Research Infrastructure Strategy (NCRIS) and the Super Science Initiative (SSI).";
+  :acknowledgement = "Data was sourced from the Integrated Marine Observing System (IMOS) - IMOS is enabled by the National Collaborative Research Infrastructure strategy (NCRIS).";
   :distribution_statement = "Data may be re-used, provided that related metadata explaining the data has been reviewed by the user, and the data is appropriately acknowledged. Data, products and services from IMOS are provided \"as is\" without any warranty as to fitness for a particular purpose.";
   :comment = "This NetCDF file has been created using the IMOS NetCDF Conventions v1.4.";
  data:
