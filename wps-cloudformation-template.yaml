@@ -11,6 +11,9 @@ Parameters:
     Type: String
   geonetworkCatalogueURL:
     Type: String
+  dataDownloadUrlPrefix:
+    Type: String
+    Default: http://data.aodn.org.au/
   sourceArn:
     Type: String
     Default: ''
@@ -74,7 +77,6 @@ Mappings:
       requestHandlerApiPath: wps
       jobStatusApiPath: jobStatus
       wpsApiStage: LATEST
-      dataDownloadUrlPrefix: "http://data.aodn.org.au/"
   ConfigurationFileMap:
     Filename:
       status: status.xml
@@ -328,7 +330,7 @@ Resources:
             Value: !Ref awsRegionSes
           -
             Name: DATA_DOWNLOAD_URL_PREFIX
-            Value: !FindInMap [Constants, ConstantMap, dataDownloadUrlPrefix]
+            Value: !Ref dataDownloadUrlPrefix
           -
             Name: SUMO_ENDPOINT
             Value: !Ref sumoEndpoint
