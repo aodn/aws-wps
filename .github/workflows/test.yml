@@ -1,0 +1,28 @@
+name: aws-wps
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-16.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install libudunits2-0
+        run: |
+          sudo apt install libudunits2-0
+      - name: Install libnetcdf11
+        run: |
+          sudo apt install libnetcdf11
+      - name: Install libgsl2
+        run: |
+          sudo apt install libgsl2
+      - name: Cache Maven packages
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+      - name: Run the Maven install phase
+        run: mvn install -DskipTests=true -Dmaven.javadoc.skip=true -B -V
+      - name: Run the Maven test phase
+        run: mvn test -B
