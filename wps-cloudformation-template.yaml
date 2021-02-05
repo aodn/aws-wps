@@ -447,8 +447,6 @@ Resources:
           DesiredvCpus: 0
           MaxvCpus: !Ref maxVCPUs
           InstanceTypes:
-            - c3.large
-            - c4.large
             - m3.large
             - m4.large
             - r4.large
