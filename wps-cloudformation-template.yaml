@@ -48,10 +48,10 @@ Parameters:
       - ap-southeast-2
   CustomAmiId:
     Type: String
-    Default: ami-bd06f3df
+    Default: ami-00e94e589a51ccdb0
   TestCustomAmiId:
     Type: String
-    Default: ami-0c7f195015aedf700
+    Default: ami-08503f06b09dbfc32
   AllowEphemeralBuckets:
     Type: String
     AllowedValues: [ true, false ]
