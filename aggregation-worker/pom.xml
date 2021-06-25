@@ -154,7 +154,7 @@
     <repositories>
         <repository>
             <id>aodn</id>
-            <url>http://content.aodn.org.au/repo/maven/</url>
+            <url>https://s3.ap-southeast-2.amazonaws.com/content.aodn.org.au/repo/maven/</url>
         </repository>
         <repository>
             <id>unidata-all</id>
