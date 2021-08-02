@@ -424,6 +424,7 @@ Resources:
         InstanceTypes:
           - m3.large
           - m4.large
+          - r5.large
           - r4.large
           - r3.large
         ImageId: !If [UseCustomAmi, !Ref CustomAmiId, !Ref 'AWS::NoValue']
@@ -449,6 +450,7 @@ Resources:
           InstanceTypes:
             - m3.large
             - m4.large
+            - r5.large
             - r4.large
             - r3.large
           ImageId: !If [UseTestCustomAmi, !Ref TestCustomAmiId, !Ref 'AWS::NoValue']
