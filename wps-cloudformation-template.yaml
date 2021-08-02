@@ -425,7 +425,7 @@ Resources:
         DesiredvCpus: 0
         MaxvCpus: !Ref maxVCPUs
         InstanceTypes:
-          - m4.large
+          - r5.large
         ImageId: !If [UseCustomAmi, !Ref CustomAmiId, !Ref 'AWS::NoValue']
         Subnets: !Split [ ',', {'Fn::ImportValue': !Sub '${ParentVPCStack}-SubnetsPublic'} ]
         SecurityGroupIds:
@@ -448,7 +448,7 @@ Resources:
           DesiredvCpus: 0
           MaxvCpus: !Ref maxVCPUs
           InstanceTypes:
-            - m4.large
+            - r5.large
           ImageId: !If [UseTestCustomAmi, !Ref TestCustomAmiId, !Ref 'AWS::NoValue']
           Subnets: !Split [ ',', {'Fn::ImportValue': !Sub '${ParentVPCStack}-SubnetsPublic'} ]
           SecurityGroupIds:
