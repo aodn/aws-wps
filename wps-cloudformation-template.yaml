@@ -421,6 +421,7 @@ Resources:
       Type: MANAGED
       ComputeResources:
         Type: SPOT
+        Ec2KeyPair: amckeown
         MinvCpus: 0
         DesiredvCpus: 0
         MaxvCpus: !Ref maxVCPUs
