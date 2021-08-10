@@ -20,6 +20,9 @@ Parameters:
   sumoEndpoint:
     Type: String
     Default: ''
+  sumoCollectorStack:
+    Type: String
+    Default: ''
   maxVCPUs:
     Type: Number
     Default: 4
@@ -85,7 +88,7 @@ Conditions:
   CreateEphemeralBucket: !And
     - !Equals [!Ref bucketName, aws-wps-dev]
     - !Equals [true, !Ref AllowEphemeralBuckets]
-  ConfigureSumoLogic: !Not [!Equals ['', !Ref sumoEndpoint]]
+  ConfigureSumoLogicForLambda: !Not [!Equals ['', !Ref sumoCollectorStack]]
   CreateWpsApiGatewayDomainName: !Not [!Equals ['', !Ref wpsDomainName]]
   HasExternalDomainName: !Not [!Equals ['', !Ref externalDomainName]]
   HasCustomDomain: !Or [!Condition CreateWpsApiGatewayDomainName, !Condition HasExternalDomainName]
@@ -801,70 +804,18 @@ Resources:
         ToPort: '-1'
         CidrIp: 0.0.0.0/0
 
-  #
-  # SumoLogic integration
-  #
-
-  SumoLogicLambdaFunction:
-    Type: AWS::Lambda::Function
-    Condition: ConfigureSumoLogic
-    Properties:
-      Code: lambda/sumologic
-      Description: Push batch logs to SumoLogic
-      FunctionName: !Sub 'SumoLogic-WPS-${AWS::StackName}'
-      Handler: index.handler
-      Role: !GetAtt SumoLogicLambdaFunctionRole.Arn
-      Runtime: nodejs10.x
-      Timeout: 3
-      Environment:
-        Variables:
-          SUMO_ENDPOINT: !Ref sumoEndpoint
-  SumoLogicLambdaFunctionRole:
-      Type: AWS::IAM::Role
-      Condition: ConfigureSumoLogic
-      Properties:
-        AssumeRolePolicyDocument:
-          Version: 2012-10-17
-          Statement:
-            - Effect: Allow
-              Principal:
-                Service:
-                  - lambda.amazonaws.com
-              Action:
-                - sts:AssumeRole
-        Path: /
-        ManagedPolicyArns:
-          - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-  RequestHandlerLogsLambdaPermission:
-    Type: AWS::Lambda::Permission
-    Condition: ConfigureSumoLogic
-    Properties:
-      Action: lambda:invokeFunction
-      FunctionName: !GetAtt SumoLogicLambdaFunction.Arn
-      Principal: !Sub 'logs.${AWS::Region}.amazonaws.com'
-      SourceArn: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${RequestHandlerLogGroup}:*'
   RequestHandlerLambdaLogsSubscriptionFilter:
     Type: AWS::Logs::SubscriptionFilter
-    Condition: ConfigureSumoLogic
-    DependsOn: RequestHandlerLogsLambdaPermission
+    Condition: ConfigureSumoLogicForLambda
     Properties:
-      DestinationArn: !GetAtt SumoLogicLambdaFunction.Arn
+      DestinationArn: {'Fn::ImportValue': !Sub '${sumoCollectorStack}-SumoCWLogsLambdaArn'}
       FilterPattern: ''
       LogGroupName: !Ref RequestHandlerLogGroup
-  JobStatusLogsLambdaPermission:
-    Type: AWS::Lambda::Permission
-    Condition: ConfigureSumoLogic
-    Properties:
-      Action: lambda:invokeFunction
-      FunctionName: !GetAtt SumoLogicLambdaFunction.Arn
-      Principal: !Sub 'logs.${AWS::Region}.amazonaws.com'
-      SourceArn: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${JobStatusLogGroup}:*'
   JobStatusLambdaLogsSubscriptionFilter:
     Type: AWS::Logs::SubscriptionFilter
-    Condition: ConfigureSumoLogic
-    DependsOn: JobStatusLogsLambdaPermission
+    Condition: ConfigureSumoLogicForLambda
     Properties:
-      DestinationArn: !GetAtt SumoLogicLambdaFunction.Arn
+      DestinationArn: {'Fn::ImportValue': !Sub '${sumoCollectorStack}-SumoCWLogsLambdaArn'}
       FilterPattern: ''
       LogGroupName: !Ref JobStatusLogGroup
   JobStatusLogGroup:
