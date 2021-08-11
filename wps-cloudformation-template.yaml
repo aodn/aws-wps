@@ -420,7 +420,7 @@ Resources:
     Properties:
       Type: MANAGED
       ComputeResources:
-        Type: SPOT
+        Type: EC2
         Ec2KeyPair: amckeown
         MinvCpus: 0
         DesiredvCpus: 0
