@@ -1,45 +1,12 @@
 #!/usr/bin/env bash
 
-set -eux
-
-# remote branch to which version updates will be pushed
-RELEASE_BRANCH=master
-
-get_maven_version() {
-  # extract version from pom.xml
-  version=$(xmllint --xpath '/*[local-name()="project"]/*[local-name()="version"]/text()' pom.xml)
-  echo "${version}"
-}
-
-set_maven_version() {
-  local suffix="$1"; shift
-
-  # use Maven versions plugin to bump version
-  mvn build-helper:parse-version versions:set \
-    -DnewVersion=\${parsedVersion.majorVersion}.\${parsedVersion.minorVersion}.\${parsedVersion.nextIncrementalVersion}${suffix} \
-    versions:commit
-}
-
-update_git() {
-  local version=$1; shift
-  git fetch --prune origin "+refs/tags/*:refs/tags/*"
-  git add pom.xml '*/pom.xml'
-  git commit -m "Jenkins version bump (${version})"
-  git tag -a -f -m 'Jenkins: create tag ${version}' ${version}
-  git push --atomic origin "HEAD:${RELEASE_BRANCH}" tag "${version}"
-}
+set -euxo pipefail
 
 main() {
-  local mode=$1; shift
-
-  # add a '-dev' suffix to non-release builds, so that non-release artifacts are more easily identifiable
-  [ "x${mode}" == "xrelease" ] && suffix=" " || suffix="-dev"
-
-  set_maven_version "$suffix"
-  new_version=$(get_maven_version)
-
-  # if run in release mode, update version information on GitHub
-  [ "x${mode}" == "xrelease" ] && update_git "${new_version}"
+  git fetch --prune origin "+refs/tags/*:refs/tags/*"
+  OLD_VERSION=$(git tag -l '*.*.*' --sort=-version:refname | head -n 1)
+  NEW_VERSION=$(bump2version --current-version $OLD_VERSION --list --tag --commit  --allow-dirty patch | grep -oP '^new_version=\K.*$')
+  git push origin tag $NEW_VERSION
 
   exit 0
 }
