@@ -159,7 +159,7 @@ Resources:
       FunctionName: !Sub 'EmptyBucket-${AWS::StackName}'
       Handler: index.handler
       Role: !GetAtt EmptyBucketLambdaFunctionRole.Arn
-      Runtime: python2.7
+      Runtime: python3.9
       Timeout: 60
       Environment:
         Variables:
