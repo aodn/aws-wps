@@ -15,9 +15,9 @@ jobs:
       - name: Install libudunits2-0
         run: |
           sudo apt-get install libudunits2-0
-      - name: Install libnetcdf15
+      - name: Install libnetcdf13
         run: |
-          sudo apt-get install libnetcdf15
+          sudo apt-get install libnetcdf13
       - name: Install libgsl23
         run: |
           sudo apt-get install libgsl23
