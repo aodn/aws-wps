@@ -4,18 +4,23 @@ on: [push]
 
 jobs:
   build:
-    runs-on: ubuntu-16.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - uses: actions/setup-java@v2
+        with:
+          distribution: 'zulu'
+          java-version: '8'
+          cache: 'maven'
       - name: Install libudunits2-0
         run: |
-          sudo apt install libudunits2-0
-      - name: Install libnetcdf11
+          sudo apt-get install libudunits2-0
+      - name: Install libnetcdf15
         run: |
-          sudo apt install libnetcdf11
-      - name: Install libgsl2
+          sudo apt-get install libnetcdf15
+      - name: Install libgsl23
         run: |
-          sudo apt install libgsl2
+          sudo apt-get install libgsl23
       - name: Cache Maven packages
         uses: actions/cache@v2
         with:
