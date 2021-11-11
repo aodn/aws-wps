@@ -20,6 +20,7 @@ import ucar.unidata.geoloc.LatLonRect;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import static au.org.emii.test.util.Assert.assertNetcdfFileEqualsCdl;
 import static au.org.emii.test.util.Assert.assertNetcdfFilesEqual;
@@ -47,7 +48,8 @@ public class NetcdfAggregatorTest {
 
     @Before
     public void createOutputFile() throws IOException {
-        outputFile = Files.createTempFile("output", "nc");
+//        outputFile = Files.createTempFile("output", "nc");
+        outputFile = Files.createFile(Paths.get("/tmp/outputfile"));
     }
 
     @Test
