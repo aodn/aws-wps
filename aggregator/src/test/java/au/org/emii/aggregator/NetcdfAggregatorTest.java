@@ -191,9 +191,9 @@ public class NetcdfAggregatorTest {
             netcdfAggregator.add(resourcePath("au/org/emii/aggregator/cars.nc"));
         }
 
-        // TODO: not correct for 4.7.3
-
-        if (libraryVersion.startsWith("4.6.0") || libraryVersion.startsWith("4.7.3")) {
+        if (libraryVersion.startsWith("4.7.3")) {
+            assertNetcdfFilesEqual(resourcePath("au/org/emii/aggregator/temporal-expected-4.7.3.nc"), outputFile);
+        } else if (libraryVersion.startsWith("4.6.0")) {
             assertNetcdfFilesEqual(resourcePath("au/org/emii/aggregator/temporal-expected-4.6.0.nc"), outputFile);
         } else {
             assertNetcdfFilesEqual(resourcePath("au/org/emii/aggregator/temporal-expected.nc"), outputFile);

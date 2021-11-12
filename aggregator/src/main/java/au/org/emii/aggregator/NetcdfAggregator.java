@@ -147,9 +147,11 @@ public class NetcdfAggregator implements AutoCloseable {
                 outputPath.toString(), chunking);
 
             // Copy global attributes to output file
-
+            // Do not include any _NCProperties that come from input files https://sourceforge.net/p/nco/bugs/117/
             for (Attribute attribute : template.getGlobalAttributes()) {
-                writer.addGroupAttribute(GLOBAL, attribute);
+                if (!attribute.getShortName().equals("_NCProperties")) {
+                    writer.addGroupAttribute(GLOBAL, attribute);
+                }
             }
 
             // Copy dimensions to output file

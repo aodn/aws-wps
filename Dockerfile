@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     maven \
     wget \
     netcdf-bin \
+    nco \
     && rm -rf /var/lib/apt/lists/*
 
 RUN update-alternatives --install /usr/bin/python python /usr/bin/python3 10
