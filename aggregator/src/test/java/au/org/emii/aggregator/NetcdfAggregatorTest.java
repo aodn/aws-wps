@@ -20,8 +20,6 @@ import ucar.unidata.geoloc.LatLonRect;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
 
 import static au.org.emii.test.util.Assert.assertNetcdfFileEqualsCdl;
 import static au.org.emii.test.util.Assert.assertNetcdfFilesEqual;
