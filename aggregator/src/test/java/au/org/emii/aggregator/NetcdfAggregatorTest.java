@@ -74,7 +74,12 @@ public class NetcdfAggregatorTest {
             netcdfAggregator.add(resourcePath("au/org/emii/aggregator/acorn-2.nc"));
         }
 
-        assertNetcdfFilesEqual(resourcePath("au/org/emii/aggregator/multiple-expected.nc"), outputFile);
+        if (libraryVersion.startsWith("4.6.0") || libraryVersion.startsWith("4.7.3")) {
+            assertNetcdfFilesEqual(resourcePath("au/org/emii/aggregator/multiple-expected-4.6.0.nc"), outputFile);
+        } else {
+            assertNetcdfFilesEqual(resourcePath("au/org/emii/aggregator/multiple-expected.nc"), outputFile);
+        }
+
     }
 
     @Test
@@ -105,6 +110,10 @@ public class NetcdfAggregatorTest {
         if (libraryVersion.startsWith("4.1.3")) {
             // sses_standard_deviation attribute ordering slightly different with this version - result is still OK.
             assertNetcdfFilesEqual(resourcePath("au/org/emii/aggregator/unpack-expected-4.1.3.nc"), outputFile);
+        }
+        else if (libraryVersion.startsWith("4.6.0") || libraryVersion.startsWith("4.7.3")) {
+            // sses_standard_deviation attribute ordering slightly different with this version - result is still OK.
+            assertNetcdfFilesEqual(resourcePath("au/org/emii/aggregator/unpack-expected-4.6.0.nc"), outputFile);
         }
         else {
             assertNetcdfFilesEqual(resourcePath("au/org/emii/aggregator/unpack-expected.nc"), outputFile);
@@ -179,7 +188,14 @@ public class NetcdfAggregatorTest {
             netcdfAggregator.add(resourcePath("au/org/emii/aggregator/cars.nc"));
         }
 
-        assertNetcdfFilesEqual(resourcePath("au/org/emii/aggregator/temporal-expected.nc"), outputFile);
+        if (libraryVersion.startsWith("4.7.3")) {
+            assertNetcdfFilesEqual(resourcePath("au/org/emii/aggregator/temporal-expected-4.7.3.nc"), outputFile);
+        } else if (libraryVersion.startsWith("4.6.0")) {
+            assertNetcdfFilesEqual(resourcePath("au/org/emii/aggregator/temporal-expected-4.6.0.nc"), outputFile);
+        } else {
+            assertNetcdfFilesEqual(resourcePath("au/org/emii/aggregator/temporal-expected.nc"), outputFile);
+        }
+
     }
 
     @Test
@@ -267,7 +283,12 @@ public class NetcdfAggregatorTest {
             netcdfAggregator.add(resourcePath("au/org/emii/aggregator/gsla1.nc"));
         }
 
-        assertNetcdfFilesEqual(resourcePath("au/org/emii/aggregator/gsla-expected.nc"), outputFile);
+        if (libraryVersion.startsWith("4.6.0") || libraryVersion.startsWith("4.7.3")) {
+            assertNetcdfFilesEqual(resourcePath("au/org/emii/aggregator/gsla-expected-4.6.0.nc"), outputFile);
+        } else {
+            assertNetcdfFilesEqual(resourcePath("au/org/emii/aggregator/gsla-expected.nc"), outputFile);
+        }
+
     }
 
     @Test

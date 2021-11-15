@@ -45,17 +45,6 @@ public class Assert {
      * @return
      */
     private static String removeNCPropertiesGlobalAttribute(String cdl) {
-        int startIndex, endIndex;
-
-        startIndex = cdl.indexOf(":_NCProperties");
-        if (startIndex != -1) {
-            endIndex = cdl.substring(startIndex, cdl.length()).indexOf("\n");
-            if (endIndex != -1) {
-                String ncPropertiesLine = cdl.substring(startIndex, startIndex + endIndex + 3);
-                return cdl.replace(ncPropertiesLine, "");
-            }
-        }
-
-        return cdl;
+        return cdl.replaceAll("[ ]*:_NCProperties.*\\\n", "");
     }
 }
