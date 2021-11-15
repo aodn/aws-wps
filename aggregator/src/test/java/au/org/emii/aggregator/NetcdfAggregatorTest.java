@@ -50,7 +50,6 @@ public class NetcdfAggregatorTest {
     @Before
     public void createOutputFile() throws IOException {
         outputFile = Files.createTempFile("output", "nc");
-//        outputFile = Files.createFile(Paths.get("/tmp/outputfile.nc"));  // DEBUG
     }
 
     @Test
