@@ -643,7 +643,7 @@ public class ExecuteIT {
                         hasXPath("//EX_GeographicBoundingBox/northBoundLatitude/Decimal", equalTo("-31.45")),
                         hasXPath("//entity[@id='layerName']/location", equalTo("acorn_hourly_avg_rot_qc_timeseries_url")),
                         hasXPath("//entity[@id='outputAggregationSettings']/location", not(isEmptyOrNullString())),
-                        hasXPath("//entity[@id='sourceData']/location", endsWith("geonetwork/srv/en/metadata.show?uuid=028b9801-279f-427c-964b-0ffcdf310b59")),
+                        hasXPath("//entity[@id='sourceData']/location", endsWith("geonetwork/srv/api/records/028b9801-279f-427c-964b-0ffcdf310b59")),
                         hasXPath("//softwareAgent[@id='JavaCode']/location", not(isEmptyOrNullString())),
                         hasXPath("//other/identifier", equalTo(getJobId(statusUrl)))
                 );
