@@ -2,20 +2,15 @@
 # Dockerfile to build image for running gridded data aggregations
 #################################################################
 
-FROM ubuntu:xenial
+FROM ubuntu:20.04
 MAINTAINER AODN
 
 # Install Java.
 RUN \
   apt-get update && \
-  apt-get install -y openjdk-8-jdk && \
-  rm -rf /var/lib/apt/lists/*
-
-# Install netcdf library
-RUN \
-  apt-get update && \
-  apt-get install -y libnetcdf11 && \
-  rm -rf /var/lib/apt/lists/*
+  apt-get install -y openjdk-8-jdk \
+  libnetcdf15 \
+  && rm -rf /var/lib/apt/lists/*
 
 ADD target/lib /opt/aggregator/lib
 ADD target/*.jar /opt/aggregator/
