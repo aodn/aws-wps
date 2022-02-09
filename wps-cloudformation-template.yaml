@@ -286,14 +286,15 @@ Resources:
                   - !Sub
                     - 'arn:aws:s3:::${BucketName}/*'
                     - { BucketName: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !Ref bucketName] }
+        -
+          PolicyName: AllowSESAccess
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
               -
                 Effect: Allow
                 Action:
                   - ses:SendEmail
-                Resource: '*'
-              -
-                Effect: Allow
-                Action:
                   - ses:SendRawEmail
                 Resource: '*'
   JobDefinition:
@@ -673,18 +674,15 @@ Resources:
                   - !Sub
                     - 'arn:aws:s3:::${BucketName}/*'
                     - { BucketName: !If [CreateEphemeralBucket, !Ref EphemeralS3Bucket, !Ref bucketName] }
-        - PolicyName: SESAccess
+        -
+          PolicyName: AllowSESAccess
           PolicyDocument:
-            Version: 2022-01-21
+            Version: 2012-10-17
             Statement:
               -
                 Effect: Allow
                 Action:
                   - ses:SendEmail
-                Resource: '*'
-              -
-                Effect: Allow
-                Action:
                   - ses:SendRawEmail
                 Resource: '*'
 
