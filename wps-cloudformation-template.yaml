@@ -438,8 +438,8 @@ Resources:
         InstanceRole: !Ref IamInstanceProfile
         SpotIamFleetRole: !Ref SpotIamFleetRole
         BidPercentage: 100
+        Tags: { "Name" : "AWS-WPS Worker", "AutoOff" : "False" }
       ServiceRole: !Ref BatchServiceRole
-      Tags: { "Name" : "AWS-WPS Worker", "AutoOff" : "False" }
   TestComputeEnvironment:
       Metadata:
         Comment: Please keep in sync with JobComputeEnvironment!!!!!
