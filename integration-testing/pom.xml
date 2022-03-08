@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>au.org.emii</groupId>
-    <version>0.0.0</version>
+    <version>4.42.53</version>
     <artifactId>integration-testing</artifactId>
 
     <properties>
