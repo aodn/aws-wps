@@ -49,6 +49,9 @@ Parameters:
       - us-west-2
       - eu-west-1
       - ap-southeast-2
+  SeSLimitRecipients:
+    Type: String
+    Default: "*"
   CustomAmiId:
     Type: String
     Default: ami-00e94e589a51ccdb0
@@ -297,6 +300,9 @@ Resources:
                   - ses:SendEmail
                   - ses:SendRawEmail
                 Resource: '*'
+                Condition:
+                  ForAllValues:StringLike:
+                    'ses:Recipients': !Ref SeSLimitRecipients
   JobDefinition:
     Type: AWS::Batch::JobDefinition
     Properties:
@@ -685,6 +691,9 @@ Resources:
                   - ses:SendEmail
                   - ses:SendRawEmail
                 Resource: '*'
+                Condition:
+                  ForAllValues:StringLike:
+                    'ses:Recipients': !Ref SeSLimitRecipients
 
   #
   # Job status service
