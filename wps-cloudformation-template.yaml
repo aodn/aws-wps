@@ -437,7 +437,6 @@ Resources:
           - r5.large
           - r4.large
           - r3.large
-        ImageId: !If [UseCustomAmi, !Ref CustomAmiId, !Ref 'AWS::NoValue']
         Subnets: !Split [ ',', {'Fn::ImportValue': !Sub '${ParentVPCStack}-SubnetsPublic'} ]
         SecurityGroupIds:
           - !Ref ComputeEnvironmentInstanceSecurityGroup
@@ -464,7 +463,6 @@ Resources:
             - r5.large
             - r4.large
             - r3.large
-          ImageId: !If [UseTestCustomAmi, !Ref TestCustomAmiId, !Ref 'AWS::NoValue']
           Subnets: !Split [ ',', {'Fn::ImportValue': !Sub '${ParentVPCStack}-SubnetsPublic'} ]
           SecurityGroupIds:
             - !Ref ComputeEnvironmentInstanceSecurityGroup
