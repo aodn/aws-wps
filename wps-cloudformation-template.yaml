@@ -52,12 +52,6 @@ Parameters:
   SeSLimitRecipients:
     Type: String
     Default: "*"
-  CustomAmiId:
-    Type: String
-    Default: ami-00e94e589a51ccdb0
-  TestCustomAmiId:
-    Type: String
-    Default: ami-08503f06b09dbfc32
   AllowEphemeralBuckets:
     Type: String
     AllowedValues: [ true, false ]
@@ -95,8 +89,6 @@ Conditions:
   CreateWpsApiGatewayDomainName: !Not [!Equals ['', !Ref wpsDomainName]]
   HasExternalDomainName: !Not [!Equals ['', !Ref externalDomainName]]
   HasCustomDomain: !Or [!Condition CreateWpsApiGatewayDomainName, !Condition HasExternalDomainName]
-  UseCustomAmi: !Not [!Equals ['', !Ref CustomAmiId]]
-  UseTestCustomAmi: !Not [!Equals ['', !Ref TestCustomAmiId]]
 Resources:
 
   #
@@ -437,7 +429,6 @@ Resources:
           - r5.large
           - r4.large
           - r3.large
-        ImageId: !If [UseCustomAmi, !Ref CustomAmiId, !Ref 'AWS::NoValue']
         Subnets: !Split [ ',', {'Fn::ImportValue': !Sub '${ParentVPCStack}-SubnetsPublic'} ]
         SecurityGroupIds:
           - !Ref ComputeEnvironmentInstanceSecurityGroup
@@ -464,7 +455,6 @@ Resources:
             - r5.large
             - r4.large
             - r3.large
-          ImageId: !If [UseTestCustomAmi, !Ref TestCustomAmiId, !Ref 'AWS::NoValue']
           Subnets: !Split [ ',', {'Fn::ImportValue': !Sub '${ParentVPCStack}-SubnetsPublic'} ]
           SecurityGroupIds:
             - !Ref ComputeEnvironmentInstanceSecurityGroup
