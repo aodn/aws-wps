@@ -220,7 +220,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
 
     private String generateStatusHTML(ExecuteResponse response, String statusDescription, String jobId, boolean includeAdminDetails) throws TemplateException, IOException {
 
-        Map<String, Object> params = new HashMap<String, Object>();
+        Map<String, Object> params = new HashMap<>();
 
         params.put("jobId", jobId);
         params.put("statusDescription", statusDescription);
@@ -358,7 +358,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
 
         if (runningJobDetails != null) {
             //  Add a log link to the job detail for display on the queue HTML page
-            ArrayList<ExtendedJobDetail> extendedJobDetailList = new ArrayList();
+            ArrayList<ExtendedJobDetail> extendedJobDetailList = new ArrayList<>();
 
             for(JobDetail currentJobDetail : runningJobDetails) {
                 ExtendedJobDetail extendedJobDetail = new ExtendedJobDetail();
@@ -374,7 +374,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
             //  Determine the full status of a completed job.
             //  This involves looking up the WPS status file for the job + adding that to the AWS batch status information.
             //  For completed jobs we'll add a WPS status description & a log link
-            ArrayList<ExtendedJobDetail> extendedJobDetailList = new ArrayList();
+            ArrayList<ExtendedJobDetail> extendedJobDetailList = new ArrayList<>();
 
             for(JobDetail currentJobDetail : completedJobDetails) {
                 //  Get the jobs WPS status from the WPS status file.
