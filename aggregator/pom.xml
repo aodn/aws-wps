@@ -69,26 +69,26 @@
     <build>
         <plugins>
             <plugin>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <executions>
-            <execution>
-                <id>create-executable-jar</id>
-                <phase>package</phase>
-                <goals>
-                    <goal>single</goal>
-                </goals>
-                <configuration>
-                    <descriptorRefs>
-                        <descriptorRef>jar-with-dependencies</descriptorRef>
-                    </descriptorRefs>
-                    <archive>
-                        <manifest>
-                            <mainClass>au.org.emii.aggregator.NetcdfAggregator</mainClass>
-                        </manifest>
-                    </archive>
-                </configuration>
-            </execution>
-        </executions>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>create-executable-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <descriptorRefs>
+                                <descriptorRef>jar-with-dependencies</descriptorRef>
+                            </descriptorRefs>
+                            <archive>
+                                <manifest>
+                                    <mainClass>au.org.emii.aggregator.NetcdfAggregator</mainClass>
+                                </manifest>
+                            </archive>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

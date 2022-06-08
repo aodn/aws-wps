@@ -379,7 +379,7 @@ public class NetcdfAggregator implements AutoCloseable {
         Long maxChunkSize = null;
 
         if (maxChunkSizeArg != null) {
-            maxChunkSize = new Long(maxChunkSizeArg);
+            maxChunkSize = Long.getLong(maxChunkSizeArg);
         }
 
         try (

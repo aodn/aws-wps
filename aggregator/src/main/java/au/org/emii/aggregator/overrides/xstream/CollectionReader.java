@@ -22,7 +22,7 @@ public class CollectionReader {
                 throw new ConversionException("Expected " + itemName + " tag but found " + reader.getNodeName());
             }
 
-            result.add((T) context.convertAnother(null, clazz));
+            result.add(clazz.cast(context.convertAnother(null, clazz)));
             reader.moveUp();
         }
 

@@ -87,9 +87,9 @@ public class ExecuteStatusBuilder {
         if (jobStatus == EnumStatus.ACCEPTED) {
             status.setProcessAccepted("Accepted job " + jobId + " for processing");
         } else if (jobStatus == EnumStatus.STARTED) {
-            status.setProcessStarted(getProcessStartedType("Job " + jobId + " is currently running", new Integer(0)));
+            status.setProcessStarted(getProcessStartedType("Job " + jobId + " is currently running", Integer.valueOf(0)));
         } else if (jobStatus == EnumStatus.PAUSED) {
-            status.setProcessPaused(getProcessStartedType("Job " + jobId + " is currently paused", new Integer(0)));
+            status.setProcessPaused(getProcessStartedType("Job " + jobId + " is currently paused", Integer.valueOf(0)));
         } else if (jobStatus == EnumStatus.SUCCEEDED) {
             status.setProcessSucceeded("Job " + jobId + " has completed");
             //  If outputs were passed - add them to the response
