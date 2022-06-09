@@ -56,7 +56,7 @@ The following mandatory features from the spec are not supported:
 Requirements:
  
   * maven 3
-  * java 8
+  * java 11
   * docker
 
 ```

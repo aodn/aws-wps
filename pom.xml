@@ -11,9 +11,11 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
         <netcdf.version>4.6.9</netcdf.version>
+        <surefire.version>2.22.2</surefire.version>
+        <apache.logging.version>2.17.1</apache.logging.version>
+        <amazon.sdk.version>1.12.234</amazon.sdk.version>
+        <javax.jaxb.version>2.3.0</javax.jaxb.version>
     </properties>
 
     <modules>
@@ -46,67 +48,67 @@
             <dependency>
                 <groupId>org.apache.logging.log4j</groupId>
                 <artifactId>log4j-core</artifactId>
-                <version>2.17.1</version>
+                <version>${apache.logging.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.logging.log4j</groupId>
                 <artifactId>log4j-api</artifactId>
-                <version>2.17.1</version>
+                <version>${apache.logging.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.logging.log4j</groupId>
                 <artifactId>log4j-slf4j-impl</artifactId>
-                <version>2.17.1</version>
+                <version>${apache.logging.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.amazonaws</groupId>
                 <artifactId>aws-java-sdk-core</artifactId>
-                <version>1.12.234</version>
+                <version>${amazon.sdk.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.amazonaws</groupId>
                 <artifactId>aws-java-sdk-batch</artifactId>
-                <version>1.12.234</version>
+                <version>${amazon.sdk.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.amazonaws</groupId>
                 <artifactId>aws-java-sdk-dynamodb</artifactId>
-                <version>1.12.234</version>
+                <version>${amazon.sdk.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.amazonaws</groupId>
                 <artifactId>aws-java-sdk-kinesis</artifactId>
-                <version>1.12.234</version>
+                <version>${amazon.sdk.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.amazonaws</groupId>
                 <artifactId>aws-java-sdk-kms</artifactId>
-                <version>1.12.234</version>
+                <version>${amazon.sdk.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.amazonaws</groupId>
                 <artifactId>aws-java-sdk-s3</artifactId>
-                <version>1.12.234</version>
+                <version>${amazon.sdk.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.amazonaws</groupId>
                 <artifactId>aws-java-sdk-ses</artifactId>
-                <version>1.12.234</version>
+                <version>${amazon.sdk.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.amazonaws</groupId>
                 <artifactId>aws-java-sdk-sns</artifactId>
-                <version>1.12.234</version>
+                <version>${amazon.sdk.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.amazonaws</groupId>
                 <artifactId>aws-java-sdk-sqs</artifactId>
-                <version>1.12.234</version>
+                <version>${amazon.sdk.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.amazonaws</groupId>
                 <artifactId>aws-java-sdk-cognitoidentity</artifactId>
-                <version>1.12.234</version>
+                <version>${amazon.sdk.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.amazonaws</groupId>
@@ -131,17 +133,17 @@
             <dependency>
                 <groupId>javax.xml.bind</groupId>
                 <artifactId>jaxb-api</artifactId>
-                <version>2.3.0</version>
+                <version>${javax.jaxb.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.sun.xml.bind</groupId>
                 <artifactId>jaxb-core</artifactId>
-                <version>2.3.0</version>
+                <version>${javax.jaxb.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.sun.xml.bind</groupId>
                 <artifactId>jaxb-impl</artifactId>
-                <version>2.3.0</version>
+                <version>${javax.jaxb.version}</version>
             </dependency>
             <dependency>
                 <groupId>commons-cli</groupId>
@@ -238,6 +240,11 @@
                     <configuration>
                         <release>10</release>
                     </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-failsafe-plugin</artifactId>
+                    <version>${surefire.version}</version>
                 </plugin>
             </plugins>
         </pluginManagement>
