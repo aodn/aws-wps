@@ -1,6 +1,7 @@
 package au.org.emii.wps.util;
 
-import com.sun.org.apache.xerces.internal.dom.DOMInputImpl;
+
+import org.apache.xerces.dom.DOMInputImpl;
 import org.w3c.dom.ls.LSInput;
 import org.w3c.dom.ls.LSResourceResolver;
 
