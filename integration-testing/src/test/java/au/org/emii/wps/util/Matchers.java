@@ -1,8 +1,8 @@
 package au.org.emii.wps.util;
 
-import com.jayway.restassured.internal.matcher.xml.XmlXsdMatcher;
+import io.restassured.internal.matcher.xml.XmlXsdMatcher;
 
-import static com.jayway.restassured.internal.matcher.xml.XmlXsdMatcher.matchesXsdInClasspath;
+import static io.restassured.internal.matcher.xml.XmlXsdMatcher.matchesXsdInClasspath;
 
 public class Matchers {
 

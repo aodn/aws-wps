@@ -7,14 +7,8 @@ import static org.junit.Assert.*;
 
 import au.org.emii.wps.util.ExecuteRequestBuilder;
 import com.google.common.io.Files;
-import com.jayway.awaitility.Duration;
-import com.jayway.restassured.builder.RequestSpecBuilder;
-import com.jayway.restassured.filter.log.RequestLoggingFilter;
-import com.jayway.restassured.filter.log.ResponseLoggingFilter;
-import com.jayway.restassured.http.ContentType;
-import com.jayway.restassured.internal.mapper.ObjectMapperType;
-import com.jayway.restassured.response.Response;
-import com.jayway.restassured.specification.RequestSpecification;
+import io.restassured.mapper.ObjectMapperType;
+import io.restassured.response.Response;
 import net.opengis.wps.v_1_0_0.Execute;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
@@ -22,6 +16,7 @@ import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.io.FileUtils;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URIBuilder;
+import org.awaitility.Awaitility;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -35,23 +30,29 @@ import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Enumeration;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import io.restassured.builder.RequestSpecBuilder;
+import io.restassured.filter.log.RequestLoggingFilter;
+import io.restassured.filter.log.ResponseLoggingFilter;
+import io.restassured.http.ContentType;
+import io.restassured.specification.RequestSpecification;
+
+import static io.restassured.RestAssured.given;
 import static au.org.emii.wps.util.GPathMatcher.hasGPath;
 import static au.org.emii.wps.util.Matchers.validateWith;
 import static au.org.emii.wps.util.NcmlValidatable.getNcml;
-import static com.jayway.awaitility.Awaitility.await;
-import static com.jayway.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.xml.HasXPath.hasXPath;
 
 public class ExecuteIT {
-    private static final Duration TWENTY_MINUTES = new Duration(20, TimeUnit.MINUTES);
+    private static final Duration TWENTY_MINUTES = Duration.of(20, ChronoUnit.MINUTES);
     private static RequestSpecification spec;
     private static String SERVICE_ENDPOINT = System.getenv("WPS_ENDPOINT");
     public static final int BUFFER_SIZE = 1024;
@@ -770,18 +771,19 @@ public class ExecuteIT {
 
         System.out.println("Waiting for process to complete...");
 
-        await().atMost(maxWait).until(() ->
-                given()
-                        .log().method()
-                        .log().path()
-                        .get(statusUrl)
-                        .then()
-                        .log().status()
-                        .statusCode(200)
-                        .body(anyOf(
-                                hasXPath("/ExecuteResponse/Status/ProcessSucceeded"),
-                                hasXPath("/ExecuteResponse/Status/ProcessFailed")))
-        );
+        Awaitility.await().atMost(maxWait).until(() -> {
+            given()
+                    .log().method()
+                    .log().uri()
+                    .get(statusUrl)
+                    .then()
+                    .log().status()
+                    .statusCode(200)
+                    .body(anyOf(
+                            hasXPath("/ExecuteResponse/Status/ProcessSucceeded"),
+                            hasXPath("/ExecuteResponse/Status/ProcessFailed")));
+            return true;
+        });
 
         System.out.println("Process completed");
 
@@ -792,7 +794,7 @@ public class ExecuteIT {
     private String submit(Execute request) {
         return given()
                 .spec(spec)
-                .content(request, ObjectMapperType.JAXB)
+                .body(request, ObjectMapperType.JAXB)
                 .when()
                 .post()
                 .then()

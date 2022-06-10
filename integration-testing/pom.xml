@@ -48,24 +48,18 @@
             <artifactId>wps-v_1_0_0-schema</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/io.rest-assured/rest-assured -->
         <dependency>
-            <groupId>com.jayway.restassured</groupId>
+            <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
-            <version>2.9.0</version>
+            <version>5.1.0</version>
             <scope>test</scope>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/org.awaitility/awaitility -->
         <dependency>
-            <groupId>com.jayway.awaitility</groupId>
+            <groupId>org.awaitility</groupId>
             <artifactId>awaitility</artifactId>
-            <version>1.7.0</version>
-            <scope>test</scope>
-        </dependency>
-        <!-- Version 4.5.2 causes an SSL handshake issue with restassured -->
-        <!-- https://stackoverflow.com/questions/37714696/not-able-to-connect-to-server-through-java-code-getting-javax-net-ssl-sslhandsh -->
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
-            <version>4.5.3</version>
+            <version>4.2.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
