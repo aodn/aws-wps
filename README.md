@@ -65,14 +65,46 @@ $ mvn clean package
 
 ## To run integration tests
 
-Set the WPS_ENDPOINT environment variable to the service url for then use mvn verify in the integration-tests directory
-to run the tests.  For example for the service url 'https://wps-testing.dev.aodn.org.au/wps' the following will 
-run integration tests against that endpoint.
+### Create environment for testing in nonproduction env
+wps-cloudformation-template.yml is used to create the followings:
+- AWS Batch: Module [aggregation-worker](aggregation-worker) contains the code to do the batch job. During the build,
+  the maven will invoke docker-build.sh under scripts to create a docker image. You can find the image with the command 
+  "docker images" assume you have installed docker.
+- AWS Lambda: Module [job-status-service](job-status-service) and [request-handler](request-handler) are two lambda 
+  functions created with this template. After running the maven build, the two module will create a zip package and
+  place it in the [lambda](lambda) folder.
 
+You need to run an instance of batch job and the two lambdas in order to run the integration-test. Execute the following
+command under [cloud-deploy](https://github.com/aodn/cloud-deploy) repo. Details can be found 
+[here](https://github.com/aodn/cloud-deploy/blob/master/doc/ansible.md)
+
+####Step 1
+Upload the docker image that you created in build to aws, please run the ./aggregation-worker/scripts/docker-deploy.sh 
+and <font color="red">must give it a tag name</font>. ie. ./aggregation-worker/scripts/docker-deploy.sh tagname
+
+####Step 2
+Run the below command in cloud-deploy directory 
+
+```shell
+$AWS_WPS_ROOT/aggregation-worker/scripts/stack-dev-deploy.sh $AWS_WPS_ROOT tagname
 ```
-$ cd integration-tests
-$ WPS_ENDPOINT='https://wps-testing.dev.aodn.org.au/wps' mvn verify
+
+It will create the application stack and you can find it under AWS Cloudformation, search your stack name with
+the tagname value. 
+
+####Step 3
+Click the stack you just create and go to the Resources section, find the "WPSRestApi" and click the link. Then
+click the APIs on the top menu and find the ID of your API.
+
+WPS_ENDPOINT=https://$API_ID.execute-api.ap-southeast-2.amazonaws.com/LATEST/wps for example something like this 
+will run the integration test
+
+```shell
+example:
+cd integration-tests
+WPS_ENDPOINT='https://w4fnovhz73.execute-api.ap-southeast-2.amazonaws.com/LATEST/wps' mvn verify
 ```
+
 ## To submit a request
 
 A sample request and a script to submit it can be found in the requets directory.   The submit script should be modified
