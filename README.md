@@ -105,6 +105,14 @@ cd integration-tests
 WPS_ENDPOINT='https://w4fnovhz73.execute-api.ap-southeast-2.amazonaws.com/LATEST/wps' mvn verify
 ```
 
+### How to debug
+You can view the log in cloud:
+1. Goto your stack instance, click on it and goto the Resources section
+2. Find RequestHandlerLambdaFunction for request handler lambda function or JobStatusLambdaFunction for another lambda
+   function
+3. Click the link, go to the Monitor tab, then hit "View logs in CloudWatch"
+
+
 ## To submit a request
 
 A sample request and a script to submit it can be found in the requets directory.   The submit script should be modified

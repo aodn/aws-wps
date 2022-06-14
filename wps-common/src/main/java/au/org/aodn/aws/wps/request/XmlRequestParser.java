@@ -4,9 +4,9 @@ import au.org.aodn.aws.wps.exception.InvalidRequestException;
 import com.amazonaws.util.StringInputStream;
 import net.opengis.wps.v_1_0_0.ExecuteResponse;
 
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Unmarshaller;
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.JAXBException;
+import jakarta.xml.bind.Unmarshaller;
 import java.io.UnsupportedEncodingException;
 
 public class XmlRequestParser {

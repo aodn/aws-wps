@@ -15,7 +15,8 @@
         <surefire.version>2.22.2</surefire.version>
         <apache.logging.version>2.17.1</apache.logging.version>
         <amazon.sdk.version>1.12.234</amazon.sdk.version>
-        <javax.jaxb.version>2.3.0</javax.jaxb.version>
+        <javax.jaxb.runtime>3.0.2</javax.jaxb.runtime>
+        <javax.jaxb.version>3.0.1</javax.jaxb.version>
     </properties>
 
     <modules>
@@ -130,20 +131,17 @@
                 <artifactId>xstream</artifactId>
                 <version>1.4.7</version>
             </dependency>
+            <!-- API, java.xml.bind module -->
             <dependency>
-                <groupId>javax.xml.bind</groupId>
-                <artifactId>jaxb-api</artifactId>
+                <groupId>jakarta.xml.bind</groupId>
+                <artifactId>jakarta.xml.bind-api</artifactId>
                 <version>${javax.jaxb.version}</version>
             </dependency>
+            <!-- Runtime, com.sun.xml.bind module -->
             <dependency>
-                <groupId>com.sun.xml.bind</groupId>
-                <artifactId>jaxb-core</artifactId>
-                <version>${javax.jaxb.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.sun.xml.bind</groupId>
-                <artifactId>jaxb-impl</artifactId>
-                <version>${javax.jaxb.version}</version>
+                <groupId>org.glassfish.jaxb</groupId>
+                <artifactId>jaxb-runtime</artifactId>
+                <version>${javax.jaxb.runtime}</version>
             </dependency>
             <dependency>
                 <groupId>commons-cli</groupId>
@@ -228,10 +226,11 @@
                     <artifactId>maven-dependency-plugin</artifactId>
                     <version>3.3.0</version>
                 </plugin>
+                <!-- This plugin generate jaxb with jakarta.xml prefix which is solution for Java11 on JAXB -->
                 <plugin>
                     <groupId>org.apache.cxf</groupId>
                     <artifactId>cxf-xjc-plugin</artifactId>
-                    <version>3.3.1</version>
+                    <version>4.0.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>

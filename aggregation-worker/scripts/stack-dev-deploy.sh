@@ -2,7 +2,6 @@
 
 tempfile=$(mktemp)
 cat << SETVAR  > $tempfile
-Description: Test instance for aws-wps, save to delete.
 Resources:
   awswps:
     CloudformationTemplateURL: '$1/wps-cloudformation-template.yaml'
@@ -27,7 +26,11 @@ SETVAR
 echo "Yaml configuration write to $tempfile"
 export AWS_PROFILE=nonproduction-admin
 
-bin/stackman deploy --stack-name raymond-wps --stack-profile $tempfile
+if [ -f bin/stackman ]; then
+  bin/stackman deploy --stack-name $2-wps --stack-profile $tempfile
+else
+  echo "You must run this script in the root folder of cloud-deploy"
+fi
 
 # Clean up file
 rm "$tempfile"
