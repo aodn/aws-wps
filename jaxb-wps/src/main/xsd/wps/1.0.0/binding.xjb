@@ -9,8 +9,6 @@
             fixedAttributeAsConstantProperty="true"
             typesafeEnumMemberName="generateName"
             generateIsSetMethod="true">
-        <xjc:noValidator />
-        <xjc:noValidatingUnmarshaller />
     </jaxb:globalBindings>
     <!--
     The wps xds imported the owsAll.xds, this result in two issues

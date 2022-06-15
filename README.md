@@ -112,6 +112,8 @@ You can view the log in cloud:
    function
 3. Click the link, go to the Monitor tab, then hit "View logs in CloudWatch"
 
+### How to delete
+aws cloudformation delete-stack --stack-name YOUR_STACK_NAME --region ap-southeast-2
 
 ## To submit a request
 
