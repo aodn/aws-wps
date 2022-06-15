@@ -2,6 +2,9 @@
                xmlns:xjc="http://java.sun.com/xml/ns/jaxb/xjc"
                jaxb:extensionBindingPrefixes="xjc">
 
+    <!--
+    We need the generateIsSetMethod as existing code use those isOperation().
+    -->
     <jaxb:globalBindings
             fixedAttributeAsConstantProperty="true"
             typesafeEnumMemberName="generateName"
@@ -9,7 +12,15 @@
         <xjc:noValidator />
         <xjc:noValidatingUnmarshaller />
     </jaxb:globalBindings>
+    <!--
+    The wps xds imported the owsAll.xds, this result in two issues
+    1. The previous packages seperated the package name between wps and ows
+    2. The import cause the schema to be included in the wps and hence the same definition (ows) is copied into wps
+       where those items are extra and not need. Even worst is the ObjectFactory will have a name conflict due
+       to two xsd contains same element name.
 
+    Below is use to separate the two package correctly
+    -->
     <jaxb:bindings schemaLocation="wpsAll.xsd">
         <jaxb:schemaBindings>
             <jaxb:package name="net.opengis.wps.v_1_0_0"></jaxb:package>
