@@ -1,8 +1,7 @@
 package au.org.emii.wps.util;
 
 import io.restassured.internal.matcher.xml.XmlXsdMatcher;
-
-import static io.restassured.internal.matcher.xml.XmlXsdMatcher.matchesXsdInClasspath;
+import static io.restassured.matcher.RestAssuredMatchers.matchesXsdInClasspath;
 
 public class Matchers {
 
@@ -15,5 +14,4 @@ public class Matchers {
         return matchesXsdInClasspath(schema)
             .using(new ClasspathResourceResolver(basePath));
     }
-
 }
