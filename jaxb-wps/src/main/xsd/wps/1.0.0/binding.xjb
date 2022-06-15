@@ -1,0 +1,24 @@
+<jaxb:bindings version="3.0" xmlns:jaxb="https://jakarta.ee/xml/ns/jaxb"
+               xmlns:xjc="http://java.sun.com/xml/ns/jaxb/xjc"
+               jaxb:extensionBindingPrefixes="xjc">
+
+    <jaxb:globalBindings
+            fixedAttributeAsConstantProperty="true"
+            typesafeEnumMemberName="generateName"
+            generateIsSetMethod="true">
+        <xjc:noValidator />
+        <xjc:noValidatingUnmarshaller />
+    </jaxb:globalBindings>
+
+    <jaxb:bindings schemaLocation="wpsAll.xsd">
+        <jaxb:schemaBindings>
+            <jaxb:package name="net.opengis.wps.v_1_0_0"></jaxb:package>
+        </jaxb:schemaBindings>
+    </jaxb:bindings>
+
+    <jaxb:bindings schemaLocation="../../ows/1.1.0/owsAll.xsd">
+        <jaxb:schemaBindings>
+            <jaxb:package name="net.opengis.ows.v_1_1_0"></jaxb:package>
+        </jaxb:schemaBindings>
+    </jaxb:bindings>
+</jaxb:bindings>

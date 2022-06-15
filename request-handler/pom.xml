@@ -90,10 +90,6 @@
             <artifactId>wps-common</artifactId>
             <version>0.0.0</version>
         </dependency>
-        <dependency>
-            <groupId>org.jvnet.ogc</groupId>
-            <artifactId>wps-v_1_0_0-schema</artifactId>
-        </dependency>
     </dependencies>
 
     <build>

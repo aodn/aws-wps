@@ -20,6 +20,7 @@
     </properties>
 
     <modules>
+        <module>jaxb-wps</module>
         <module>wps-common</module>
         <module>request-handler</module>
         <module>aggregator</module>
@@ -182,11 +183,6 @@
                 <groupId>velocity</groupId>
                 <artifactId>velocity</artifactId>
                 <version>1.4</version>
-            </dependency>
-            <dependency>
-                <groupId>org.jvnet.ogc</groupId>
-                <artifactId>wps-v_1_0_0-schema</artifactId>
-                <version>1.0.0</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
