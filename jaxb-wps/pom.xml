@@ -43,8 +43,8 @@
                             <sourceRoot>${basedir}/src/main/generated-sources</sourceRoot>
                             <xsdOptions>
                                 <xsdOption>
-                                    <xsd>${basedir}/src/main/xsd/wps/1.0.0/wpsAll.xsd</xsd>
-                                    <bindingFile>${basedir}/src/main/xsd/wps/1.0.0/binding.xjb</bindingFile>
+                                    <xsd>${basedir}/src/main/resources/wps/1.0.0/wpsAll.xsd</xsd>
+                                    <bindingFile>${basedir}/src/main/resources/binding.xjb</bindingFile>
                                     <extension>true</extension>
                                 </xsdOption>
                             </xsdOptions>

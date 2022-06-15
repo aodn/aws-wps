@@ -19,13 +19,13 @@
 
     Below is use to separate the two package correctly
     -->
-    <jaxb:bindings schemaLocation="wpsAll.xsd">
+    <jaxb:bindings schemaLocation="wps/1.0.0/wpsAll.xsd">
         <jaxb:schemaBindings>
             <jaxb:package name="net.opengis.wps.v_1_0_0"></jaxb:package>
         </jaxb:schemaBindings>
     </jaxb:bindings>
 
-    <jaxb:bindings schemaLocation="../../ows/1.1.0/owsAll.xsd">
+    <jaxb:bindings schemaLocation="ows/1.1.0/owsAll.xsd">
         <jaxb:schemaBindings>
             <jaxb:package name="net.opengis.ows.v_1_1_0"></jaxb:package>
         </jaxb:schemaBindings>
