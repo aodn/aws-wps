@@ -1,9 +1,5 @@
 package au.org.aodn.aws.util;
 
-import net.opengis.ows.v_1_1_0.CodeType;
-import net.opengis.ows.v_1_1_0.IdentificationType;
-import net.opengis.ows.v_1_1_0.LanguageStringType;
-import net.opengis.wps.v_1_0_0.InputDescriptionType;
 import net.opengis.wps.v_1_0_0.ProcessDescriptionType;
 import net.opengis.wps.v_1_0_0.ProcessDescriptions;
 import org.junit.Test;

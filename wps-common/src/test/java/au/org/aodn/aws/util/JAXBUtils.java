@@ -1,6 +1,5 @@
 package au.org.aodn.aws.util;
 
-import net.opengis.ows.v_1_1_0.AllowedValues;
 import net.opengis.ows.v_1_1_0.AnyValue;
 import net.opengis.ows.v_1_1_0.CodeType;
 import net.opengis.ows.v_1_1_0.LanguageStringType;
