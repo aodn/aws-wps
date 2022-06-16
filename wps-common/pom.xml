@@ -106,7 +106,7 @@
         </dependency>
         <dependency>
             <groupId>au.org.emii</groupId>
-            <artifactId>jaxb-wps</artifactId>
+            <artifactId>wps-common</artifactId>
             <version>0.0.0</version>
         </dependency>
     </dependencies>

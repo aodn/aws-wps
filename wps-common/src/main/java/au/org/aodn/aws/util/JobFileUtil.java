@@ -22,10 +22,24 @@ import java.io.StringWriter;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.TimeZone;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class JobFileUtil {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(JobFileUtil.class);
+    protected static final ConcurrentHashMap<Class<?>, JAXBContext> jaxbContexts = new ConcurrentHashMap<>();
+
+    static {
+        // Expensive operate, create once. This operation is thread safe but marshaller / unmarshaller is not
+        try {
+            jaxbContexts.put(ExceptionReport.class, JAXBContext.newInstance(ExceptionReport.class));
+            jaxbContexts.put(ExecuteResponse.class, JAXBContext.newInstance(ExecuteResponse.class));
+        }
+        catch (JAXBException e) {
+            LOGGER.error("Fail to create JAXBContext, system start failed");
+            assert false;
+        }
+    }
 
     /**
      * Generate an XML string from a XML type object.
@@ -85,10 +99,8 @@ public class JobFileUtil {
         ExceptionReport report = getExceptionReport(message, code, locator);
         String responseDoc = null;
 
-        JAXBContext context;
         try {
-            context = JAXBContext.newInstance(ExceptionReport.class);
-            Marshaller m = context.createMarshaller();
+            Marshaller m = jaxbContexts.get(ExceptionReport.class).createMarshaller();
             m.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
             StringWriter writer = new StringWriter();
             m.marshal(report, writer);
@@ -109,13 +121,10 @@ public class JobFileUtil {
     public static ExecuteResponse unmarshallExecuteResponse(String xmlString)
     {
         try {
-
-            JAXBContext context = JAXBContext.newInstance(ExecuteResponse.class);
-            Unmarshaller u = context.createUnmarshaller();
-
+            Unmarshaller u = jaxbContexts.get(ExecuteResponse.class).createUnmarshaller();
             return (ExecuteResponse) u.unmarshal(new StringInputStream(xmlString));
-        } catch (Exception ex) {
-
+        }
+        catch (Exception ex) {
             return null;
         }
     }
