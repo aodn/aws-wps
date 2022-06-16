@@ -678,9 +678,9 @@ public class ExecuteIT {
                         hasXPath("//EX_GeographicBoundingBox/southBoundLatitude/Decimal", Matchers.equalTo("-33.18")),
                         hasXPath("//EX_GeographicBoundingBox/northBoundLatitude/Decimal", Matchers.equalTo("-31.45")),
                         hasXPath("//entity[@id='layerName']/location", Matchers.equalTo("acorn_hourly_avg_rot_qc_timeseries_url")),
-                        hasXPath("//entity[@id='outputAggregationSettings']/location", Matchers.not(isEmptyOrNullString())),
+                        hasXPath("//entity[@id='outputAggregationSettings']/location", Matchers.not(Matchers.is(Matchers.emptyOrNullString()))),
                         hasXPath("//entity[@id='sourceData']/location", Matchers.endsWith("geonetwork/srv/api/records/028b9801-279f-427c-964b-0ffcdf310b59")),
-                        hasXPath("//softwareAgent[@id='JavaCode']/location", Matchers.not(isEmptyOrNullString())),
+                        hasXPath("//softwareAgent[@id='JavaCode']/location", Matchers.not(Matchers.is(Matchers.emptyOrNullString()))),
                         hasXPath("//other/identifier", Matchers.equalTo(getJobId(statusUrl)))
                 );
 
