@@ -109,11 +109,6 @@
             <artifactId>jaxb-wps</artifactId>
             <version>0.0.0</version>
         </dependency>
-        <dependency>
-            <groupId>au.org.emii</groupId>
-            <artifactId>jaxb-wps</artifactId>
-            <version>0.0.0</version>
-        </dependency>
     </dependencies>
 
     <repositories>
