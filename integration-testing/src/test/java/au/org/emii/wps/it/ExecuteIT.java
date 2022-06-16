@@ -1,15 +1,20 @@
 package au.org.emii.wps.it;
 
 import static org.hamcrest.CoreMatchers.*;
-import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.isEmptyOrNullString;
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
 
 import au.org.emii.wps.util.ExecuteRequestBuilder;
 import com.google.common.io.Files;
-import io.restassured.mapper.ObjectMapperType;
+import io.restassured.mapper.ObjectMapper;
+import io.restassured.mapper.ObjectMapperDeserializationContext;
+import io.restassured.mapper.ObjectMapperSerializationContext;
 import io.restassured.response.Response;
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.JAXBException;
+import jakarta.xml.bind.Marshaller;
 import net.opengis.wps.v_1_0_0.Execute;
+import net.opengis.wps.v_1_0_0.ExecuteResponse;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
@@ -17,16 +22,11 @@ import org.apache.commons.io.FileUtils;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URIBuilder;
 import org.awaitility.Awaitility;
+import org.hamcrest.Matchers;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.FilenameFilter;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.Charset;
@@ -43,12 +43,13 @@ import io.restassured.filter.log.RequestLoggingFilter;
 import io.restassured.filter.log.ResponseLoggingFilter;
 import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static io.restassured.RestAssured.given;
 import static au.org.emii.wps.util.GPathMatcher.hasGPath;
 import static au.org.emii.wps.util.Matchers.validateWith;
 import static au.org.emii.wps.util.NcmlValidatable.getNcml;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.xml.HasXPath.hasXPath;
 
 public class ExecuteIT {
@@ -56,6 +57,40 @@ public class ExecuteIT {
     private static RequestSpecification spec;
     private static String SERVICE_ENDPOINT = System.getenv("WPS_ENDPOINT");
     public static final int BUFFER_SIZE = 1024;
+
+    protected Logger logger = LoggerFactory.getLogger(ExecuteIT.class);
+
+    // We need to use the mashaller and unmashalelr from our generated jaxb package
+    protected class CustomObjectMapper implements ObjectMapper {
+
+        private Marshaller marshaller;
+
+        public CustomObjectMapper() throws JAXBException {
+            JAXBContext jaxbContext = JAXBContext.newInstance(ExecuteResponse.class);
+            marshaller = jaxbContext.createMarshaller();
+        }
+
+        // Should not have call this
+        @Override
+        public Object deserialize(ObjectMapperDeserializationContext content) {
+            throw new UnsupportedOperationException("Have not implemented");
+        }
+
+        @Override
+        public Object serialize(ObjectMapperSerializationContext content) {
+            Object raw = content.getObjectToSerialize();
+            StringWriter writer = new StringWriter();
+            try {
+                marshaller.marshal(raw, writer);
+            }
+            catch (JAXBException e) {
+                logger.error("Error happens during marshall: {}", raw.toString());
+            }
+            finally {
+                return writer.toString();
+            }
+        }
+    }
 
     @BeforeClass
     public static void initSpec() {
@@ -68,7 +103,7 @@ public class ExecuteIT {
     }
 
     @Test
-    public void testAcornSubset() throws IOException {
+    public void testAcornSubset() throws IOException, JAXBException {
         Execute request = new ExecuteRequestBuilder()
                 .identifer("gs:GoGoDuck")
                 .input("layer", "acorn_hourly_avg_rot_qc_timeseries_url")
@@ -92,12 +127,12 @@ public class ExecuteIT {
 
         getNcml(outputLocation).content(
                 // Check global attributes overridden as required
-                hasXPath("/netcdf/attribute[@name='time_coverage_start']/@value", equalTo("2017-01-01T00:00:00Z")),
-                hasXPath("/netcdf/attribute[@name='time_coverage_end']/@value", equalTo("2017-01-07T23:04:00Z")),
-                hasXPath("/netcdf/attribute[@name='geospatial_lat_min']/@value", equalTo("-33.145229 ")),
-                hasXPath("/netcdf/attribute[@name='geospatial_lat_max']/@value", equalTo("-31.485632 ")),
-                hasXPath("/netcdf/attribute[@name='geospatial_lon_min']/@value", equalTo("114.849838 ")),
-                hasXPath("/netcdf/attribute[@name='geospatial_lon_max']/@value", equalTo("115.359207 ")),
+                hasXPath("/netcdf/attribute[@name='time_coverage_start']/@value", Matchers.equalTo("2017-01-01T00:00:00Z")),
+                hasXPath("/netcdf/attribute[@name='time_coverage_end']/@value", Matchers.equalTo("2017-01-07T23:04:00Z")),
+                hasXPath("/netcdf/attribute[@name='geospatial_lat_min']/@value", Matchers.equalTo("-33.145229 ")),
+                hasXPath("/netcdf/attribute[@name='geospatial_lat_max']/@value", Matchers.equalTo("-31.485632 ")),
+                hasXPath("/netcdf/attribute[@name='geospatial_lon_min']/@value", Matchers.equalTo("114.849838 ")),
+                hasXPath("/netcdf/attribute[@name='geospatial_lon_max']/@value", Matchers.equalTo("115.359207 ")),
                 // Check all variables have been included
                 hasGPath("netcdf.variable.@name", containsInAnyOrder(
                         "TIME","LATITUDE","LONGITUDE","GDOP","UCUR","VCUR","UCUR_sd","VCUR_sd","NOBS1","NOBS2",
@@ -109,7 +144,7 @@ public class ExecuteIT {
 
 
     @Test
-    public void testTimeseries() {
+    public void testTimeseries() throws JAXBException {
         Execute request = new ExecuteRequestBuilder()
                 .identifer("gs:GoGoDuck")
                 .input("layer", "acorn_hourly_avg_rot_qc_timeseries_url")
@@ -138,7 +173,7 @@ public class ExecuteIT {
                 .then()
                 .statusCode(200)
                 .contentType("text/csv")
-                .body(equalTo(
+                .body(Matchers.equalTo(
                         "TIME (UTC),LATITUDE (degrees_north),LONGITUDE (degrees_east),GDOP (Degrees),UCUR (m s-1),VCUR (m s-1),UCUR_sd (m s-1),VCUR_sd (m s-1),NOBS1 (1),NOBS2 (1),UCUR_quality_control,VCUR_quality_control\n" +
                                 "2017-01-04T10:30:00Z,-31.810335,115.019623,68.80474,0.019122316,0.5347731,0.04222228,0.044319205,6,6,1,1\n" +
                                 "2017-01-04T11:30:00Z,-31.810335,115.019623,68.80474,-0.009952986,0.55120397,0.034548346,0.036436576,6,6,1,1\n"
@@ -148,7 +183,7 @@ public class ExecuteIT {
 
 
     @Test
-    public void testTestModeTimeseries() {
+    public void testTestModeTimeseries()  throws JAXBException {
         Execute request = new ExecuteRequestBuilder()
                 .identifer("gs:GoGoDuck")
                 .input("layer", "acorn_hourly_avg_rot_qc_timeseries_url")
@@ -204,7 +239,7 @@ public class ExecuteIT {
 
 
     @Test
-    public void testTimeseriesInTimestampOrder() {
+    public void testTimeseriesInTimestampOrder()  throws JAXBException {
         Execute request = new ExecuteRequestBuilder()
                 .identifer("gs:GoGoDuck")
                 .input("layer", "acorn_hourly_avg_rot_qc_timeseries_url")
@@ -265,7 +300,7 @@ public class ExecuteIT {
     }
 
     @Test
-    public void testSrsSubset() throws IOException {
+    public void testSrsSubset() throws IOException, JAXBException {
         Execute request = new ExecuteRequestBuilder()
                 .identifer("gs:GoGoDuck")
                 .input("layer", "srs_ghrsst_l3s_1d_day_url")
@@ -289,14 +324,14 @@ public class ExecuteIT {
 
         getNcml(outputLocation).content(
                 // Check global attributes overridden as required
-                hasXPath("/netcdf/attribute[@name='time_coverage_start']/@value", equalTo("2017-10-19T03:20:00Z")),
-                hasXPath("/netcdf/attribute[@name='start_time']/@value", equalTo("2017-10-19T03:20:00Z")),
-                hasXPath("/netcdf/attribute[@name='time_coverage_end']/@value", equalTo("2017-10-19T03:20:00Z")),
-                hasXPath("/netcdf/attribute[@name='stop_time']/@value", equalTo("2017-10-19T03:20:00Z")),
-                hasXPath("/netcdf/attribute[@name='northernmost_latitude']/@value", equalTo("19.989999771118164 ")),
-                hasXPath("/netcdf/attribute[@name='southernmost_latitude']/@value", equalTo("-69.98999786376953 ")),
-                hasXPath("/netcdf/attribute[@name='westernmost_longitude']/@value", equalTo("70.01000213623047 ")),
-                hasXPath("/netcdf/attribute[@name='easternmost_longitude']/@value", equalTo("189.99000549316406 ")),
+                hasXPath("/netcdf/attribute[@name='time_coverage_start']/@value", Matchers.equalTo("2017-10-19T03:20:00Z")),
+                hasXPath("/netcdf/attribute[@name='start_time']/@value", Matchers.equalTo("2017-10-19T03:20:00Z")),
+                hasXPath("/netcdf/attribute[@name='time_coverage_end']/@value", Matchers.equalTo("2017-10-19T03:20:00Z")),
+                hasXPath("/netcdf/attribute[@name='stop_time']/@value", Matchers.equalTo("2017-10-19T03:20:00Z")),
+                hasXPath("/netcdf/attribute[@name='northernmost_latitude']/@value", Matchers.equalTo("19.989999771118164 ")),
+                hasXPath("/netcdf/attribute[@name='southernmost_latitude']/@value", Matchers.equalTo("-69.98999786376953 ")),
+                hasXPath("/netcdf/attribute[@name='westernmost_longitude']/@value", Matchers.equalTo("70.01000213623047 ")),
+                hasXPath("/netcdf/attribute[@name='easternmost_longitude']/@value", Matchers.equalTo("189.99000549316406 ")),
                 // Check only requested variables have been included
                 hasGPath("netcdf.variable.@name", containsInAnyOrder(
                         "time", "lat", "lon", "dt_analysis", "l2p_flags", "quality_level", "satellite_zenith_angle",
@@ -304,12 +339,12 @@ public class ExecuteIT {
                         )
                 ),
                 // Ensure type has been overridden as required
-                hasXPath("/netcdf/variable[@name='sea_surface_temperature']/@type", equalTo("float"))
+                hasXPath("/netcdf/variable[@name='sea_surface_temperature']/@type", Matchers.equalTo("float"))
         );
     }
 
     @Test
-    public void testCarsSubset() throws IOException {
+    public void testCarsSubset() throws IOException, JAXBException  {
         Execute request = new ExecuteRequestBuilder()
                 .identifer("gs:GoGoDuck")
                 .input("layer", "csiro_cars_weekly_url")
@@ -333,14 +368,14 @@ public class ExecuteIT {
 
         getNcml(outputLocation).content(
                 // Check global attributes overridden as required
-                hasXPath("/netcdf/attribute[@name='time_coverage_start']/@value", equalTo("2009-12-19T00:00:00Z")),
-                hasXPath("/netcdf/attribute[@name='time_coverage_end']/@value", equalTo("2009-12-26T00:00:00Z")),
-                hasXPath("/netcdf/attribute[@name='geospatial_lat_max']/@value", equalTo("-32.5 ")),
-                hasXPath("/netcdf/attribute[@name='geospatial_lat_min']/@value", equalTo("-33.0 ")),
-                hasXPath("/netcdf/attribute[@name='geospatial_lon_max']/@value", equalTo("115.5 ")),
-                hasXPath("/netcdf/attribute[@name='geospatial_lon_min']/@value", equalTo("114.5 ")),
-                hasXPath("/netcdf/attribute[@name='geospatial_vertical_max']/@value", equalTo("100.0 ")),
-                hasXPath("/netcdf/attribute[@name='geospatial_vertical_min']/@value", equalTo("0.0 ")),
+                hasXPath("/netcdf/attribute[@name='time_coverage_start']/@value", Matchers.equalTo("2009-12-19T00:00:00Z")),
+                hasXPath("/netcdf/attribute[@name='time_coverage_end']/@value", Matchers.equalTo("2009-12-26T00:00:00Z")),
+                hasXPath("/netcdf/attribute[@name='geospatial_lat_max']/@value", Matchers.equalTo("-32.5 ")),
+                hasXPath("/netcdf/attribute[@name='geospatial_lat_min']/@value", Matchers.equalTo("-33.0 ")),
+                hasXPath("/netcdf/attribute[@name='geospatial_lon_max']/@value", Matchers.equalTo("115.5 ")),
+                hasXPath("/netcdf/attribute[@name='geospatial_lon_min']/@value", Matchers.equalTo("114.5 ")),
+                hasXPath("/netcdf/attribute[@name='geospatial_vertical_max']/@value", Matchers.equalTo("100.0 ")),
+                hasXPath("/netcdf/attribute[@name='geospatial_vertical_min']/@value", Matchers.equalTo("0.0 ")),
                 // Check only requested variables have been included
                 hasGPath("netcdf.variable.@name", containsInAnyOrder(
                         "DAY_OF_YEAR", "DEPTH", "LATITUDE", "LONGITUDE", "TEMP", "TEMP_mean", "TEMP_std_dev",
@@ -359,7 +394,7 @@ public class ExecuteIT {
 
 
     @Test
-    public void testTimeseriesZip() {
+    public void testTimeseriesZip()  throws JAXBException {
         Execute request = new ExecuteRequestBuilder()
                 .identifer("gs:GoGoDuck")
                 .input("layer", "acorn_hourly_avg_rot_qc_timeseries_url")
@@ -421,7 +456,7 @@ public class ExecuteIT {
 
 
     @Test
-    public void testTestModeTimeseriesZip() {
+    public void testTestModeTimeseriesZip()  throws JAXBException  {
         Execute request = new ExecuteRequestBuilder()
                 .identifer("gs:GoGoDuck")
                 .input("layer", "acorn_hourly_avg_rot_qc_timeseries_url")
@@ -478,7 +513,7 @@ public class ExecuteIT {
 
 
     @Test
-    public void testTimeseriesInTimestampOrderZip() {
+    public void testTimeseriesInTimestampOrderZip()  throws JAXBException {
         Execute request = new ExecuteRequestBuilder()
                 .identifer("gs:GoGoDuck")
                 .input("layer", "acorn_hourly_avg_rot_qc_timeseries_url")
@@ -543,7 +578,7 @@ public class ExecuteIT {
 
 
     @Test
-    public void testCarsSubsetZip() throws IOException {
+    public void testCarsSubsetZip() throws IOException, JAXBException {
         Execute request = new ExecuteRequestBuilder()
                 .identifer("gs:GoGoDuck")
                 .input("layer", "csiro_cars_weekly_url")
@@ -575,14 +610,14 @@ public class ExecuteIT {
 
             getNcml(ncFile.getAbsolutePath()).content(
                     // Check global attributes overridden as required
-                    hasXPath("/netcdf/attribute[@name='time_coverage_start']/@value", equalTo("2009-12-19T00:00:00Z")),
-                    hasXPath("/netcdf/attribute[@name='time_coverage_end']/@value", equalTo("2009-12-26T00:00:00Z")),
-                    hasXPath("/netcdf/attribute[@name='geospatial_lat_max']/@value", equalTo("-32.5 ")),
-                    hasXPath("/netcdf/attribute[@name='geospatial_lat_min']/@value", equalTo("-33.0 ")),
-                    hasXPath("/netcdf/attribute[@name='geospatial_lon_max']/@value", equalTo("115.5 ")),
-                    hasXPath("/netcdf/attribute[@name='geospatial_lon_min']/@value", equalTo("114.5 ")),
-                    hasXPath("/netcdf/attribute[@name='geospatial_vertical_max']/@value", equalTo("100.0 ")),
-                    hasXPath("/netcdf/attribute[@name='geospatial_vertical_min']/@value", equalTo("0.0 ")),
+                    hasXPath("/netcdf/attribute[@name='time_coverage_start']/@value", Matchers.equalTo("2009-12-19T00:00:00Z")),
+                    hasXPath("/netcdf/attribute[@name='time_coverage_end']/@value", Matchers.equalTo("2009-12-26T00:00:00Z")),
+                    hasXPath("/netcdf/attribute[@name='geospatial_lat_max']/@value", Matchers.equalTo("-32.5 ")),
+                    hasXPath("/netcdf/attribute[@name='geospatial_lat_min']/@value", Matchers.equalTo("-33.0 ")),
+                    hasXPath("/netcdf/attribute[@name='geospatial_lon_max']/@value", Matchers.equalTo("115.5 ")),
+                    hasXPath("/netcdf/attribute[@name='geospatial_lon_min']/@value", Matchers.equalTo("114.5 ")),
+                    hasXPath("/netcdf/attribute[@name='geospatial_vertical_max']/@value", Matchers.equalTo("100.0 ")),
+                    hasXPath("/netcdf/attribute[@name='geospatial_vertical_min']/@value", Matchers.equalTo("0.0 ")),
                     // Check only requested variables have been included
                     hasGPath("netcdf.variable.@name", containsInAnyOrder(
                             "DAY_OF_YEAR", "DEPTH", "LATITUDE", "LONGITUDE", "TEMP", "TEMP_mean", "TEMP_std_dev",
@@ -605,7 +640,7 @@ public class ExecuteIT {
     }
 
     @Test
-    public void testProvenanceRequested() {
+    public void testProvenanceRequested()  throws JAXBException  {
         Execute request = new ExecuteRequestBuilder()
                 .identifer("gs:GoGoDuck")
                 .input("layer", "acorn_hourly_avg_rot_qc_timeseries_url")
@@ -624,7 +659,7 @@ public class ExecuteIT {
                 .statusCode(200)
                 .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
                 .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"))
-                .body("ExecuteResponse.ProcessOutputs.Output.Identifier", equalTo("provenance"))
+                .body("ExecuteResponse.ProcessOutputs.Output.Identifier", Matchers.equalTo("provenance"))
                 .extract()
                 .path("ExecuteResponse.ProcessOutputs.Output.Reference.@href");
 
@@ -636,23 +671,23 @@ public class ExecuteIT {
                 .statusCode(200)
                 .contentType("application/xml")
                 .body(
-                        hasXPath("//TimePeriod/beginPosition", equalTo("2017-01-01T00:00:00Z")),
-                        hasXPath("//TimePeriod/endPosition", equalTo("2017-01-07T23:04:00Z")),
-                        hasXPath("//EX_GeographicBoundingBox/westBoundLongitude/Decimal", equalTo("114.82")),
-                        hasXPath("//EX_GeographicBoundingBox/eastBoundLongitude/Decimal", equalTo("115.39")),
-                        hasXPath("//EX_GeographicBoundingBox/southBoundLatitude/Decimal", equalTo("-33.18")),
-                        hasXPath("//EX_GeographicBoundingBox/northBoundLatitude/Decimal", equalTo("-31.45")),
-                        hasXPath("//entity[@id='layerName']/location", equalTo("acorn_hourly_avg_rot_qc_timeseries_url")),
-                        hasXPath("//entity[@id='outputAggregationSettings']/location", not(isEmptyOrNullString())),
-                        hasXPath("//entity[@id='sourceData']/location", endsWith("geonetwork/srv/api/records/028b9801-279f-427c-964b-0ffcdf310b59")),
-                        hasXPath("//softwareAgent[@id='JavaCode']/location", not(isEmptyOrNullString())),
-                        hasXPath("//other/identifier", equalTo(getJobId(statusUrl)))
+                        hasXPath("//TimePeriod/beginPosition", Matchers.equalTo("2017-01-01T00:00:00Z")),
+                        hasXPath("//TimePeriod/endPosition", Matchers.equalTo("2017-01-07T23:04:00Z")),
+                        hasXPath("//EX_GeographicBoundingBox/westBoundLongitude/Decimal", Matchers.equalTo("114.82")),
+                        hasXPath("//EX_GeographicBoundingBox/eastBoundLongitude/Decimal", Matchers.equalTo("115.39")),
+                        hasXPath("//EX_GeographicBoundingBox/southBoundLatitude/Decimal", Matchers.equalTo("-33.18")),
+                        hasXPath("//EX_GeographicBoundingBox/northBoundLatitude/Decimal", Matchers.equalTo("-31.45")),
+                        hasXPath("//entity[@id='layerName']/location", Matchers.equalTo("acorn_hourly_avg_rot_qc_timeseries_url")),
+                        hasXPath("//entity[@id='outputAggregationSettings']/location", Matchers.not(isEmptyOrNullString())),
+                        hasXPath("//entity[@id='sourceData']/location", Matchers.endsWith("geonetwork/srv/api/records/028b9801-279f-427c-964b-0ffcdf310b59")),
+                        hasXPath("//softwareAgent[@id='JavaCode']/location", Matchers.not(isEmptyOrNullString())),
+                        hasXPath("//other/identifier", Matchers.equalTo(getJobId(statusUrl)))
                 );
 
     }
 
     @Test
-    public void testNoProvenanceRequested() {
+    public void testNoProvenanceRequested()  throws JAXBException {
         Execute request = new ExecuteRequestBuilder()
                 .identifer("gs:GoGoDuck")
                 .input("layer", "acorn_hourly_avg_rot_qc_timeseries_url")
@@ -672,12 +707,12 @@ public class ExecuteIT {
                 .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
                 .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"))
                 .body(hasXPath("/ExecuteResponse/ProcessOutputs/Output/Identifier[text()='result']"))
-                .body(not(hasXPath("/ExecuteResponse/ProcessOutputs/Output/Identifier[text()='provenance']")));
+                .body(Matchers.not(hasXPath("/ExecuteResponse/ProcessOutputs/Output/Identifier[text()='provenance']")));
     }
 
 
     @Test
-    public void testBathy() {
+    public void testBathy()  throws JAXBException {
         Execute request = new ExecuteRequestBuilder()
                 .identifer("gs:GoGoDuck")
                 .input("layer", "imos:bathy_ppb_deakin_url")
@@ -697,12 +732,12 @@ public class ExecuteIT {
                 .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
                 .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"))
                 .body(hasXPath("/ExecuteResponse/ProcessOutputs/Output/Identifier[text()='result']"))
-                .body(not(hasXPath("/ExecuteResponse/ProcessOutputs/Output/Identifier[text()='provenance']")));
+                .body(Matchers.not(hasXPath("/ExecuteResponse/ProcessOutputs/Output/Identifier[text()='provenance']")));
     }
 
 
     @Test
-    public void testNoEmail() {
+    public void testNoEmail()  throws JAXBException {
         Execute request = new ExecuteRequestBuilder()
                 .identifer("gs:GoGoDuck")
                 .input("layer", "acorn_hourly_avg_rot_qc_timeseries_url")
@@ -724,7 +759,7 @@ public class ExecuteIT {
 
 
     @Test
-    public void testHtmlStatusPagesUpdated() throws IOException {
+    public void testHtmlStatusPagesUpdated() throws IOException, JAXBException {
         // Create longer running request
         Execute request = new ExecuteRequestBuilder()
                 .identifer("gs:GoGoDuck")
@@ -762,11 +797,11 @@ public class ExecuteIT {
                 .get(pageUrl)
                 .then()
                 .statusCode(200)
-                .body(containsString(jobId));
+                .body(Matchers.containsString(jobId));
     }
 
 
-    private String submitAndWaitToComplete(Execute request, Duration maxWait) {
+    private String submitAndWaitToComplete(Execute request, Duration maxWait) throws JAXBException {
         String statusUrl = submit(request);
 
         System.out.println("Waiting for process to complete...");
@@ -779,7 +814,7 @@ public class ExecuteIT {
                     .then()
                     .log().status()
                     .statusCode(200)
-                    .body(anyOf(
+                    .body(Matchers.anyOf(
                             hasXPath("/ExecuteResponse/Status/ProcessSucceeded"),
                             hasXPath("/ExecuteResponse/Status/ProcessFailed")));
             return true;
@@ -791,10 +826,10 @@ public class ExecuteIT {
     }
 
 
-    private String submit(Execute request) {
+    private String submit(Execute request) throws JAXBException {
         return given()
                 .spec(spec)
-                .body(request, ObjectMapperType.JAXB)
+                .body(request, new CustomObjectMapper())
                 .when()
                 .post()
                 .then()
