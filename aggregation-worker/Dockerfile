@@ -8,7 +8,7 @@ MAINTAINER AODN
 # Install Java.
 RUN \
   apt-get update && \
-  apt-get install -y openjdk-8-jdk \
+  apt-get install -y openjdk-11-jdk \
   libnetcdf15 \
   && rm -rf /var/lib/apt/lists/*
 

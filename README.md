@@ -86,7 +86,7 @@ and <font color="red">must give it a tag name</font>. ie. ./aggregation-worker/s
 Run the below command in cloud-deploy directory 
 
 ```shell
-$AWS_WPS_ROOT/aggregation-worker/scripts/stack-dev-deploy.sh $AWS_WPS_ROOT tagname
+$AWS_WPS_PROJECT_ROOT/aggregation-worker/scripts/stack-dev-deploy.sh $AWS_WPS_PROJECT_ROOT tagname
 ```
 
 It will create the application stack and you can find it under AWS Cloudformation, search your stack name with
@@ -105,12 +105,17 @@ cd integration-tests
 WPS_ENDPOINT='https://w4fnovhz73.execute-api.ap-southeast-2.amazonaws.com/LATEST/wps' mvn verify
 ```
 
-### How to debug
+### How to check log on cloud
 You can view the log in cloud:
+
+Lambda
 1. Goto your stack instance, click on it and goto the Resources section
 2. Find RequestHandlerLambdaFunction for request handler lambda function or JobStatusLambdaFunction for another lambda
    function
 3. Click the link, go to the Monitor tab, then hit "View logs in CloudWatch"
+
+Batch Instance
+1. In cloudwatch search /aws/batch/job
 
 ### How to delete
 aws cloudformation delete-stack --stack-name YOUR_STACK_NAME --region ap-southeast-2

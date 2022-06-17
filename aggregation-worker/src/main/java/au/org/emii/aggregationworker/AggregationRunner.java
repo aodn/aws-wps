@@ -357,6 +357,8 @@ public class AggregationRunner implements CommandLineRunner {
                 String catalogueURL = WpsConfig.getProperty(GEONETWORK_CATALOGUE_URL_CONFIG_KEY);
                 String layerSearchField = WpsConfig.getProperty(GEONETWORK_CATALOGUE_LAYER_FIELD_CONFIG_KEY);
                 CatalogueReader catalogueReader = new CatalogueReader(catalogueURL, layerSearchField);
+
+                //TODO: You need to report failure in the status report, otherwise the client keep waiting
                 String metadataResponseXML = catalogueReader.getMetadataSummaryXML(layer);
 
                 if (metadataResponseXML != null && metadataResponseXML.length() > 0) {
@@ -380,6 +382,7 @@ public class AggregationRunner implements CommandLineRunner {
                             if (metadataUuid != null) {
 
                                 //  Get the full metadata record
+                                //TODO: You need to report failure in the status report, otherwise the client keep waiting
                                 String fullMetadataRecord = catalogueReader.getMetadataRecordXML(metadataUuid);
 
                                 //  Write the metadata to a file

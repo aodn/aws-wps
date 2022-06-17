@@ -35,8 +35,8 @@ public class CatalogueReader {
     private static final Logger logger = LoggerFactory.getLogger(CatalogueReader.class);
 
     private static final String METADATA_PROTOCOL = "WWW:LINK-1.0-http--metadata-URL";
-    private static final String CATALOGUE_SUMMARY_SEARCH_TEMPLATE = "%s/srv/eng/q?%s=%s&hitsPerPage=1&fast=index&buildSummary=false";
-    private static final String CATALOGUE_METADATA_GET_TEMPLATE = "%s/srv/eng/xml.metadata.get?uuid=%s";
+    private static final String CATALOGUE_SUMMARY_SEARCH_TEMPLATE = "https://%s/srv/eng/q?%s=%s&hitsPerPage=1&fast=index&buildSummary=false";
+    private static final String CATALOGUE_METADATA_GET_TEMPLATE = "https://%s/srv/eng/xml.metadata.get?uuid=%s";
 
     public static final String METADATA_SUMMARY_UUID_XPATH = "//info/uuid";
     public static final String METADATA_SUMMARY_TITLE_XPATH = "//metadata/title";
@@ -73,6 +73,7 @@ public class CatalogueReader {
             return content;
 
         } catch (Exception ex) {
+            //TODO: Cross check all usage that it handle properly. Else status not report correctly to client
             logger.error("Unable to read metadata XML.", ex);
             throw ex;
         }
@@ -98,6 +99,7 @@ public class CatalogueReader {
             return content;
 
         } catch (Exception ex) {
+            //TODO: Cross check all usage that it handle properly. Else status not report correctly to client
             logger.error("Unable to read metadata XML.", ex);
             throw ex;
         }
@@ -189,7 +191,7 @@ public class CatalogueReader {
             return strWriter.toString();
 
         } catch(Exception ex) {
-            logger.error("Unable to extract metadata element from XML", ex);
+            logger.error("Unable to extract metadata element from XML {}", xmlMetadataResponse, ex);
         }
 
         return "";
@@ -264,6 +266,7 @@ public class CatalogueReader {
 
         CatalogueReader reader = new CatalogueReader(url, layerField);
         try {
+            //TODO: You need to report failure on getMetadataSummaryXML exception in the status report, otherwise the client keep waiting
             String summaryXml = reader.getMetadataSummaryXML(layer);
             System.out.println("XML returned [" + summaryXml + "]");
 

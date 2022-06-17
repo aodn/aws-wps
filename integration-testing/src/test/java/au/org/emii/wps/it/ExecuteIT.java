@@ -1,6 +1,5 @@
 package au.org.emii.wps.it;
 
-import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
 
@@ -9,10 +8,12 @@ import com.google.common.io.Files;
 import io.restassured.mapper.ObjectMapper;
 import io.restassured.mapper.ObjectMapperDeserializationContext;
 import io.restassured.mapper.ObjectMapperSerializationContext;
+import io.restassured.path.xml.XmlPath;
 import io.restassured.response.Response;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
 import jakarta.xml.bind.Marshaller;
+
 import net.opengis.wps.v_1_0_0.Execute;
 import net.opengis.wps.v_1_0_0.ExecuteResponse;
 import org.apache.commons.csv.CSVFormat;
@@ -35,6 +36,8 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -53,7 +56,7 @@ import static au.org.emii.wps.util.NcmlValidatable.getNcml;
 import static org.hamcrest.xml.HasXPath.hasXPath;
 
 public class ExecuteIT {
-    private static final Duration TWENTY_MINUTES = Duration.of(20, ChronoUnit.MINUTES);
+    private static final Duration TWENTY_MINUTES = Duration.of(30, ChronoUnit.MINUTES);
     private static RequestSpecification spec;
     private static String SERVICE_ENDPOINT = System.getenv("WPS_ENDPOINT");
     public static final int BUFFER_SIZE = 1024;
@@ -803,24 +806,31 @@ public class ExecuteIT {
 
     private String submitAndWaitToComplete(Execute request, Duration maxWait) throws JAXBException {
         String statusUrl = submit(request);
-
-        System.out.println("Waiting for process to complete...");
+        CountDownLatch latch = new CountDownLatch(1);
 
         Awaitility.await().atMost(maxWait).until(() -> {
-            given()
-                    .log().method()
-                    .log().uri()
-                    .get(statusUrl)
-                    .then()
-                    .log().status()
-                    .statusCode(200)
-                    .body(Matchers.anyOf(
-                            hasXPath("/ExecuteResponse/Status/ProcessSucceeded"),
-                            hasXPath("/ExecuteResponse/Status/ProcessFailed")));
-            return true;
+            logger.info("Waiting for process to complete with success or failed status..");
+            latch.await(20, TimeUnit.SECONDS);
+
+            Response res = given()
+                            .log().method()
+                            .log().uri()
+                            .get(statusUrl);
+
+            res.then()
+                .log()
+                .status()
+                .statusCode(200);
+
+            logger.info("Response {}", res.asString());
+            XmlPath xmlPath = new XmlPath(res.asString());
+
+            return Matchers.anyOf(
+                    hasXPath("/ExecuteResponse/Status/ProcessSucceeded"),
+                    hasXPath("/ExecuteResponse/Status/ProcessFailed")).matches(xmlPath);
         });
 
-        System.out.println("Process completed");
+        logger.info("Process completed");
 
         return statusUrl;
     }
