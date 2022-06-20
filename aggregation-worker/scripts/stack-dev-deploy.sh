@@ -7,10 +7,10 @@ Resources:
     CloudformationTemplateURL: '$1/wps-cloudformation-template.yaml'
     Parameters:
       dockerImage: '615645230945.dkr.ecr.ap-southeast-2.amazonaws.com/javaduck:$2'
-      geoserver: 'http://geoserver-123.aodn.org.au/geoserver/imos/ows'
+      geoserver: 'https://geoserver-123.aodn.org.au/geoserver/imos/ows'
       templatesURL: 'https://raw.githubusercontent.com/aodn/geoserver-config/production/wps/templates.xml'
       administratorEmail: 'developers@emii.org.au'
-      geonetworkCatalogueURL: 'http://catalogue.aodn.org.au/geonetwork'
+      geonetworkCatalogueURL: 'https://catalogue.aodn.org.au/geonetwork'
       sourceArn: 'arn:aws:ses:us-east-1:615645230945:identity/aodn.org.au'
       AllowEphemeralBuckets: 'true'
     Endpoint: ''

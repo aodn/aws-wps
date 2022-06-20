@@ -1,0 +1,15 @@
+aggregationWorker:
+  WORKING_DIR: '/tmp/work'
+  DOWNLOAD_CONNECT_TIMEOUT: '60000'
+  DOWNLOAD_READ_TIMEOUT: '60000'
+  AWS_BATCH_JOB_ID: '12345567890'
+  JOB_S3_KEY: 'jobs/'
+  STATUS_S3_FILENAME: 'status.xml'
+  REQUEST_S3_FILENAME: 'request.xml'
+  AWS_WPS_ENDPOINT_URL: 'file://${aggregationWorker.WORKING_DIR}'
+  # Need enhance to point to some test server for development
+  GEOSERVER_CATALOGUE_ENDPOINT_URL: 'https://geoserver-123.aodn.org.au/geoserver/imos/ows'
+  administratorEmail: 'developers@emii.org.au'
+
+logging:
+  level: debug
