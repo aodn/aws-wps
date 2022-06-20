@@ -43,7 +43,7 @@ public class ExecuteStatusBuilder {
     public ExecuteStatusBuilder(String jobId, String s3Bucket, String filename) {
         String jobFileS3KeyPrefix = WpsConfig.getProperty(AWS_BATCH_JOB_S3_KEY_PREFIX);
         this.wpsEndpointUrl = WpsConfig.getAwsWpsEndpointUrl();
-        this.statusFileS3Location = WpsConfig.getS3ExternalURL(s3Bucket, jobFileS3KeyPrefix + jobId + "/" + filename);
+        this.statusFileS3Location = WpsConfig.getExternalURL(s3Bucket, jobFileS3KeyPrefix + jobId + "/" + filename);
         this.jobId = jobId;
     }
 

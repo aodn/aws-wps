@@ -1,9 +1,6 @@
 package au.org.aodn.aws.wps.lambda;
 
-import au.org.aodn.aws.util.AWSBatchUtil;
-import au.org.aodn.aws.util.JobFileUtil;
-import au.org.aodn.aws.util.S3Utils;
-import au.org.aodn.aws.util.Utils;
+import au.org.aodn.aws.util.*;
 import au.org.aodn.aws.wps.status.JobStatusFormatEnum;
 import au.org.aodn.aws.wps.JobStatusRequest;
 import au.org.aodn.aws.wps.JobStatusRequestParameterParser;
@@ -56,6 +53,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
     private String statusS3Bucket = WpsConfig.getProperty(WpsConfig.OUTPUT_S3_BUCKET_CONFIG_KEY);
     private String requestFilename = WpsConfig.getProperty(WpsConfig.REQUEST_S3_FILENAME_CONFIG_KEY);
 
+    protected Storage<S3Object> storage = new S3Utils();
 
     @Override
     public JobStatusResponse handleRequest(JobStatusRequest request, Context context) {
@@ -98,7 +96,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
 
             if (requestedStatusFormat.equals(JobStatusFormatEnum.HTML) || requestedStatusFormat.equals(JobStatusFormatEnum.ADMIN)) {
 
-                ExecuteResponse executeResponse = JobFileUtil.getExecuteResponse(jobFileS3KeyPrefix, jobId, statusFilename, statusS3Bucket);
+                ExecuteResponse executeResponse = JobFileUtil.getExecuteResponse(storage, jobFileS3KeyPrefix, jobId, statusFilename, statusS3Bucket);
                 String statusDescription = null;
 
                 LOGGER.info("HTML output format requested.  Running transform.");
@@ -125,7 +123,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
                 }
             } else {  //  Default format = XML
 
-                String executeResponseString = JobFileUtil.getExecuteResponseString(jobFileS3KeyPrefix, jobId, statusFilename, statusS3Bucket);
+                String executeResponseString = JobFileUtil.getExecuteResponseString(storage, jobFileS3KeyPrefix, jobId, statusFilename, statusS3Bucket);
                 if (executeResponseString != null) {
                     responseBody = executeResponseString;
                     LOGGER.info("Retrieved status file XML.");
@@ -237,7 +235,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
             //  submission time of the job
             String requestFileS3Key = jobFileS3KeyPrefix + jobId + "/" + requestFilename;
             LOGGER.info("Request file bucket [" + statusS3Bucket + "], Key [" + requestFileS3Key + "]");
-            S3Object requestS3Object = S3Utils.getS3Object(statusS3Bucket, requestFileS3Key);
+            S3Object requestS3Object = storage.getObject(statusS3Bucket, requestFileS3Key);
 
             if (requestS3Object != null) {
                 long lastModifiedTimestamp = requestS3Object.getObjectMetadata().getLastModified().getTime();
@@ -380,7 +378,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
                 //  Get the jobs WPS status from the WPS status file.
                 ExtendedJobDetail extendedJobDetails = new ExtendedJobDetail();
                 extendedJobDetails.setAwsBatchJobDetail(currentJobDetail);
-                ExecuteResponse wpsResponse = JobFileUtil.getExecuteResponse(jobFileS3KeyPrefix, currentJobDetail.getJobId(), statusFilename, statusS3Bucket);
+                ExecuteResponse wpsResponse = JobFileUtil.getExecuteResponse(storage, jobFileS3KeyPrefix, currentJobDetail.getJobId(), statusFilename, statusS3Bucket);
                 if(wpsResponse != null && wpsResponse.getStatus() != null) {
                     extendedJobDetails.setWpsStatusDescription(getWpsStatusDescription(wpsResponse.getStatus()));
                 } else {

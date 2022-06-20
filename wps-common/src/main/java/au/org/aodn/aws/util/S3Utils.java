@@ -1,19 +1,16 @@
 package au.org.aodn.aws.util;
 
-import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.AbortMultipartUploadRequest;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.CompleteMultipartUploadRequest;
-import com.amazonaws.services.s3.model.CompleteMultipartUploadResult;
 import com.amazonaws.services.s3.model.InitiateMultipartUploadRequest;
 import com.amazonaws.services.s3.model.InitiateMultipartUploadResult;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PartETag;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
-import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import com.amazonaws.services.s3.model.UploadPartRequest;
 import com.amazonaws.services.s3.transfer.TransferManager;
 import com.amazonaws.services.s3.transfer.TransferManagerBuilder;
@@ -22,29 +19,23 @@ import com.amazonaws.util.StringInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-public class S3Utils {
+public class S3Utils implements Storage<S3Object> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(S3Utils.class);
 
-    public static String readS3ObjectAsString(String s3Bucket, String s3Key) throws IOException {
+    public String readObjectAsString(String s3Bucket, String s3Key) throws IOException {
 
         String objectString;
 
         //  read file to String
-        try(S3ObjectInputStream contentStream = getS3ObjectStream(s3Bucket, s3Key)) {
+        try(FilterInputStream contentStream = getObjectStream(s3Bucket, s3Key)) {
             objectString = Utils.inputStreamToString(contentStream);
         } catch (IOException ioex) {
             //  Bad stuff - blow up!
@@ -55,20 +46,18 @@ public class S3Utils {
         return objectString;
     }
 
-    public static S3ObjectInputStream getS3ObjectStream(String s3Bucket, String s3Key) throws IOException {
-        S3Object s3Object = getS3Object(s3Bucket, s3Key);
+    public FilterInputStream getObjectStream(String s3Bucket, String s3Key) throws IOException {
+        S3Object s3Object = getObject(s3Bucket, s3Key);
         return s3Object.getObjectContent();
     }
 
-
-    public static S3Object getS3Object(String s3Bucket, String s3Key) throws IOException {
+    public S3Object getObject(String s3Bucket, String s3Key) {
         //  Get from S3 bucket
         AmazonS3 s3Client = AmazonS3ClientBuilder.defaultClient();
         return s3Client.getObject(s3Bucket, s3Key);
     }
 
-    public static void uploadToS3(File file, String s3bucket, String fileKey, String contentType)
-        throws InterruptedException, IOException {
+    public void uploadToTarget(File file, String s3bucket, String fileKey, String contentType) throws InterruptedException, IOException {
         TransferManager tx = TransferManagerBuilder.defaultTransferManager();
         FileInputStream fileStream = null;
         try {
@@ -106,7 +95,7 @@ public class S3Utils {
         }
     }
 
-    public static void uploadToS3(String document, String bucket, String key, String contentType) throws IOException {
+    public void uploadToTarget(String document, String bucket, String key, String contentType) throws IOException {
 
         AmazonS3 s3Client = AmazonS3ClientBuilder.defaultClient();
 
@@ -133,7 +122,7 @@ public class S3Utils {
         }
     }
 
-    public static int getExpirationinDays(String bucket) {
+    public int getExpirationinDays(String bucket) {
         AmazonS3 s3Client = AmazonS3ClientBuilder.defaultClient();
         return s3Client.getBucketLifecycleConfiguration(bucket).getRules().get(0).getExpirationInDays();
     }

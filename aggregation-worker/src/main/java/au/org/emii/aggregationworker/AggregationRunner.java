@@ -4,6 +4,7 @@ package au.org.emii.aggregationworker;
 import au.org.aodn.aws.exception.EmailException;
 import au.org.aodn.aws.util.EmailService;
 import au.org.aodn.aws.util.S3Utils;
+import au.org.aodn.aws.util.Storage;
 import au.org.aodn.aws.wps.request.ExecuteRequestHelper;
 import au.org.aodn.aws.wps.request.XmlRequestParser;
 import au.org.aodn.aws.wps.status.EnumStatus;
@@ -82,7 +83,7 @@ public class AggregationRunner implements CommandLineRunner {
     private String statusFilename = null;
     private String requestFilename = null;
 
-
+    protected Storage<?> storage = new S3Utils();
     /**
      * Entry point for the aggregation.
      *
@@ -125,11 +126,14 @@ public class AggregationRunner implements CommandLineRunner {
             //  These values are passed as environment variables set in the AWS Batch job definition
             String outputBucketName = WpsConfig.getProperty(OUTPUT_S3_BUCKET_CONFIG_KEY);
             statusS3Bucket = WpsConfig.getProperty(OUTPUT_S3_BUCKET_CONFIG_KEY);
+
             String jobFileS3KeyPrefix = WpsConfig.getProperty(AWS_BATCH_JOB_S3_KEY_PREFIX);
             statusFilename = WpsConfig.getProperty(STATUS_S3_FILENAME_CONFIG_KEY);
             requestFilename = WpsConfig.getProperty(REQUEST_S3_FILENAME_CONFIG_KEY);
+
             Path workingDir = Paths.get(WpsConfig.getProperty(WORKING_DIR_CONFIG_KEY));
             Path jobDir = Files.createTempDirectory(workingDir, batchJobId);
+
             administratorEmail = WpsConfig.getProperty(WpsConfig.ADMINISTRATOR_EMAIL);
             String aggregatorTemplateFileURL = WpsConfig.getProperty(AGGREGATOR_TEMPLATE_FILE_URL_KEY);
 
@@ -343,7 +347,7 @@ public class AggregationRunner implements CommandLineRunner {
                     logger.info("Uploaded " + convertedFile.toFile().getAbsolutePath() + " to S3");
 
                     //  Put output URL in WPS response
-                    resultUrl = WpsConfig.getS3ExternalURL(outputBucketName, outputFileManager.getJobFileKey(outputFilename));
+                    resultUrl = WpsConfig.getExternalURL(outputBucketName, outputFileManager.getJobFileKey(outputFilename));
                     if (requestHelper.hasRequestedOutput("result")) {
                         outputMap.put("result", resultUrl);
                     }
@@ -422,7 +426,7 @@ public class AggregationRunner implements CommandLineRunner {
                     logger.info("Uploaded " + batchJobId + ".zip to S3");
 
                     //  Put output URL in WPS response
-                    resultUrl = WpsConfig.getS3ExternalURL(outputBucketName, outputFileManager.getJobFileKey(outputFilename));
+                    resultUrl = WpsConfig.getExternalURL(outputBucketName, outputFileManager.getJobFileKey(outputFilename));
                     if (requestHelper.hasRequestedOutput("result")) {
                         outputMap.put("result", resultUrl);
                     }
@@ -459,7 +463,7 @@ public class AggregationRunner implements CommandLineRunner {
                     //  Upload provenance document to S3
                     outputFileManager.upload(provenanceFile, "provenance.xml", PROVENANCE_FILE_MIME_TYPE);
 
-                    String provenanceUrl = WpsConfig.getS3ExternalURL(outputBucketName,
+                    String provenanceUrl = WpsConfig.getExternalURL(outputBucketName,
                             outputFileManager.getJobFileKey("provenance.xml"));
 
                     //  Add provenance output to WPS response
@@ -486,7 +490,7 @@ public class AggregationRunner implements CommandLineRunner {
                                 contactEmail,
                                 batchJobId,
                                 statusUrl,
-                                S3Utils.getExpirationinDays(outputBucketName),
+                                storage.getExpirationinDays(outputBucketName),
                                 subsetParams,
                                 collectionTitle);
                     } catch (EmailException ex) {
