@@ -37,6 +37,7 @@ import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.ISODateTimeFormat;
 import org.joda.time.format.PeriodFormatter;
 import org.joda.time.format.PeriodFormatterBuilder;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import ucar.nc2.time.CalendarDateRange;
 import ucar.unidata.geoloc.LatLonRect;
@@ -62,8 +63,6 @@ import static au.org.emii.aggregator.config.DownloadConfigReader.getDownloadConf
 
 public class AggregationWorker {
 
-    public static final int DEFAULT_CONNECT_TIMEOUT_MS = 60000;
-    public static final int DEFAULT_READ_TIMEOUT_MS = 60000;
     public static final String SUMOLOGIC_LOG_APPENDER_NAME = "SumoAppender";
     private static final String PROVENANCE_TEMPLATE_GRIDDED = "provenance_template_gridded.ftl";
     private static final String METADATA_FILE_EXTENSION = ".xml";
@@ -88,8 +87,11 @@ public class AggregationWorker {
     @Value("${aggregationWorker.autoStart:true}")
     protected Boolean autoStart;
 
-    public AggregationWorker(Storage<?> storage) {
+    protected Downloader downloader;
+
+    public AggregationWorker(Storage<?> storage, Downloader downloader) {
         this.storage = storage;
+        this.downloader = downloader;
     }
 
     @PostConstruct
@@ -146,23 +148,6 @@ public class AggregationWorker {
             administratorEmail = WpsConfig.getProperty(WpsConfig.ADMINISTRATOR_EMAIL);
             String aggregatorTemplateFileURL = WpsConfig.getProperty(AGGREGATOR_TEMPLATE_FILE_URL_KEY);
 
-            //  Parse connect timeout
-            String downloadConnectTimeoutString = WpsConfig.getProperty(DOWNLOAD_CONNECT_TIMEOUT_CONFIG_KEY);
-            int downloadConnectTimeout;
-            if (downloadConnectTimeoutString != null && IntegerHelper.isInteger(downloadConnectTimeoutString)) {
-                downloadConnectTimeout = Integer.parseInt(downloadConnectTimeoutString);
-            } else {
-                downloadConnectTimeout = DEFAULT_CONNECT_TIMEOUT_MS;
-            }
-
-            // Parse read timeout
-            String downloadReadTimeoutString = WpsConfig.getProperty(DOWNLOAD_READ_TIMEOUT_CONFIG_KEY);
-            int downloadReadTimeout;
-            if (downloadReadTimeoutString != null && IntegerHelper.isInteger(downloadReadTimeoutString)) {
-                downloadReadTimeout = Integer.parseInt(downloadConnectTimeoutString);
-            } else {
-                downloadReadTimeout = DEFAULT_READ_TIMEOUT_MS;
-            }
 
             //  TODO:  null check and act on null configuration
             //  TODO : validate configuration
@@ -302,9 +287,6 @@ public class AggregationWorker {
 
             //  Apply download configuration
             DownloadConfig downloadConfig = getDownloadConfig(downloadDirectory);
-
-            //  Apply connect/read timeouts
-            Downloader downloader = new Downloader(downloadConnectTimeout, downloadReadTimeout);
 
             //  Create a temp file as the destination for the aggregation
             Path outputFile = Files.createTempFile(jobDir, "agg", ".nc");

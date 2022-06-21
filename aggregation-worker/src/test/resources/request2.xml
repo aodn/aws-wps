@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ns3:Execute service="WPS" version="1.0.0" xmlns:ns2="http://www.w3.org/1999/xlink" xmlns:ns1="http://www.opengis.net/ows/1.1" xmlns:ns3="http://www.opengis.net/wps/1.0.0">
+    <ns1:Identifier>gs:GoGoDuck</ns1:Identifier>
+    <ns3:DataInputs>
+        <ns3:Input>
+            <ns1:Identifier>layer</ns1:Identifier>
+            <ns3:Data>
+                <ns3:LiteralData>acorn_hourly_avg_rot_qc_timeseries_url</ns3:LiteralData>
+            </ns3:Data>
+        </ns3:Input>
+        <ns3:Input>
+            <ns1:Identifier>subset</ns1:Identifier>
+            <ns3:Data>
+                <ns3:LiteralData>TIME,2017-01-01T00:00:00.000Z,2017-01-07T23:04:00.000Z;LATITUDE,-33.18,-31.45;LONGITUDE,114.82,115.39</ns3:LiteralData>
+            </ns3:Data>
+        </ns3:Input>
+        <ns3:Input>
+            <ns1:Identifier>callbackParams</ns1:Identifier>
+            <ns3:Data>
+                <ns3:LiteralData>imos-wps-testing@mailinator.com</ns3:LiteralData>
+            </ns3:Data>
+        </ns3:Input>
+    </ns3:DataInputs>
+    <ns3:ResponseForm>
+        <ns3:ResponseDocument storeExecuteResponse="true" status="true">
+            <ns3:Output asReference="true" mimeType="application/x-netcdf">
+                <ns1:Identifier>result</ns1:Identifier>
+            </ns3:Output>
+        </ns3:ResponseDocument>
+    </ns3:ResponseForm>
+</ns3:Execute>

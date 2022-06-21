@@ -67,6 +67,23 @@ public class WorkerIT {
     }
 
     @Test
+    public void verifyRequest2Processed() throws IOException {
+        // First copy the request file to target location
+        String uuid = UUID.randomUUID().toString();
+        System.setProperty(WpsConfig.AWS_BATCH_JOB_ID_CONFIG_KEY, uuid);
+
+        File f = ResourceUtils.getFile("classpath:request2.xml");
+        writeRequestXml(f);
+
+        runner.start();
+
+        assertDoesNotThrow(() -> {
+            assertTrue("Expect job completed",
+                    getStatusXml().contains("Job " + uuid + " has completed"));
+        });
+    }
+
+    @Test
     public void verifyNoRequestShowExceptionTextInStatus() {
         // Give a random jobid so it will not crash across test
         String uuid = UUID.randomUUID().toString();
