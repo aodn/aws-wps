@@ -1,5 +1,6 @@
 package au.org.aodn.aws.wps.lambda;
 
+import au.org.aodn.aws.wps.Storage;
 import au.org.aodn.aws.util.*;
 import au.org.aodn.aws.wps.status.JobStatusFormatEnum;
 import au.org.aodn.aws.wps.JobStatusRequest;
@@ -53,7 +54,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
     private String statusS3Bucket = WpsConfig.getProperty(WpsConfig.OUTPUT_S3_BUCKET_CONFIG_KEY);
     private String requestFilename = WpsConfig.getProperty(WpsConfig.REQUEST_S3_FILENAME_CONFIG_KEY);
 
-    protected Storage<S3Object> storage = new S3Utils();
+    protected Storage<S3Object> storage = new S3Storage();
 
     @Override
     public JobStatusResponse handleRequest(JobStatusRequest request, Context context) {

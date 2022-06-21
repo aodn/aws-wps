@@ -5,6 +5,7 @@ import au.org.aodn.aws.geonetwork.CatalogueReader;
 import au.org.aodn.aws.geoserver.client.SubsetParameters;
 import au.org.aodn.aws.util.EmailService;
 import au.org.aodn.aws.util.JobFileUtil;
+import au.org.aodn.aws.util.S3Storage;
 import au.org.aodn.aws.wps.request.ExecuteRequestHelper;
 import au.org.aodn.aws.wps.status.*;
 import com.amazonaws.services.batch.AWSBatch;
@@ -91,7 +92,7 @@ public class ExecuteOperation implements Operation {
 
         LOGGER.info("Batch job submitted. JobID [" + jobId + "], Identifier [" + jobSettings.getProcessIdentifier() + "], Email [" + email + "]");
         LOGGER.info("Writing job request file to S3");
-        S3JobFileManager s3JobFileManager = new S3JobFileManager(outputS3BucketName, jobFileS3KeyPrefix, jobId);
+        JobFileManager s3JobFileManager = new JobFileManager(new S3Storage(), outputS3BucketName, jobFileS3KeyPrefix, jobId);
         try {
             s3JobFileManager.write(JobFileUtil.createXmlDocument(executeRequest), requestFileName, STATUS_FILE_MIME_TYPE);
         } catch (IOException e) {

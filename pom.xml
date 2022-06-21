@@ -17,6 +17,7 @@
         <amazon.sdk.version>1.12.234</amazon.sdk.version>
         <javax.jaxb.runtime>3.0.2</javax.jaxb.runtime>
         <javax.jaxb.version>3.0.1</javax.jaxb.version>
+        <springboot.version>2.6.5</springboot.version>
     </properties>
 
     <modules>
@@ -172,7 +173,7 @@
             <dependency>
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-core</artifactId>
-                <version>1.8.5</version>
+                <version>2.28.2</version>
             </dependency>
             <dependency>
                 <groupId>org.freemarker</groupId>
