@@ -33,13 +33,37 @@ public class WorkerIT {
     @Autowired
     protected AggregationWorker runner;
 
-    protected String getStatusXml() throws IOException {
-        String path = String.format("%s/%s/%s",
+    protected String getJobWorkPath() {
+        return String.format("%s/%s/%s",
                 WpsConfig.getProperty(WpsConfig.OUTPUT_S3_BUCKET_CONFIG_KEY),
                 WpsConfig.getProperty(WpsConfig.AWS_BATCH_JOB_S3_KEY_PREFIX),
                 WpsConfig.getProperty(WpsConfig.AWS_BATCH_JOB_ID_CONFIG_KEY));
+    }
 
-        return localStorage.readObjectAsString(path, "status.xml");
+    protected String getStatusXml() throws IOException {
+        return localStorage.readObjectAsString(getJobWorkPath(), "status.xml");
+    }
+
+    protected void writeRequestXml(File source) throws IOException {
+        logger.info("Copy request1.xml to {}", getJobWorkPath());
+        FileUtils.copyFile(source, new File( getJobWorkPath() + File.separator + "request.xml"));
+    }
+
+    @Test
+    public void verifyRequest1Processed() throws IOException {
+        // First copy the request file to target location
+        String uuid = UUID.randomUUID().toString();
+        System.setProperty(WpsConfig.AWS_BATCH_JOB_ID_CONFIG_KEY, uuid);
+
+        File f = ResourceUtils.getFile("classpath:request1.xml");
+        writeRequestXml(f);
+
+        runner.start();
+
+        assertDoesNotThrow(() -> {
+            assertTrue("Expect job completed",
+                    getStatusXml().contains("Job " + uuid + " has completed"));
+        });
     }
 
     @Test
@@ -50,19 +74,8 @@ public class WorkerIT {
         runner.start();
 
         assertDoesNotThrow(() -> {
-            assertTrue("Xml contains",
+            assertTrue("Expect exception in processing",
                     getStatusXml().contains("Exception occurred during aggregation : jakarta.xml.bind.UnmarshalException"));
         });
-    }
-
-    @Test
-    public void test() throws IOException {
-        // First copy the request file to target location
-        String targetDir = WpsConfig.getProperty(WpsConfig.OUTPUT_S3_BUCKET_CONFIG_KEY);
-        File f = ResourceUtils.getFile("classpath:request1.xml");
-
-        logger.info("Copy request1.xml to {}", targetDir);
-        FileUtils.copyFile(f, new File(targetDir + File.pathSeparator + "request.xml"));
-
     }
 }

@@ -530,7 +530,10 @@ public class AggregationWorker {
                     LogManager.shutdown();
 
                     //  Exit with a failed return code - means batch job will retry (unless max retries reached)
-                    System.exit(1);
+                    if(autoStart) {
+                        // Autostart, auto exist. You do not want this behavior in test
+                        System.exit(1);
+                    }
                 }
             }
 

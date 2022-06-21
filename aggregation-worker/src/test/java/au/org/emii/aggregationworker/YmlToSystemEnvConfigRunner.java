@@ -42,14 +42,41 @@ public class YmlToSystemEnvConfigRunner implements CommandLineRunner {
     @Value("${aggregationWorker.AWS_WPS_ENDPOINT_URL}")
     protected Optional<String> endPointUrl;
 
+    @Value("${aggregationWorker.GEONETWORK_CATALOGUE_URL}")
+    protected Optional<String> geoNetworkUrl;
+
     @Value("${aggregationWorker.GEOSERVER_CATALOGUE_ENDPOINT_URL}")
-    protected Optional<String> geoServerUrl;
+    protected Optional<String> geoserverUrl;
+
+    @Value("${aggregationWorker.DATA_DOWNLOAD_URL_PREFIX}")
+    protected Optional<String> dataDownloadUrlPrefix;
 
     @Value("${aggregationWorker.OUTPUT_S3_BUCKET}")
     protected Optional<String> outputBucket;
 
     @Value("${aggregationWorker.administratorEmail}")
     protected Optional<String> administratorEmail;
+
+    @Value("${aggregationWorker.AWS_REGION_SES}")
+    protected Optional<String> region;
+
+    @Value("${aggregationWorker.AGGREGATOR_TEMPLATE_FILE_URL}")
+    protected Optional<String> templateUrl;
+
+    @Value("${aggregationWorker.DOWNLOAD_ATTEMPTS}")
+    protected Optional<String> downloadAttempts;
+
+    @Value("${aggregationWorker.LOCAL_STORAGE_LIMIT_BYTES}")
+    protected Optional<String> localStorageLimitBytes;
+
+    @Value("${aggregationWorker.POOL_SIZE}")
+    protected Optional<String> poolSize;
+
+    @Value("${aggregationWorker.RETRY_INTERVAL_MS}")
+    protected Optional<String> retryIntervalMs;
+
+    @Value("${aggregationWorker.CHUNK_SIZE}")
+    protected Optional<String> chunkSize;
 
     @Override
     public void run(String... args) {
@@ -61,8 +88,17 @@ public class YmlToSystemEnvConfigRunner implements CommandLineRunner {
         System.setProperty(WpsConfig.STATUS_S3_FILENAME_CONFIG_KEY, statusFileName.orElse(null));
         System.setProperty(WpsConfig.REQUEST_S3_FILENAME_CONFIG_KEY, requestFileName.orElse(null));
         System.setProperty(WpsConfig.WPS_ENDPOINT_URL_CONFIG_KEY, endPointUrl.orElse(null));
-        System.setProperty(WpsConfig.GEONETWORK_CATALOGUE_URL_CONFIG_KEY, geoServerUrl.orElse(null));
+        System.setProperty(WpsConfig.GEONETWORK_CATALOGUE_URL_CONFIG_KEY, geoNetworkUrl.orElse(null));
         System.setProperty(WpsConfig.ADMINISTRATOR_EMAIL, administratorEmail.orElse(null));
         System.setProperty(WpsConfig.OUTPUT_S3_BUCKET_CONFIG_KEY, outputBucket.orElse(null));
+        System.setProperty(WpsConfig.AWS_REGION_SES_CONFIG_KEY, region.orElse(null));
+        System.setProperty(WpsConfig.GEOSERVER_CATALOGUE_ENDPOINT_URL_CONFIG_KEY, geoserverUrl.orElse(null));
+        System.setProperty(WpsConfig.DATA_DOWNLOAD_URL_PREFIX_CONFIG_KEY, dataDownloadUrlPrefix.orElse(null));
+        System.setProperty(WpsConfig.AGGREGATOR_TEMPLATE_FILE_URL_KEY, templateUrl.orElse(null));
+        System.setProperty(WpsConfig.DOWNLOAD_ATTEMPTS_CONFIG_KEY, downloadAttempts.orElse(null));
+        System.setProperty(WpsConfig.LOCAL_STORAGE_LIMIT_PROPERTY_KEY, localStorageLimitBytes.orElse(null));
+        System.setProperty(WpsConfig.POOL_SIZE_CONFIG_KEY, poolSize.orElse(null));
+        System.setProperty(WpsConfig.RETRY_INTERVAL_CONFIG_KEY, retryIntervalMs.orElse(null));
+        System.setProperty(WpsConfig.CHUNK_SIZE_KEY, chunkSize.orElse(null));
     }
 }
