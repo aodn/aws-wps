@@ -2,12 +2,12 @@ package au.org.emii.download;
 
 import org.apache.commons.io.FileUtils;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.util.StreamUtils;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.*;
 import java.net.URL;
-import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -23,15 +23,20 @@ public class Downloader {
     }
 
     public void download(URL url, Path path) throws IOException {
-        // Don't need to delete temp file as it is running in docker and delete when exit
-        File download = template.execute(url.toString(),  HttpMethod.GET, null, clientHttpResponse -> {
-            File ret = File.createTempFile("download", "tmp");
-            StreamUtils.copy(clientHttpResponse.getBody(), new FileOutputStream(ret));
-            return ret;
-        });
+        try {
+            File download = template.execute(url.toString(),  HttpMethod.GET, null, clientHttpResponse -> {
+                File ret = File.createTempFile("download", "tmp");
+                ret.deleteOnExit();
+                StreamUtils.copy(clientHttpResponse.getBody(), new FileOutputStream(ret));
+                return ret;
+            });
 
-        // No exception, nothing wrong when arrived here
-        FileUtils.moveFile(download, path.toFile());
+            // No exception, nothing wrong when arrived here
+            FileUtils.moveFile(download, path.toFile());
+        }
+        catch(Exception e) {
+            throw new DownloadException(e.getMessage(), e);
+        }
     }
 
     private void deleteIfExists(Path path) {

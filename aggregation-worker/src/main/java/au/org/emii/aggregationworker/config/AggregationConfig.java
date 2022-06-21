@@ -63,7 +63,7 @@ public class AggregationConfig {
         PoolingHttpClientConnectionManager connectionManager = new PoolingHttpClientConnectionManager();
         connectionManager.setMaxTotal(20);
         connectionManager.closeExpiredConnections();
-        connectionManager.setDefaultMaxPerRoute(20);
+        connectionManager.setDefaultMaxPerRoute(5);
 
         RequestConfig requestConfig = RequestConfig
                 .custom()
