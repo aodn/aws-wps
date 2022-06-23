@@ -678,11 +678,11 @@ public class ExecuteIT {
                 .body("document.entity.findAll{i -> i.@id='spatialExtent'}.boundingBox.EX_Extent.geographicElement.EX_GeographicBoundingBox.eastBoundLongitude.Decimal", equalTo("115.39"))
                 .body("document.entity.findAll{i -> i.@id='spatialExtent'}.boundingBox.EX_Extent.geographicElement.EX_GeographicBoundingBox.southBoundLatitude.Decimal", equalTo("-33.18"))
                 .body("document.entity.findAll{i -> i.@id='spatialExtent'}.boundingBox.EX_Extent.geographicElement.EX_GeographicBoundingBox.northBoundLatitude.Decimal", equalTo("-31.45"))
-                .body("document.entity.findAll{i -> i.@id='outputAggregationSettings'}.location", Matchers.not(Matchers.is(Matchers.emptyOrNullString())))
-                .body("document.entity.findAll{i -> i.@id='sourceData'}.location", Matchers.endsWith("geonetwork/srv/api/records/028b9801-279f-427c-964b-0ffcdf310b59"))
-                .body("document.softwareAgent.findAll{i -> i.@id='JavaCode'}.location", Matchers.not(Matchers.is(Matchers.emptyOrNullString())))
+                .body("document.entity.location", hasItem("https://raw.githubusercontent.com/aodn/geoserver-config/production/wps/templates.xml"))
+                .body("document.entity.location", hasItem("https://catalogue-imos.aodn.org.au:443/geonetwork/srv/api/records/028b9801-279f-427c-964b-0ffcdf310b59"))
+                .body("document.softwareAgent.location", equalTo("https://github.com/aodn/geoserver-build/blob/master/src/extension/wps/doc/GOGODUCK_README.md"))
                 .body("document.other.identifier", Matchers.equalTo(getJobId(statusUrl)))
-                .body("document.entity.findAll{i -> i.@id='layerName'}.location", equalTo("acorn_hourly_avg_rot_qc_timeseries_url"));
+                .body("document.entity.location", hasItem("acorn_hourly_avg_rot_qc_timeseries_url"));
     }
 
     @Test
