@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ns3:ExecuteResponse serviceInstance="https://processes.aodn.org.au/wps" statusLocation="https://processes.aodn.org.au/wps/jobStatus?jobId=0abf8851-6722-4dd3-9b8a-9176c082f36d&amp;format=XML" service="WPS" version="1.0.0" xml:lang="en-US" xmlns:ns2="http://www.w3.org/1999/xlink" xmlns:ns1="http://www.opengis.net/ows/1.1" xmlns:ns3="http://www.opengis.net/wps/1.0.0">
+    <ns3:Process ns3:processVersion="1.0.0">
+        <ns1:Identifier>gs:GoGoDuck</ns1:Identifier>
+        <ns1:Title>GoGoDuck</ns1:Title>
+        <ns1:Abstract>Subset and download gridded collection as NetCDF files</ns1:Abstract>
+    </ns3:Process>
+    <ns3:Status creationTime="2022-06-23T00:18:16.757Z">
+        <ns3:ProcessSucceeded>Job 0abf8851-6722-4dd3-9b8a-9176c082f36d has completed</ns3:ProcessSucceeded>
+    </ns3:Status>
+    <ns3:ProcessOutputs>
+        <ns3:Output>
+            <ns1:Identifier>result</ns1:Identifier>
+            <ns1:Title>result</ns1:Title>
+            <ns3:Reference href="https://s3-ap-southeast-2.amazonaws.com/aws-wps-prod/jobs/0abf8851-6722-4dd3-9b8a-9176c082f36d/IMOS_aggregation_20220623T001532Z.zip"/>
+        </ns3:Output>
+    </ns3:ProcessOutputs>
+</ns3:ExecuteResponse>

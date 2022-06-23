@@ -53,7 +53,6 @@ import static io.restassured.RestAssured.given;
 import static au.org.emii.wps.util.GPathMatcher.hasGPath;
 import static au.org.emii.wps.util.Matchers.validateWith;
 import static au.org.emii.wps.util.NcmlValidatable.getNcml;
-import static org.hamcrest.xml.HasXPath.hasXPath;
 
 public class ExecuteIT {
     private static final Duration TWENTY_MINUTES = Duration.of(30, ChronoUnit.MINUTES);
@@ -124,7 +123,7 @@ public class ExecuteIT {
                 .then()
                 .statusCode(200)
                 .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
-                .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"))
+                .body("ExecuteResponse.Status.ProcessSucceeded", not(emptyOrNullString()))
                 .extract()
                 .path("ExecuteResponse.ProcessOutputs.Output.Reference.@href");
 
@@ -165,7 +164,7 @@ public class ExecuteIT {
                 .then()
                 .statusCode(200)
                 .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
-                .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"))
+                .body("ExecuteResponse.Status.ProcessSucceeded", not(emptyOrNullString()))
                 .extract()
                 .path("ExecuteResponse.ProcessOutputs.Output.Reference.@href");
 
@@ -179,7 +178,7 @@ public class ExecuteIT {
                 .body(Matchers.equalTo(
                         "TIME (UTC),LATITUDE (degrees_north),LONGITUDE (degrees_east),GDOP (Degrees),UCUR (m s-1),VCUR (m s-1),UCUR_sd (m s-1),VCUR_sd (m s-1),NOBS1 (1),NOBS2 (1),UCUR_quality_control,VCUR_quality_control\n" +
                                 "2017-01-04T10:30:00Z,-31.810335,115.019623,68.80474,0.019122316,0.5347731,0.04222228,0.044319205,6,6,1,1\n" +
-                                "2017-01-04T11:30:00Z,-31.810335,115.019623,68.80474,-0.009952986,0.55120397,0.034548346,0.036436576,6,6,1,1\n"
+                                "2017-01-04T11:30:00Z,-31.810335,115.019623,68.80474,-0.009952986,0.55120397,0.034548346,0.036436576,6,6,1,1"
                 ));
 
     }
@@ -205,7 +204,7 @@ public class ExecuteIT {
                 .then()
                 .statusCode(200)
                 .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
-                .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"))
+                .body("ExecuteResponse.Status.ProcessSucceeded", not(emptyOrNullString()))
                 .extract()
                 .path("ExecuteResponse.ProcessOutputs.Output.Reference.@href");
 
@@ -260,7 +259,7 @@ public class ExecuteIT {
                 .then()
                 .statusCode(200)
                 .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
-                .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"))
+                .body("ExecuteResponse.Status.ProcessSucceeded", not(emptyOrNullString()))
                 .extract()
                 .path("ExecuteResponse.ProcessOutputs.Output.Reference.@href");
 
@@ -321,7 +320,7 @@ public class ExecuteIT {
                 .then()
                 .statusCode(200)
                 .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
-                .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"))
+                .body("ExecuteResponse.Status.ProcessSucceeded", not(emptyOrNullString()))
                 .extract()
                 .path("ExecuteResponse.ProcessOutputs.Output.Reference.@href");
 
@@ -365,7 +364,7 @@ public class ExecuteIT {
                 .then()
                 .statusCode(200)
                 .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
-                .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"))
+                .body("ExecuteResponse.Status.ProcessSucceeded", not(emptyOrNullString()))
                 .extract()
                 .path("ExecuteResponse.ProcessOutputs.Output.Reference.@href");
 
@@ -416,7 +415,7 @@ public class ExecuteIT {
                 .then()
                 .statusCode(200)
                 .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
-                .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"))
+                .body("ExecuteResponse.Status.ProcessSucceeded", not(emptyOrNullString()))
                 .extract()
                 .path("ExecuteResponse.ProcessOutputs.Output.Reference.@href");
 
@@ -479,7 +478,7 @@ public class ExecuteIT {
                 .then()
                 .statusCode(200)
                 .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
-                .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"))
+                .body("ExecuteResponse.Status.ProcessSucceeded", not(emptyOrNullString()))
                 .extract()
                 .path("ExecuteResponse.ProcessOutputs.Output.Reference.@href");
 
@@ -535,7 +534,7 @@ public class ExecuteIT {
                 .then()
                 .statusCode(200)
                 .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
-                .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"))
+                .body("ExecuteResponse.Status.ProcessSucceeded", not(emptyOrNullString()))
                 .extract()
                 .path("ExecuteResponse.ProcessOutputs.Output.Reference.@href");
 
@@ -600,7 +599,7 @@ public class ExecuteIT {
                 .then()
                 .statusCode(200)
                 .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
-                .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"))
+                .body("ExecuteResponse.Status.ProcessSucceeded", not(emptyOrNullString()))
                 .extract()
                 .path("ExecuteResponse.ProcessOutputs.Output.Reference.@href");
 
@@ -661,7 +660,7 @@ public class ExecuteIT {
                 .then()
                 .statusCode(200)
                 .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
-                .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"))
+                .body("ExecuteResponse.Status.ProcessSucceeded", not(emptyOrNullString()))
                 .body("ExecuteResponse.ProcessOutputs.Output.Identifier", Matchers.equalTo("provenance"))
                 .extract()
                 .path("ExecuteResponse.ProcessOutputs.Output.Reference.@href");
@@ -673,20 +672,17 @@ public class ExecuteIT {
                 .then()
                 .statusCode(200)
                 .contentType("application/xml")
-                .body(
-                        hasXPath("//TimePeriod/beginPosition", Matchers.equalTo("2017-01-01T00:00:00Z")),
-                        hasXPath("//TimePeriod/endPosition", Matchers.equalTo("2017-01-07T23:04:00Z")),
-                        hasXPath("//EX_GeographicBoundingBox/westBoundLongitude/Decimal", Matchers.equalTo("114.82")),
-                        hasXPath("//EX_GeographicBoundingBox/eastBoundLongitude/Decimal", Matchers.equalTo("115.39")),
-                        hasXPath("//EX_GeographicBoundingBox/southBoundLatitude/Decimal", Matchers.equalTo("-33.18")),
-                        hasXPath("//EX_GeographicBoundingBox/northBoundLatitude/Decimal", Matchers.equalTo("-31.45")),
-                        hasXPath("//entity[@id='layerName']/location", Matchers.equalTo("acorn_hourly_avg_rot_qc_timeseries_url")),
-                        hasXPath("//entity[@id='outputAggregationSettings']/location", Matchers.not(Matchers.is(Matchers.emptyOrNullString()))),
-                        hasXPath("//entity[@id='sourceData']/location", Matchers.endsWith("geonetwork/srv/api/records/028b9801-279f-427c-964b-0ffcdf310b59")),
-                        hasXPath("//softwareAgent[@id='JavaCode']/location", Matchers.not(Matchers.is(Matchers.emptyOrNullString()))),
-                        hasXPath("//other/identifier", Matchers.equalTo(getJobId(statusUrl)))
-                );
-
+                .body("document.entity.findAll{i -> i.@id='timeExtent'}.temporalExtent.EX_Extent.temporalElement.EX_TemporalExtent.extent.TimePeriod.beginPosition", equalTo("2017-01-01T00:00:00Z"))
+                .body("document.entity.findAll{i -> i.@id='timeExtent'}.temporalExtent.EX_Extent.temporalElement.EX_TemporalExtent.extent.TimePeriod.endPosition", equalTo("2017-01-07T23:04:00Z"))
+                .body("document.entity.findAll{i -> i.@id='spatialExtent'}.boundingBox.EX_Extent.geographicElement.EX_GeographicBoundingBox.westBoundLongitude.Decimal", equalTo("114.82"))
+                .body("document.entity.findAll{i -> i.@id='spatialExtent'}.boundingBox.EX_Extent.geographicElement.EX_GeographicBoundingBox.eastBoundLongitude.Decimal", equalTo("115.39"))
+                .body("document.entity.findAll{i -> i.@id='spatialExtent'}.boundingBox.EX_Extent.geographicElement.EX_GeographicBoundingBox.southBoundLatitude.Decimal", equalTo("-33.18"))
+                .body("document.entity.findAll{i -> i.@id='spatialExtent'}.boundingBox.EX_Extent.geographicElement.EX_GeographicBoundingBox.northBoundLatitude.Decimal", equalTo("-31.45"))
+                .body("document.entity.findAll{i -> i.@id='outputAggregationSettings'}.location", Matchers.not(Matchers.is(Matchers.emptyOrNullString())))
+                .body("document.entity.findAll{i -> i.@id='sourceData'}.location", Matchers.endsWith("geonetwork/srv/api/records/028b9801-279f-427c-964b-0ffcdf310b59"))
+                .body("document.softwareAgent.findAll{i -> i.@id='JavaCode'}.location", Matchers.not(Matchers.is(Matchers.emptyOrNullString())))
+                .body("document.other.identifier", Matchers.equalTo(getJobId(statusUrl)))
+                .body("document.entity.findAll{i -> i.@id='layerName'}.location", equalTo("acorn_hourly_avg_rot_qc_timeseries_url"));
     }
 
     @Test
@@ -708,9 +704,9 @@ public class ExecuteIT {
                 .then()
                 .statusCode(200)
                 .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
-                .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"))
-                .body(hasXPath("/ExecuteResponse/ProcessOutputs/Output/Identifier[text()='result']"))
-                .body(Matchers.not(hasXPath("/ExecuteResponse/ProcessOutputs/Output/Identifier[text()='provenance']")));
+                .body("ExecuteResponse.Status.ProcessSucceeded", not(emptyOrNullString()))
+                .body("ExecuteResponse.ProcessOutputs.Output.Identifier", equalTo("result"))
+                .body("ExecuteResponse.ProcessOutputs.Output.Identifier", not(equalTo("provenance")));
     }
 
 
@@ -733,9 +729,9 @@ public class ExecuteIT {
                 .then()
                 .statusCode(200)
                 .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
-                .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"))
-                .body(hasXPath("/ExecuteResponse/ProcessOutputs/Output/Identifier[text()='result']"))
-                .body(Matchers.not(hasXPath("/ExecuteResponse/ProcessOutputs/Output/Identifier[text()='provenance']")));
+                .body("ExecuteResponse.Status.ProcessSucceeded", not(emptyOrNullString()))
+                .body("ExecuteResponse.ProcessOutputs.Output.Identifier", equalTo("result"))
+                .body("ExecuteResponse.ProcessOutputs.Output.Identifier", not(equalTo("provenance")));
     }
 
 
@@ -757,7 +753,7 @@ public class ExecuteIT {
                 .then()
                 .statusCode(200)
                 .body(validateWith("/wps/1.0.0/wpsAll.xsd"))
-                .body(hasXPath("/ExecuteResponse/Status/ProcessSucceeded"));
+                .body("ExecuteResponse.Status.ProcessSucceeded", not(emptyOrNullString()));
     }
 
 
@@ -822,19 +818,17 @@ public class ExecuteIT {
                 .status()
                 .statusCode(200);
 
-            logger.info("Response {}", res.asString());
             XmlPath xmlPath = new XmlPath(res.asString());
 
-            return Matchers.anyOf(
-                    hasXPath("/ExecuteResponse/Status/ProcessSucceeded"),
-                    hasXPath("/ExecuteResponse/Status/ProcessFailed")).matches(xmlPath);
+            // Restassured used dot notation for xpath query
+            return !xmlPath.get("ExecuteResponse.Status.ProcessSucceeded").toString().equalsIgnoreCase("")
+                    || !xmlPath.get("ExecuteResponse.Status.ProcessFailed").toString().equalsIgnoreCase("");
         });
 
         logger.info("Process completed");
 
         return statusUrl;
     }
-
 
     private String submit(Execute request) throws JAXBException {
         return given()

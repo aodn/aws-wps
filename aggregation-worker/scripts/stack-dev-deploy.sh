@@ -27,6 +27,7 @@ echo "Yaml configuration write to $tempfile"
 export AWS_PROFILE=nonproduction-admin
 
 if [ -f bin/stackman ]; then
+  $(dirname $0)/docker-deploy.sh $2
   bin/stackman deploy --stack-name $2-wps --stack-profile $tempfile
 else
   echo "You must run this script in the root folder of cloud-deploy"

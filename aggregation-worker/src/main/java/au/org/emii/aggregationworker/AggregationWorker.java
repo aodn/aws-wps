@@ -39,6 +39,9 @@ import org.joda.time.format.PeriodFormatter;
 import org.joda.time.format.PeriodFormatterBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.ExitCodeGenerator;
+import org.springframework.boot.SpringApplication;
+import org.springframework.context.ApplicationContext;
 import ucar.nc2.time.CalendarDateRange;
 import ucar.unidata.geoloc.LatLonRect;
 import org.apache.logging.log4j.Logger;
@@ -56,12 +59,15 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import static au.org.aodn.aws.wps.status.WpsConfig.*;
 import static au.org.emii.aggregator.config.AggregationOverridesReader.getAggregationOverrides;
 import static au.org.emii.aggregator.config.DownloadConfigReader.getDownloadConfig;
 
-public class AggregationWorker {
+public class AggregationWorker implements ExitCodeGenerator {
 
     public static final String SUMOLOGIC_LOG_APPENDER_NAME = "SumoAppender";
     private static final String PROVENANCE_TEMPLATE_GRIDDED = "provenance_template_gridded.ftl";
@@ -87,7 +93,14 @@ public class AggregationWorker {
     @Value("${aggregationWorker.autoStart:true}")
     protected Boolean autoStart;
 
+    @Autowired
+    protected ApplicationContext applicationContext;
+
     protected Downloader downloader;
+
+    protected int exitCode = 0;
+
+    private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
     public AggregationWorker(Storage<?> storage, Downloader downloader) {
         this.storage = storage;
@@ -97,7 +110,13 @@ public class AggregationWorker {
     @PostConstruct
     public void init() {
         if(autoStart) {
-            start();
+            // We want to start and shutdown in production automatically but not good for unit testing.
+            scheduler.schedule(() -> {
+                // We want to give some time before work start so that spring completed the cycle of post construct
+                start();
+                scheduler.shutdown();
+                System.exit(SpringApplication.exit(applicationContext));
+            }, 3, TimeUnit.SECONDS);
         }
     }
 
@@ -495,8 +514,8 @@ public class AggregationWorker {
                 }
             }
         } catch(Throwable e) {
-            if(e instanceof AmazonServiceException ){
-                AmazonServiceException se = (AmazonServiceException)e;
+            if (e instanceof AmazonServiceException) {
+                AmazonServiceException se = (AmazonServiceException) e;
 
                 if (!se.getErrorType().equals(AmazonServiceException.ErrorType.Client)) {
                     // the exception was Amazon's fault, not ours, so the batch job should retry
@@ -507,25 +526,16 @@ public class AggregationWorker {
                             ", ErrorType [" + se.getErrorType().name() + "]";
 
                     logger.error(errorMessage, se);
-
-                    //  Flush messages etc...
-                    LogManager.shutdown();
-
-                    //  Exit with a failed return code - means batch job will retry (unless max retries reached)
-                    if(autoStart) {
-                        // Autostart, auto exist. You do not want this behavior in test
-                        System.exit(1);
-                    }
+                    exitCode = 1;
                 }
             }
 
-            e.printStackTrace();
             logger.error("Failed aggregation. JobID [" + batchJobId + "], Callback email [" + contactEmail + "] : " + e.getMessage(), e);
             if (statusFileManager != null) {
                 if (batchJobId != null) {
                     String statusDocument = null;
                     try {
-                        statusDocument = statusBuilder.createResponseDocument(EnumStatus.FAILED, GOGODUCK_PROCESS_IDENTIFIER,"Exception occurred during aggregation : " + e.getMessage(), "AggregationError", null);
+                        statusDocument = statusBuilder.createResponseDocument(EnumStatus.FAILED, GOGODUCK_PROCESS_IDENTIFIER, "Exception occurred during aggregation : " + e.getMessage(), "AggregationError", null);
                         statusFileManager.write(statusDocument, statusFilename, STATUS_FILE_MIME_TYPE);
                     } catch (IOException ioe) {
                         logger.error("Unable to update status for job [" + batchJobId + "]. Status: " + statusDocument);
@@ -546,18 +556,17 @@ public class AggregationWorker {
                     logger.error(ex.getMessage(), ex);
                 }
             }
-
+        }
+        finally {
             //  Flush messages etc...
             LogManager.shutdown();
 
             //  Exit with a 'success' return code - will mean job will not retry
-            if(autoStart) {
-                // Autostart, auto exist. You do not want this behavior in test
-                System.exit(0);
-            }
+            // Autostart, auto exist. You do not want this behavior in test
+            logger.info("Process completed successfully.. process will be shutdown in 3 secs");
+
         }
     }
-
 
     private void checkLoggingConfiguration() {
         //  If we don't have a sumo endpoint defined - but we do have a Sumo log appender configured
@@ -604,5 +613,10 @@ public class AggregationWorker {
         collectionTitle = collectionTitle.replaceAll("[^\\w.-]", "_");
 
         return collectionTitle;
+    }
+
+    @Override
+    public int getExitCode() {
+        return exitCode;
     }
 }

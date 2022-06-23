@@ -91,8 +91,11 @@ public class WorkerIT {
         runner.start();
 
         assertDoesNotThrow(() -> {
+            String x = getStatusXml();
+            logger.info(x);
+
             assertTrue("Expect exception in processing",
-                    getStatusXml().contains("Exception occurred during aggregation : jakarta.xml.bind.UnmarshalException"));
+                    x.contains("Exception occurred during aggregation : jakarta.xml.bind.UnmarshalException"));
         });
     }
 }
