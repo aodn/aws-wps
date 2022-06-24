@@ -20,7 +20,10 @@ Lambda function that handles OGC WPS requests
 
 ### Aggregation worker
 
-Docker image that performs the actual aggregation.  Its whats run on the EC2 instance.
+Docker image that performs the actual aggregation.  Its whats run on the EC2 instance, the request handler will post a 
+batch task, where aws will call this worker given the docker image that is found in elastic container registry.
+
+It stored under javaduck:latest repo for nonproduction-admin
 
 ### Job Status service
 
@@ -32,10 +35,12 @@ Lambda function that handles job status requests.
 - ```request-handler```  a maven sub-module to build the lambda deployment package for the request handler
 - ```aggregation-worker``` a maven sub-module to build the docker image for the aggregation worker.
 - ```job-status-service``` a maven sub-module to build the lambda deployment package for the job status service
+- ```lambda``` the output directory for lambda function build. These zip files need to push to the aws
 - ```integration-tests``` a maven project that can be used to integration test a deployed AWS/WPS instance at a 
-location specified by the WPS_ENDPOINT environment variable    
+location specified by the WPS_ENDPOINT environment variable, that means you need to run the stack deploy. 
 - ```requests``` contains a demo request that can be submitted to a deployed AWS/WPS instance
 - ```wps-cloudformation-template.yaml``` a cloud formation template for creating AWS components of the AWS/WPS instance
+
 
 ## Supported aggregation processes
 
@@ -74,33 +79,23 @@ wps-cloudformation-template.yml is used to create the followings:
   functions created with this template. After running the maven build, the two module will create a zip package and
   place it in the [lambda](lambda) folder.
 
-You need to run an instance of batch job and the two lambdas in order to run the integration-test. Execute the following
-command under [cloud-deploy](https://github.com/aodn/cloud-deploy) repo. Details can be found 
-[here](https://github.com/aodn/cloud-deploy/blob/master/doc/ansible.md)
+You need to run an instance of batch job and the two lambdas in order to run the integration-test.
 
-####Step 1
-Upload the docker image that you created in build to aws, please run the ./aggregation-worker/scripts/docker-deploy.sh 
-and <font color="red">must give it a tag name</font>. ie. ./aggregation-worker/scripts/docker-deploy.sh tagname
+> **_NOTE:_**  For testing you can use stack-dev-deploy.sh under aggregation-worker/scripts, which push docker image and lambda zips
+> then you can run from cloud-deploy directory 
+>
+> $AWS_WPS_PROJECT/aggregation-worker/scripts/stack-dev-deploy.sh $AWS_WPS_PROJECT $TAG
+> 
+> where $TAG is a name you choose, this is used to avoid the default name "latest" which is use for production deployment. 
 
-####Step 2
-Run the below command in cloud-deploy directory 
+Click the stack you just created and go to the Resources section, find the "WPSRestApi" and click the link. Then
+click the APIs on the top menu and find the ID of your API_ID.
 
-```shell
-$AWS_WPS_PROJECT_ROOT/aggregation-worker/scripts/stack-dev-deploy.sh $AWS_WPS_PROJECT_ROOT tagname
-```
-
-It will create the application stack and you can find it under AWS Cloudformation, search your stack name with
-the tagname value. 
-
-####Step 3
-Click the stack you just create and go to the Resources section, find the "WPSRestApi" and click the link. Then
-click the APIs on the top menu and find the ID of your API.
-
-WPS_ENDPOINT=https://$API_ID.execute-api.ap-southeast-2.amazonaws.com/LATEST/wps for example something like this 
-will run the integration test
+WPS_ENDPOINT=https://$API_ID.execute-api.ap-southeast-2.amazonaws.com/LATEST/wps
 
 ```shell
-example:
+Finally you can run the integrateion-test as below
+
 cd integration-tests
 WPS_ENDPOINT='https://w4fnovhz73.execute-api.ap-southeast-2.amazonaws.com/LATEST/wps' mvn verify
 ```
