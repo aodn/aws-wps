@@ -4,7 +4,7 @@ ARG BUILDER_UID=9999
 ARG DEBIAN_FRONTEND=noninteractive
 
 ENV TZ="Australia"
-ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64
+ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk-amd64
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgsl23 \
     libudunits2-0 \
     libxml2-utils \
-    openjdk-8-jdk \
+    openjdk-11-jdk \
     python3-dev \
     maven \
     wget \
@@ -21,7 +21,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 RUN update-alternatives --install /usr/bin/python python /usr/bin/python3 10
-RUN update-java-alternatives -s java-1.8.0-openjdk-amd64
+RUN update-java-alternatives -s java-11-openjdk-amd64
 
 RUN wget -q https://bootstrap.pypa.io/pip/3.5/get-pip.py \
     && python get-pip.py pip==18.1 setuptools==49.6.0 wheel==0.35.1 \
