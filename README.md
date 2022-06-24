@@ -123,4 +123,17 @@ A sample request and a script to submit it can be found in the requets directory
     
 ## Deployment Pipeline/Process
 
-TBC
+> :warning: **Two different build at the same time**:
+> 
+> The github build (something new) will build the item and determine if the build can be merged. However, it cannot push
+> image to aws
+> 
+> The Jenkins build is the existing work way.
+
+Once the code merged to master, the Jenkin job will push the docker image to the aws, you need to access via profie
+"production-developer" and go the [docker registry](https://ap-southeast-2.console.aws.amazon.com/ecr/repositories/private/104044260116/javaduck?region=ap-southeast-2) 
+the image can be used to push to test env while stack.
+
+The lambda zip is store under s3 s3://imos-artifacts/promoted/aws-wps/build
+
+Then you need to run stack in order to install the wps in your target environment.
