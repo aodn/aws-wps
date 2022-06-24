@@ -168,19 +168,22 @@ public class ExecuteIT {
                 .extract()
                 .path("ExecuteResponse.ProcessOutputs.Output.Reference.@href");
 
-        given()
+        Response res = given()
                 .spec(spec)
                 .when()
-                .get(outputLocation)
-                .then()
-                .statusCode(200)
-                .contentType("text/csv")
-                .body(Matchers.equalTo(
-                        "TIME (UTC),LATITUDE (degrees_north),LONGITUDE (degrees_east),GDOP (Degrees),UCUR (m s-1),VCUR (m s-1),UCUR_sd (m s-1),VCUR_sd (m s-1),NOBS1 (1),NOBS2 (1),UCUR_quality_control,VCUR_quality_control\n" +
-                                "2017-01-04T10:30:00Z,-31.810335,115.019623,68.80474,0.019122316,0.5347731,0.04222228,0.044319205,6,6,1,1\n" +
-                                "2017-01-04T11:30:00Z,-31.810335,115.019623,68.80474,-0.009952986,0.55120397,0.034548346,0.036436576,6,6,1,1"
-                ));
+                .get(outputLocation);
 
+        res.then()
+                .statusCode(200)
+                .contentType("text/csv");
+
+
+        String raw = res.asString();
+        assertEquals("Body content is the same ",
+                "TIME (UTC),LATITUDE (degrees_north),LONGITUDE (degrees_east),GDOP (Degrees),UCUR (m s-1),VCUR (m s-1),UCUR_sd (m s-1),VCUR_sd (m s-1),NOBS1 (1),NOBS2 (1),UCUR_quality_control,VCUR_quality_control\n" +
+                        "2017-01-04T10:30:00Z,-31.810335,115.019623,68.80474,0.019122316,0.5347731,0.04222228,0.044319205,6,6,1,1\n" +
+                        "2017-01-04T11:30:00Z,-31.810335,115.019623,68.80474,-0.009952986,0.55120397,0.034548346,0.036436576,6,6,1,1\n",
+                raw);
     }
 
 
