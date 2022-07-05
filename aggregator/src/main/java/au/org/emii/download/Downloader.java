@@ -1,9 +1,13 @@
 package au.org.emii.download;
 
-import java.io.IOException;
-import java.io.InputStream;
+import org.apache.commons.io.FileUtils;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.util.StreamUtils;
+import org.springframework.web.client.RestTemplate;
+
+import java.io.*;
 import java.net.URL;
-import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -11,24 +15,27 @@ import java.nio.file.Path;
  * File downloader
  */
 public class Downloader {
-    private final int connectTimeOut;
-    private final int readTimeOut;
 
-    public Downloader(int connectTimeOut, int readTimeOut) {
-        this.connectTimeOut = connectTimeOut;
-        this.readTimeOut = readTimeOut;
+    protected RestTemplate template;
+
+    public Downloader(RestTemplate template) {
+        this.template = template;
     }
 
     public void download(URL url, Path path) throws IOException {
-        final URLConnection connection = url.openConnection();
-        connection.setConnectTimeout(connectTimeOut);
-        connection.setReadTimeout(readTimeOut);
+        try {
+            File download = template.execute(url.toString(),  HttpMethod.GET, null, clientHttpResponse -> {
+                File ret = File.createTempFile("download", "tmp");
+                ret.deleteOnExit();
+                StreamUtils.copy(clientHttpResponse.getBody(), new FileOutputStream(ret));
+                return ret;
+            });
 
-        try (InputStream source = connection.getInputStream()) {
-            Files.copy(source, path);
-        } catch (IOException e) {
-            deleteIfExists(path);
-            throw e;
+            // No exception, nothing wrong when arrived here
+            FileUtils.moveFile(download, path.toFile());
+        }
+        catch(Exception e) {
+            throw new DownloadException(e.getMessage(), e);
         }
     }
 

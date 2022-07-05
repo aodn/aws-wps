@@ -1,5 +1,6 @@
 package au.org.aodn.aws.util;
 
+import au.org.aodn.aws.wps.Storage;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.util.StringInputStream;
@@ -10,10 +11,10 @@ import net.opengis.wps.v_1_0_0.StatusType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Marshaller;
-import javax.xml.bind.Unmarshaller;
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.JAXBException;
+import jakarta.xml.bind.Marshaller;
+import jakarta.xml.bind.Unmarshaller;
 import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.datatype.DatatypeFactory;
 import javax.xml.datatype.XMLGregorianCalendar;
@@ -22,10 +23,24 @@ import java.io.StringWriter;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.TimeZone;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class JobFileUtil {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(JobFileUtil.class);
+    protected static final ConcurrentHashMap<Class<?>, JAXBContext> jaxbContexts = new ConcurrentHashMap<>();
+
+    static {
+        // Expensive operate, create once. This operation is thread safe but marshaller / unmarshaller is not
+        try {
+            jaxbContexts.put(ExceptionReport.class, JAXBContext.newInstance(ExceptionReport.class));
+            jaxbContexts.put(ExecuteResponse.class, JAXBContext.newInstance(ExecuteResponse.class));
+        }
+        catch (JAXBException e) {
+            LOGGER.error("Fail to create JAXBContext, system start failed");
+            assert false;
+        }
+    }
 
     /**
      * Generate an XML string from a XML type object.
@@ -85,10 +100,8 @@ public class JobFileUtil {
         ExceptionReport report = getExceptionReport(message, code, locator);
         String responseDoc = null;
 
-        JAXBContext context;
         try {
-            context = JAXBContext.newInstance(ExceptionReport.class);
-            Marshaller m = context.createMarshaller();
+            Marshaller m = jaxbContexts.get(ExceptionReport.class).createMarshaller();
             m.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
             StringWriter writer = new StringWriter();
             m.marshal(report, writer);
@@ -109,13 +122,10 @@ public class JobFileUtil {
     public static ExecuteResponse unmarshallExecuteResponse(String xmlString)
     {
         try {
-
-            JAXBContext context = JAXBContext.newInstance(ExecuteResponse.class);
-            Unmarshaller u = context.createUnmarshaller();
-
+            Unmarshaller u = jaxbContexts.get(ExecuteResponse.class).createUnmarshaller();
             return (ExecuteResponse) u.unmarshal(new StringInputStream(xmlString));
-        } catch (Exception ex) {
-
+        }
+        catch (Exception ex) {
             return null;
         }
     }
@@ -151,8 +161,8 @@ public class JobFileUtil {
     }
 
 
-    public static ExecuteResponse getExecuteResponse(String jobFileS3KeyPrefix, String jobId, String statusFilename, String statusS3Bucket) {
-        String statusXMLString = getExecuteResponseString(jobFileS3KeyPrefix, jobId, statusFilename, statusS3Bucket);
+    public static ExecuteResponse getExecuteResponse(Storage storage, String jobFileS3KeyPrefix, String jobId, String statusFilename, String statusS3Bucket) {
+        String statusXMLString = getExecuteResponseString(storage, jobFileS3KeyPrefix, jobId, statusFilename, statusS3Bucket);
         if(statusXMLString != null)
         {
             //  Read the status document
@@ -163,7 +173,7 @@ public class JobFileUtil {
     }
 
 
-    public static String getExecuteResponseString(String jobFileS3KeyPrefix, String jobId, String statusFilename, String statusS3Bucket) {
+    public static String getExecuteResponseString(Storage storage, String jobFileS3KeyPrefix, String jobId, String statusFilename, String statusS3Bucket) {
         String s3Key = jobFileS3KeyPrefix + jobId + "/" + statusFilename;
 
         //  Check for the existence of the status document
@@ -183,7 +193,7 @@ public class JobFileUtil {
 
             LOGGER.info("Reading status file: Bucket [" + statusS3Bucket + "],  Key [" + s3Key + "]");
             try {
-                statusXMLString = S3Utils.readS3ObjectAsString(statusS3Bucket, s3Key);
+                statusXMLString = storage.readObjectAsString(statusS3Bucket, s3Key);
 
                 return statusXMLString;
             } catch(IOException ioex) {

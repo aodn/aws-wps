@@ -73,6 +73,7 @@ public class CatalogueReader {
             return content;
 
         } catch (Exception ex) {
+            //TODO: Cross check all usage that it handle properly. Else status not report correctly to client
             logger.error("Unable to read metadata XML.", ex);
             throw ex;
         }
@@ -98,6 +99,7 @@ public class CatalogueReader {
             return content;
 
         } catch (Exception ex) {
+            //TODO: Cross check all usage that it handle properly. Else status not report correctly to client
             logger.error("Unable to read metadata XML.", ex);
             throw ex;
         }
@@ -189,7 +191,7 @@ public class CatalogueReader {
             return strWriter.toString();
 
         } catch(Exception ex) {
-            logger.error("Unable to extract metadata element from XML", ex);
+            logger.error("Unable to extract metadata element from XML {}", xmlMetadataResponse, ex);
         }
 
         return "";
@@ -264,6 +266,7 @@ public class CatalogueReader {
 
         CatalogueReader reader = new CatalogueReader(url, layerField);
         try {
+            //TODO: You need to report failure on getMetadataSummaryXML exception in the status report, otherwise the client keep waiting
             String summaryXml = reader.getMetadataSummaryXML(layer);
             System.out.println("XML returned [" + summaryXml + "]");
 

@@ -77,7 +77,7 @@ public class WpsConfig {
     public static final String DEFAULT_LANGUAGE = "en-US";
 
     public static String getProperty(String propertyName) {
-        return System.getenv(propertyName);
+        return System.getProperty(propertyName, System.getenv(propertyName));
     }
 
     public static String getStatusServiceHtmlEndpoint(String jobUuid) {
@@ -103,9 +103,13 @@ public class WpsConfig {
     }
 
 
-    public static String getS3ExternalURL(String s3Bucket, String s3Key) {
+    public static String getExternalURL(String path, String name) {
         String region = getProperty(WpsConfig.AWS_REGION_CONFIG_KEY);
-        return String.format("https://s3-%s.amazonaws.com/%s/%s", region, s3Bucket, s3Key);
+
+        // Not using S3 if region is missing
+        return region != null ?
+                String.format("https://s3-%s.amazonaws.com/%s/%s", region, path, name) :
+                String.format("%s/%s", path, name) ;
     }
 
     /**

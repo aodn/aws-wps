@@ -1,0 +1,27 @@
+aggregationWorker:
+  WORKING_DIR: '/tmp/work'
+  DOWNLOAD_CONNECT_TIMEOUT: '60000'
+  DOWNLOAD_READ_TIMEOUT: '60000'
+  BATCH_JOB_ID: '12345567890'
+  JOB_S3_KEY: 'jobs/'
+  STATUS_S3_FILENAME: 'status.xml'
+  REQUEST_S3_FILENAME: 'request.xml'
+  AWS_WPS_ENDPOINT_URL: '${aggregationWorker.WORKING_DIR}'
+  OUTPUT_S3_BUCKET: '${aggregationWorker.AWS_WPS_ENDPOINT_URL}/output'
+  # Need enhance to point to some test server for development
+  GEOSERVER_CATALOGUE_ENDPOINT_URL: 'https://geoserver-123.aodn.org.au/geoserver/imos/ows'
+  GEONETWORK_CATALOGUE_URL: 'https://catalogue.aodn.org.au/geonetwork'
+  DATA_DOWNLOAD_URL_PREFIX: 'http://data.aodn.org.au/'
+  AGGREGATOR_TEMPLATE_FILE_URL: 'https://raw.githubusercontent.com/aodn/geoserver-config/production/wps/templates.xml'
+  administratorEmail: 'developers@emii.org.au'
+  AWS_REGION_SES: 'ap-southeast-2'
+  DOWNLOAD_ATTEMPTS: 5
+  LOCAL_STORAGE_LIMIT_BYTES: 104857600
+  RETRY_INTERVAL_MS: 60000
+  CHUNK_SIZE: 100000000
+  POOL_SIZE: 8
+  autoStart: false
+
+logging:
+  level:
+    root: debug

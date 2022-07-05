@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.springframework.web.client.RestTemplate;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,7 +33,7 @@ public class ParallelDownloadManagerTest {
     @Before
     public void setup() throws IOException {
         downloadDir = Files.createTempDirectory("download.");
-        downloader = new Downloader(60*MILLISECONDS_IN_A_SECOND, 60*MILLISECONDS_IN_A_SECOND);
+        downloader = new Downloader(new RestTemplate());
     }
 
     @Test

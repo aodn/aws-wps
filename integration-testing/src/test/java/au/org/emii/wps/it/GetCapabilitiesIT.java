@@ -1,15 +1,15 @@
 package au.org.emii.wps.it;
 
-import com.jayway.restassured.builder.RequestSpecBuilder;
-import com.jayway.restassured.filter.log.RequestLoggingFilter;
-import com.jayway.restassured.filter.log.ResponseLoggingFilter;
-import com.jayway.restassured.http.ContentType;
-import com.jayway.restassured.specification.RequestSpecification;
+import io.restassured.builder.RequestSpecBuilder;
+import io.restassured.filter.log.RequestLoggingFilter;
+import io.restassured.filter.log.ResponseLoggingFilter;
+import io.restassured.http.ContentType;
+import io.restassured.specification.RequestSpecification;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static au.org.emii.wps.util.Matchers.validateWith;
-import static com.jayway.restassured.RestAssured.given;
+import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.hasItem;
 
 public class GetCapabilitiesIT {
@@ -20,12 +20,12 @@ public class GetCapabilitiesIT {
     @BeforeClass
     public static void initSpec() {
         spec = new RequestSpecBuilder()
-            .setBaseUri(SERVICE_ENDPOINT)
-            .addParameter("service", "WPS")
-            .addParameter("request", "GetCapabilities")
-            .addFilter(new ResponseLoggingFilter())
-            .addFilter(new RequestLoggingFilter())
-            .build();
+                .setBaseUri(SERVICE_ENDPOINT)
+                .addParam("service", "WPS")
+                .addParam("request", "GetCapabilities")
+                .addFilter(new ResponseLoggingFilter())
+                .addFilter(new RequestLoggingFilter())
+                .build();
     }
 
     @Test

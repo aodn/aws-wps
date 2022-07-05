@@ -1,8 +1,8 @@
 package au.org.emii.wps.util;
 
-import com.jayway.restassured.assertion.XMLAssertion;
-import groovy.util.XmlSlurper;
-import groovy.util.slurpersupport.GPathResult;
+import groovy.xml.XmlSlurper;
+import groovy.xml.slurpersupport.GPathResult;
+import io.restassured.internal.path.xml.XMLAssertion;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;

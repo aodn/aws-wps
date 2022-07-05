@@ -1,9 +1,7 @@
 package au.org.aodn.aws.wps.lambda;
 
-import au.org.aodn.aws.util.AWSBatchUtil;
-import au.org.aodn.aws.util.JobFileUtil;
-import au.org.aodn.aws.util.S3Utils;
-import au.org.aodn.aws.util.Utils;
+import au.org.aodn.aws.wps.Storage;
+import au.org.aodn.aws.util.*;
 import au.org.aodn.aws.wps.status.JobStatusFormatEnum;
 import au.org.aodn.aws.wps.JobStatusRequest;
 import au.org.aodn.aws.wps.JobStatusRequestParameterParser;
@@ -56,6 +54,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
     private String statusS3Bucket = WpsConfig.getProperty(WpsConfig.OUTPUT_S3_BUCKET_CONFIG_KEY);
     private String requestFilename = WpsConfig.getProperty(WpsConfig.REQUEST_S3_FILENAME_CONFIG_KEY);
 
+    protected Storage<S3Object> storage = new S3Storage();
 
     @Override
     public JobStatusResponse handleRequest(JobStatusRequest request, Context context) {
@@ -98,7 +97,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
 
             if (requestedStatusFormat.equals(JobStatusFormatEnum.HTML) || requestedStatusFormat.equals(JobStatusFormatEnum.ADMIN)) {
 
-                ExecuteResponse executeResponse = JobFileUtil.getExecuteResponse(jobFileS3KeyPrefix, jobId, statusFilename, statusS3Bucket);
+                ExecuteResponse executeResponse = JobFileUtil.getExecuteResponse(storage, jobFileS3KeyPrefix, jobId, statusFilename, statusS3Bucket);
                 String statusDescription = null;
 
                 LOGGER.info("HTML output format requested.  Running transform.");
@@ -125,7 +124,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
                 }
             } else {  //  Default format = XML
 
-                String executeResponseString = JobFileUtil.getExecuteResponseString(jobFileS3KeyPrefix, jobId, statusFilename, statusS3Bucket);
+                String executeResponseString = JobFileUtil.getExecuteResponseString(storage, jobFileS3KeyPrefix, jobId, statusFilename, statusS3Bucket);
                 if (executeResponseString != null) {
                     responseBody = executeResponseString;
                     LOGGER.info("Retrieved status file XML.");
@@ -220,7 +219,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
 
     private String generateStatusHTML(ExecuteResponse response, String statusDescription, String jobId, boolean includeAdminDetails) throws TemplateException, IOException {
 
-        Map<String, Object> params = new HashMap<String, Object>();
+        Map<String, Object> params = new HashMap<>();
 
         params.put("jobId", jobId);
         params.put("statusDescription", statusDescription);
@@ -237,7 +236,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
             //  submission time of the job
             String requestFileS3Key = jobFileS3KeyPrefix + jobId + "/" + requestFilename;
             LOGGER.info("Request file bucket [" + statusS3Bucket + "], Key [" + requestFileS3Key + "]");
-            S3Object requestS3Object = S3Utils.getS3Object(statusS3Bucket, requestFileS3Key);
+            S3Object requestS3Object = storage.getObject(statusS3Bucket, requestFileS3Key);
 
             if (requestS3Object != null) {
                 long lastModifiedTimestamp = requestS3Object.getObjectMetadata().getLastModified().getTime();
@@ -358,7 +357,7 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
 
         if (runningJobDetails != null) {
             //  Add a log link to the job detail for display on the queue HTML page
-            ArrayList<ExtendedJobDetail> extendedJobDetailList = new ArrayList();
+            ArrayList<ExtendedJobDetail> extendedJobDetailList = new ArrayList<>();
 
             for(JobDetail currentJobDetail : runningJobDetails) {
                 ExtendedJobDetail extendedJobDetail = new ExtendedJobDetail();
@@ -374,13 +373,13 @@ public class JobStatusServiceRequestHandler implements RequestHandler<JobStatusR
             //  Determine the full status of a completed job.
             //  This involves looking up the WPS status file for the job + adding that to the AWS batch status information.
             //  For completed jobs we'll add a WPS status description & a log link
-            ArrayList<ExtendedJobDetail> extendedJobDetailList = new ArrayList();
+            ArrayList<ExtendedJobDetail> extendedJobDetailList = new ArrayList<>();
 
             for(JobDetail currentJobDetail : completedJobDetails) {
                 //  Get the jobs WPS status from the WPS status file.
                 ExtendedJobDetail extendedJobDetails = new ExtendedJobDetail();
                 extendedJobDetails.setAwsBatchJobDetail(currentJobDetail);
-                ExecuteResponse wpsResponse = JobFileUtil.getExecuteResponse(jobFileS3KeyPrefix, currentJobDetail.getJobId(), statusFilename, statusS3Bucket);
+                ExecuteResponse wpsResponse = JobFileUtil.getExecuteResponse(storage, jobFileS3KeyPrefix, currentJobDetail.getJobId(), statusFilename, statusS3Bucket);
                 if(wpsResponse != null && wpsResponse.getStatus() != null) {
                     extendedJobDetails.setWpsStatusDescription(getWpsStatusDescription(wpsResponse.getStatus()));
                 } else {

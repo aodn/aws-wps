@@ -1,0 +1,40 @@
+name: aws-wps
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-java@v2
+        with:
+          distribution: 'zulu'
+          java-version: '11'
+          cache: 'maven'
+
+      - name: Install libudunits2-0
+        run: |
+          sudo apt-get install libudunits2-0
+
+      - name: Install libnetcdf15
+        run: |
+          sudo apt-get install libnetcdf15
+
+      - name: Install libgsl23
+        run: |
+          sudo apt-get install libgsl23
+
+      - name: Install libxml2-utils
+        run: |
+          sudo apt-get install libxml2-utils
+
+      - name: Cache Maven packages
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Run the Maven install phase
+        run: mvn clean package install

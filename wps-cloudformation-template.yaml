@@ -600,7 +600,7 @@ Resources:
       Handler: au.org.aodn.aws.wps.lambda.WpsLambdaRequestHandler
       MemorySize: 1536
       Role: !GetAtt RequestHandlerLambdaExecutionRole.Arn
-      Runtime: java8
+      Runtime: java11
       Timeout: 60
       Code: lambda/request-handler-lambda-package.zip
       Environment:
@@ -730,7 +730,7 @@ Resources:
       Handler: au.org.aodn.aws.wps.lambda.JobStatusServiceRequestHandler
       MemorySize: 1536
       Role: !GetAtt JobStatusLambdaExecutionRole.Arn
-      Runtime: java8
+      Runtime: java11
       Timeout: 60
       Code: lambda/job-status-service-lambda-package.zip
       Environment:

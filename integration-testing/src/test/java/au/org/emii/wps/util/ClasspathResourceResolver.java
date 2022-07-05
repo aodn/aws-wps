@@ -1,6 +1,7 @@
 package au.org.emii.wps.util;
 
-import com.sun.org.apache.xerces.internal.dom.DOMInputImpl;
+
+import org.apache.xerces.dom.DOMInputImpl;
 import org.w3c.dom.ls.LSInput;
 import org.w3c.dom.ls.LSResourceResolver;
 
@@ -20,6 +21,7 @@ public class ClasspathResourceResolver implements LSResourceResolver {
         SYSTEM_ID_MAPPING.put("../../ows/1.1.0/owsAll.xsd", "/ows/1.1.0/owsAll.xsd");
         SYSTEM_ID_MAPPING.put("../../xlink/1.0.0/xlinks.xsd", "/xlink/1.0.0/xlinks.xsd");
         SYSTEM_ID_MAPPING.put("../../xml/xml.xsd", "/xml/xml.xsd");
+        SYSTEM_ID_MAPPING.put("http://www.w3.org/2001/xml.xsd", "/xml/xml.xsd");
     }
 
     private final String basePath; // location of parent schema - used to resolve relative references

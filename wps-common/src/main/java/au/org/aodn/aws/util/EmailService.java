@@ -43,7 +43,7 @@ public class EmailService {
             Destination destination = new Destination().withToAddresses(to);
 
             if(bccAddress != null) {
-                ArrayList<String> bccAddresses = new ArrayList();
+                ArrayList<String> bccAddresses = new ArrayList<>();
                 bccAddresses.add(bccAddress);
                 destination.setBccAddresses(bccAddresses);
             }

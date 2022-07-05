@@ -1,5 +1,8 @@
 #################################################################
 # Dockerfile to build image for running gridded data aggregations
+#
+# This is the process which receive item from aws Batch queue
+# and do the real work
 #################################################################
 
 FROM ubuntu:20.04
@@ -8,7 +11,7 @@ MAINTAINER AODN
 # Install Java.
 RUN \
   apt-get update && \
-  apt-get install -y openjdk-8-jdk \
+  apt-get install -y openjdk-11-jdk \
   libnetcdf15 \
   && rm -rf /var/lib/apt/lists/*
 
