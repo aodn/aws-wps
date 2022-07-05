@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>au.org.emii</groupId>
-    <version>0.0.0</version>
+    <version>4.42.57</version>
     <artifactId>integration-testing</artifactId>
 
     <properties>
@@ -22,7 +22,7 @@
             <dependency>
                 <groupId>au.org.emii</groupId>
                 <artifactId>aws-wps</artifactId>
-                <version>0.0.0</version>
+                <version>4.42.57</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -33,7 +33,7 @@
         <dependency>
             <groupId>au.org.emii</groupId>
             <artifactId>jaxb-wps</artifactId>
-            <version>0.0.0</version>
+            <version>4.42.57</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
