@@ -295,6 +295,17 @@ Resources:
                 Condition:
                   ForAllValues:StringLike:
                     'ses:Recipients': !Ref SeSLimitRecipients
+  BatchEC2LaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateData:
+        BlockDeviceMappings:
+          - Ebs:
+              VolumeSize: 1600
+              VolumeType: gp2
+              DeleteOnTermination: true
+              Encrypted: true
+            DeviceName: /dev/xvda
   JobDefinition:
     Type: AWS::Batch::JobDefinition
     Properties:
@@ -419,6 +430,8 @@ Resources:
     Properties:
       Type: MANAGED
       ComputeResources:
+        LaunchTemplate:
+          LaunchTemplateId: !Ref BatchEC2LaunchTemplate
         Type: SPOT
         MinvCpus: 0
         DesiredvCpus: 0
