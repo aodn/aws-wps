@@ -72,7 +72,7 @@ Parameters:
 Mappings:
   Constants:
     ConstantMap:
-      ContainerWorkingDir: /mnt/work
+      ContainerWorkingDir: /tmp
       S3JobKeyPrefix: jobs/
       requestHandlerApiPath: wps
       jobStatusApiPath: jobStatus
