@@ -13,7 +13,7 @@ Parameters:
     Type: String
   dataDownloadUrlPrefix:
     Type: String
-    Default: http://data.aodn.org.au/
+    Default: https://imos-data.s3-ap-southeast-2.amazonaws.com/
   sourceArn:
     Type: String
     Default: ''
