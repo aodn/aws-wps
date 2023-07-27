@@ -61,7 +61,7 @@ netcdf {
   :date_created = "2016-11-30T23:33:49Z";
   :project = "Integrated Marine Observing System (IMOS)";
   :Conventions = "CF-1.5";
-  :institution = "eMII";
+  :institution = "AODN";
   :abstract = "CARS (CSIRO Atlas of Regional Seas) is a digital climatology, or atlas of seasonal ocean water properties. It comprises gridded fields of mean ocean properties over the period of modern ocean measurement, and average seasonal cycles for that period. It is derived from a quality-controlled archive of all available historical subsurface ocean property measurements - primarily research vessel instrument profiles and autonomous profiling buoys. As data availability has enormously increased in recent years, the CARS mean values are inevitably biased towards the recent ocean state. See http://www.marine.csiro.au/~dunn/cars2009/ .";
   :references = "http://www.imos.org.au";
   :keywords = "CARS extraction, Climatology, TEMP, TEMP_anomaly, PSAL, PSAL_anomaly, DOX2, DOX2_anomaly, DENS, DENS_anomaly, NTR2, NTR2_anomaly, SLC2, SLC2_anomaly, PHOS, PHOS_anomaly";
@@ -77,11 +77,11 @@ netcdf {
   :time_coverage_end = "2009-01-01T00:00:00Z";
   :time_coverage_step = 30.5; // double
   :lineage = "http://www.marine.csiro.au/~dunn/cars2009/#about http://www.marine.csiro.au/~dunn/cars2009/#use";
-  :data_centre = "eMarine Information Infrastructure (eMII)";
+  :data_centre = "Australian Ocean Data Network (AODN)";
   :data_centre_email = "info@aodn.org.au";
   :author = "Guillaume Galibert";
   :author_email = "guillaume.galibert@utas.edu.au";
-  :institution_references = "http://www.imos.org.au/emii.html";
+  :institution_references = "http://www.imos.org.au/AODN.html";
   :citation = "The citation in a list of references is: \"CARS2009 [year-of-data-download], [Title], [data-access-url], accessed [date-of-access]\"";
   :acknowledgement = "The User agrees that whenever the Product or imagery/data derived from the Product are published by the User, the CSIRO Marine Laboratories shall be acknowledged as the source of the Product.";
   :distribution_statement = "The User acknowledges that the Product was developed by CSIRO for its own research purposes. The CSIRO will not therefore be liable for interpretation of or inconsistencies, discrepancies, errors or omissions in any or all of the Product as supplied. Any use of or reliance by the User on the Product or any part thereof is at the User\'s own risk and CSIRO shall not be liable for any loss or damage howsoever arising as a result of such use. The User agrees to indemnify and hold harmless CSIRO in respect of any loss or damage (including any rights arising from negligence or infringement of third party intellectual property rights) suffered by CSIRO as a result of User\'s use of or reliance on the Data.";
