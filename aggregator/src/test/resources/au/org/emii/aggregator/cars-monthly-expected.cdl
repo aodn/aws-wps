@@ -81,7 +81,7 @@ netcdf {
   :data_centre_email = "info@aodn.org.au";
   :author = "Guillaume Galibert";
   :author_email = "guillaume.galibert@utas.edu.au";
-  :institution_references = "http://www.imos.org.au/AODN.html";
+  :institution_references = "https://imos.org.au/facilities/aodn";
   :citation = "The citation in a list of references is: \"CARS2009 [year-of-data-download], [Title], [data-access-url], accessed [date-of-access]\"";
   :acknowledgement = "The User agrees that whenever the Product or imagery/data derived from the Product are published by the User, the CSIRO Marine Laboratories shall be acknowledged as the source of the Product.";
   :distribution_statement = "The User acknowledges that the Product was developed by CSIRO for its own research purposes. The CSIRO will not therefore be liable for interpretation of or inconsistencies, discrepancies, errors or omissions in any or all of the Product as supplied. Any use of or reliance by the User on the Product or any part thereof is at the User\'s own risk and CSIRO shall not be liable for any loss or damage howsoever arising as a result of such use. The User agrees to indemnify and hold harmless CSIRO in respect of any loss or damage (including any rights arising from negligence or infringement of third party intellectual property rights) suffered by CSIRO as a result of User\'s use of or reliance on the Data.";
