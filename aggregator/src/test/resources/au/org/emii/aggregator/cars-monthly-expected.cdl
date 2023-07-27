@@ -78,7 +78,7 @@ netcdf {
   :time_coverage_step = 30.5; // double
   :lineage = "http://www.marine.csiro.au/~dunn/cars2009/#about http://www.marine.csiro.au/~dunn/cars2009/#use";
   :data_centre = "eMarine Information Infrastructure (eMII)";
-  :data_centre_email = "info@emii.org.au";
+  :data_centre_email = "info@aodn.org.au";
   :author = "Guillaume Galibert";
   :author_email = "guillaume.galibert@utas.edu.au";
   :institution_references = "http://www.imos.org.au/emii.html";
