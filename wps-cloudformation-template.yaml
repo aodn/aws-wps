@@ -100,6 +100,14 @@ Resources:
     Condition: CreateEphemeralBucket
     DeletionPolicy: Delete
     Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: False
+        BlockPublicPolicy: False
+        IgnorePublicAcls: True
+        RestrictPublicBuckets: True
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerPreferred
       LifecycleConfiguration:
         Rules:
           - Id: JobExpirationInDays

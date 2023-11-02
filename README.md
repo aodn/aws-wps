@@ -71,6 +71,13 @@ $ mvn clean package
 ## To run integration tests
 
 ### Create environment for testing in nonproduction env
+
+First install the aws-wps package to your maven repo:
+
+```
+$ mvn clean install
+```
+
 wps-cloudformation-template.yml is used to create the followings:
 - AWS Batch: Module [aggregation-worker](aggregation-worker) contains the code to do the batch job. During the build,
   the maven will invoke docker-build.sh under scripts to create a docker image. You can find the image with the command 
@@ -94,9 +101,9 @@ click the APIs on the top menu and find the ID of your API_ID.
 WPS_ENDPOINT=https://$API_ID.execute-api.ap-southeast-2.amazonaws.com/LATEST/wps
 
 ```shell
-Finally you can run the integrateion-test as below
+Finally you can run the integration-testing as below
 
-cd integration-tests
+cd integration-testing
 WPS_ENDPOINT='https://w4fnovhz73.execute-api.ap-southeast-2.amazonaws.com/LATEST/wps' mvn verify
 ```
 
