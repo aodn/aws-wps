@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ns3:Execute service="WPS" version="1.0.0" xmlns:ns2="http://www.w3.org/1999/xlink" xmlns:ns1="http://www.opengis.net/ows/1.1" xmlns:ns3="http://www.opengis.net/wps/1.0.0">
+    <ns1:Identifier>gs:GoGoDuck</ns1:Identifier>
+    <ns3:DataInputs>
+        <ns3:Input>
+            <ns1:Identifier>layer</ns1:Identifier>
+            <ns3:Data>
+                <ns3:LiteralData>gsla_fv02_nrt_timeseries_url</ns3:LiteralData>
+            </ns3:Data>
+        </ns3:Input>
+        <ns3:Input>
+            <ns1:Identifier>TestMode</ns1:Identifier>
+            <ns3:Data>
+                <ns3:LiteralData>false</ns3:LiteralData>
+            </ns3:Data>
+        </ns3:Input>
+        <ns3:Input>
+            <ns1:Identifier>subset</ns1:Identifier>
+            <ns3:Data>
+                <ns3:LiteralData>TIME,2021-09-01T00:00:00.000Z,2021-10-01T00:00:00.000Z;LATITUDE,-36.958984375,-37.75;LONGITUDE,129.375,130.78125</ns3:LiteralData>
+            </ns3:Data>
+        </ns3:Input>
+        <ns3:Input>
+            <ns1:Identifier>callbackParams</ns1:Identifier>
+            <ns3:Data>
+                <ns3:LiteralData>imos-wps-testing@mailinator.com</ns3:LiteralData>
+            </ns3:Data>
+        </ns3:Input>
+    </ns3:DataInputs>
+    <ns3:ResponseForm>
+        <ns3:ResponseDocument storeExecuteResponse="true" status="true">
+            <ns3:Output asReference="true" mimeType="text/csv">
+                <ns1:Identifier>result</ns1:Identifier>
+            </ns3:Output>
+        </ns3:ResponseDocument>
+    </ns3:ResponseForm>
+</ns3:Execute>

@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.util.UUID;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -97,5 +98,22 @@ public class WorkerIT {
             assertTrue("Expect exception in processing",
                     x.contains("Exception occurred during aggregation : jakarta.xml.bind.UnmarshalException"));
         });
+    }
+
+    @Test
+    public void requestFails() throws IOException {
+        // This test depends on a request run against a faulty geoserver layer.
+        // Since we don't normally have such layers, the test will be skipped if the request does not fail.
+        // For debugging layers that are failing, update the request_fails.xml file to generate a failed request.
+        String uuid = UUID.randomUUID().toString();
+        System.setProperty(WpsConfig.AWS_BATCH_JOB_ID_CONFIG_KEY, uuid);
+
+        File f = ResourceUtils.getFile("classpath:request_fails.xml");
+        writeRequestXml(f);
+        runner.start();
+
+        String statusXml = getStatusXml();
+        assumeTrue("Assuming the process failed", statusXml.contains("ProcessFailed"));
+
     }
 }

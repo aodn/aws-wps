@@ -369,7 +369,7 @@ public class AggregationWorker implements ExitCodeGenerator {
 
                 //  Search for the metadata record for the layer by layer name
                 String catalogueURL = WpsConfig.getProperty(GEONETWORK_CATALOGUE_URL_CONFIG_KEY);
-                String layerSearchField = WpsConfig.getProperty(GEONETWORK_CATALOGUE_LAYER_FIELD_CONFIG_KEY);
+                String layerSearchField = WpsConfig.getProperty(GEONETWORK_LAYER_SEARCH_FIELD_CONFIG_KEY);
                 CatalogueReader catalogueReader = new CatalogueReader(catalogueURL, layerSearchField);
 
                 //TODO: You need to report failure in the status report, otherwise the client keep waiting
@@ -546,6 +546,15 @@ public class AggregationWorker implements ExitCodeGenerator {
 
             //  Send failed job email to user
             if (contactEmail != null) {
+                if (collectionTitle == "") {
+                    // The metadata has not been retrieved yet
+                    try {
+                        collectionTitle = getCollectionTitle(statusFileManager);
+                    } catch (Exception ex) {
+                        logger.error(ex.getMessage(), ex);
+                        collectionTitle = "Could not retrieve collection metadata.";
+                    }
+                }
                 try {
                     emailService.sendFailedJobEmail(contactEmail,
                             administratorEmail,
@@ -566,6 +575,38 @@ public class AggregationWorker implements ExitCodeGenerator {
             logger.info("Process completed successfully.. process will be shutdown in 3 secs");
 
         }
+    }
+
+    private String getCollectionTitle(JobFileManager jobFileManager) throws Exception {
+
+        String collectionTitle = "";
+
+        // Get the layer name from the request
+        String requestXML = jobFileManager.read(requestFilename);
+        XmlRequestParser parser = new XmlRequestParser();
+        Execute request = (Execute) parser.parse(requestXML);
+        ExecuteRequestHelper requestHelper = new ExecuteRequestHelper(request);
+        String layer = requestHelper.getLiteralInputValue(LITERAL_INPUT_IDENTIFIER_LAYER);
+
+        //  Search for the metadata record for the layer by layer name
+        String catalogueURL = WpsConfig.getProperty(GEONETWORK_CATALOGUE_URL_CONFIG_KEY);
+        String layerSearchField = WpsConfig.getProperty(GEONETWORK_LAYER_SEARCH_FIELD_CONFIG_KEY);
+        CatalogueReader catalogueReader = new CatalogueReader(catalogueURL, layerSearchField);
+
+        String metadataResponseXML = catalogueReader.getMetadataSummaryXML(layer);
+
+        if (metadataResponseXML != null && metadataResponseXML.length() > 0) {
+
+            //  We only need the <metadata> tag and its contents
+            String metadataSummary = catalogueReader.getMetadataNodeContent(metadataResponseXML);
+
+            if (metadataSummary != null) {
+                collectionTitle = catalogueReader.getCollectionTitle(metadataSummary);
+                logger.info("Metadata collection title: " + collectionTitle);
+            }
+        }
+
+        return collectionTitle;
     }
 
     private void checkLoggingConfiguration() {
