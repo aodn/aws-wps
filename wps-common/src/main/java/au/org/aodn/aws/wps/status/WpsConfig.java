@@ -51,7 +51,7 @@ public class WpsConfig {
     public static final String DOWNLOAD_READ_TIMEOUT_CONFIG_KEY = "DOWNLOAD_READ_TIMEOUT";
 
     public static final String GEONETWORK_CATALOGUE_URL_CONFIG_KEY = "GEONETWORK_CATALOGUE_URL";
-    public static final String GEONETWORK_LAYER_SEARCH_FIELD_CONFIG_KEY = "GEONETWORK_LAYER_SEARCH_FIELD";
+    public static final String GEONETWORK_CATALOGUE_LAYER_FIELD_CONFIG_KEY = "GEONETWORK_LAYER_SEARCH_FIELD";
 
     public static final String STATUS_SERVICE_JOB_ID_PARAMETER_NAME = "jobId";
     public static final String STATUS_SERVICE_FORMAT_PARAMETER_NAME = "format";

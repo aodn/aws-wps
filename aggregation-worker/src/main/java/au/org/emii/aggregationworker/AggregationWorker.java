@@ -20,7 +20,6 @@ import au.org.emii.download.*;
 import au.org.aodn.aws.geoserver.client.HttpIndexReader;
 import au.org.aodn.aws.geoserver.client.SubsetParameters;
 import au.org.aodn.aws.geoserver.client.TimeNotSupportedException;
-import au.org.emii.util.IntegerHelper;
 import au.org.emii.util.NumberRange;
 import au.org.emii.util.ProvenanceWriter;
 import com.amazonaws.AmazonServiceException;
@@ -369,7 +368,7 @@ public class AggregationWorker implements ExitCodeGenerator {
 
                 //  Search for the metadata record for the layer by layer name
                 String catalogueURL = WpsConfig.getProperty(GEONETWORK_CATALOGUE_URL_CONFIG_KEY);
-                String layerSearchField = WpsConfig.getProperty(GEONETWORK_LAYER_SEARCH_FIELD_CONFIG_KEY);
+                String layerSearchField = WpsConfig.getProperty(GEONETWORK_CATALOGUE_LAYER_FIELD_CONFIG_KEY);
                 CatalogueReader catalogueReader = new CatalogueReader(catalogueURL, layerSearchField);
 
                 //TODO: You need to report failure in the status report, otherwise the client keep waiting
@@ -590,7 +589,7 @@ public class AggregationWorker implements ExitCodeGenerator {
 
         //  Search for the metadata record for the layer by layer name
         String catalogueURL = WpsConfig.getProperty(GEONETWORK_CATALOGUE_URL_CONFIG_KEY);
-        String layerSearchField = WpsConfig.getProperty(GEONETWORK_LAYER_SEARCH_FIELD_CONFIG_KEY);
+        String layerSearchField = WpsConfig.getProperty(GEONETWORK_CATALOGUE_LAYER_FIELD_CONFIG_KEY);
         CatalogueReader catalogueReader = new CatalogueReader(catalogueURL, layerSearchField);
 
         String metadataResponseXML = catalogueReader.getMetadataSummaryXML(layer);

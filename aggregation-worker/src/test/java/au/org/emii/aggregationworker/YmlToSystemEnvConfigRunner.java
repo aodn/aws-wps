@@ -92,7 +92,7 @@ public class YmlToSystemEnvConfigRunner implements CommandLineRunner {
         System.setProperty(WpsConfig.REQUEST_S3_FILENAME_CONFIG_KEY, requestFileName.orElse(null));
         System.setProperty(WpsConfig.WPS_ENDPOINT_URL_CONFIG_KEY, endPointUrl.orElse(null));
         System.setProperty(WpsConfig.GEONETWORK_CATALOGUE_URL_CONFIG_KEY, geoNetworkUrl.orElse(null));
-        System.setProperty(WpsConfig.GEONETWORK_LAYER_SEARCH_FIELD_CONFIG_KEY, geonetworkLayerSearchField.orElse(null));
+        System.setProperty(WpsConfig.GEONETWORK_CATALOGUE_LAYER_FIELD_CONFIG_KEY, geonetworkLayerSearchField.orElse(null));
         System.setProperty(WpsConfig.ADMINISTRATOR_EMAIL, administratorEmail.orElse(null));
         System.setProperty(WpsConfig.OUTPUT_S3_BUCKET_CONFIG_KEY, outputBucket.orElse(null));
         System.setProperty(WpsConfig.AWS_REGION_SES_CONFIG_KEY, region.orElse(null));
