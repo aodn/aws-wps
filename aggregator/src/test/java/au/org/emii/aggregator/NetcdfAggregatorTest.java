@@ -209,7 +209,11 @@ public class NetcdfAggregatorTest {
             netcdfAggregator.add(resourcePath("au/org/emii/aggregator/projection-2.nc"));
         }
 
-        assertNetcdfFilesEqual(resourcePath("au/org/emii/aggregator/projection-expected.nc"), outputFile);
+        if (libraryVersion.startsWith("4.8")) {
+            assertNetcdfFilesEqual(resourcePath("au/org/emii/aggregator/projection-expected-4.8.nc"), outputFile);
+        } else {
+            assertNetcdfFilesEqual(resourcePath("au/org/emii/aggregator/projection-expected.nc"), outputFile);
+        }
     }
 
     @Test
@@ -223,7 +227,11 @@ public class NetcdfAggregatorTest {
             netcdfAggregator.add(resourcePath("au/org/emii/aggregator/projection-2.nc"));
         }
 
-        assertNetcdfFilesEqual(resourcePath("au/org/emii/aggregator/projection-point-within-expected.nc"), outputFile);
+        if (libraryVersion.startsWith("4.8")) {
+            assertNetcdfFilesEqual(resourcePath("au/org/emii/aggregator/projection-point-within-expected-4.8.nc"), outputFile);
+        } else {
+            assertNetcdfFilesEqual(resourcePath("au/org/emii/aggregator/projection-point-within-expected.nc"), outputFile);
+        }
     }
 
     @Test
@@ -237,7 +245,11 @@ public class NetcdfAggregatorTest {
             netcdfAggregator.add(resourcePath("au/org/emii/aggregator/projection-2.nc"));
         }
 
-        assertNetcdfFilesEqual(resourcePath("au/org/emii/aggregator/projection-point-outside-expected.nc"), outputFile);
+        if (libraryVersion.startsWith("4.8")) {
+            assertNetcdfFilesEqual(resourcePath("au/org/emii/aggregator/projection-point-outside-expected-4.8.nc"), outputFile);
+        } else {
+            assertNetcdfFilesEqual(resourcePath("au/org/emii/aggregator/projection-point-outside-expected.nc"), outputFile);
+        }
     }
 
     @Test(expected = AggregationException.class)
