@@ -11,6 +11,7 @@ aggregationWorker:
   # Need enhance to point to some test server for development
   GEOSERVER_CATALOGUE_ENDPOINT_URL: 'https://geoserver-123.aodn.org.au/geoserver/imos/ows'
   GEONETWORK_CATALOGUE_URL: 'https://catalogue.aodn.org.au/geonetwork'
+  GEONETWORK_LAYER_SEARCH_FIELD: 'layer'
   DATA_DOWNLOAD_URL_PREFIX: 'http://data.aodn.org.au/'
   AGGREGATOR_TEMPLATE_FILE_URL: 'https://raw.githubusercontent.com/aodn/geoserver-config/production/wps/templates.xml'
   administratorEmail: 'developers@emii.org.au'
@@ -24,4 +25,4 @@ aggregationWorker:
 
 logging:
   level:
-    root: debug
+    root: info
