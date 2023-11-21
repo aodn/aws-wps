@@ -6,13 +6,13 @@
 
     <groupId>au.org.emii</groupId>
     <artifactId>wps-common</artifactId>
-    <version>0.0.0</version>
+    <version>4.42.62</version>
 
     <parent>
         <groupId>au.org.emii</groupId>
         <artifactId>aws-wps</artifactId>
         <relativePath>../pom.xml</relativePath>
-        <version>0.0.0</version>
+        <version>4.42.62</version>
     </parent>
 
     <dependencies>
@@ -102,12 +102,12 @@
         <dependency>
             <groupId>au.org.emii</groupId>
             <artifactId>aggregator</artifactId>
-            <version>0.0.0</version>
+            <version>4.42.62</version>
         </dependency>
         <dependency>
             <groupId>au.org.emii</groupId>
             <artifactId>jaxb-wps</artifactId>
-            <version>0.0.0</version>
+            <version>4.42.62</version>
         </dependency>
     </dependencies>
 
